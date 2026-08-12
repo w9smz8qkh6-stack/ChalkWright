@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "approved-inert",
+  "timeZone": "Asia/Ho_Chi_Minh",
+  "missedRunPolicy": "no-catch-up",
+  "jobs": [
+    {
+      "name": "production-plan-refresh",
+      "authority": "powerschool-read-only",
+      "schedule": "Mon..Fri,Sun *-*-* 07:20:00 Asia/Ho_Chi_Minh",
+      "serviceTemplate": "classroom-hub-production-plan-refresh.service.in",
+      "timerTemplate": "classroom-hub-production-plan-refresh.timer.in",
+      "persistent": false
+    },
+    {
+      "name": "production-classroom-refresh",
+      "authority": "classroom-read-only-active-class-only",
+      "schedule": "30-seconds-after-activation-or-prior-run-completion",
+      "serviceTemplate": "classroom-hub-production-classroom-refresh.service.in",
+      "timerTemplate": "classroom-hub-production-classroom-refresh.timer.in",
+      "persistent": false
+    }
+  ],
+  "deferred": [
+    "protected-powerschool-reference-provisioning-and-live-repair",
+    "protected-classroom-reference-provisioning",
+    "telegram-alert-provisioning-and-wiring",
+    "morning-and-daily-brief-native-delivery",
+    "maintenance-timer-finalization",
+    "calendar-writer-cutover"
+  ]
+}

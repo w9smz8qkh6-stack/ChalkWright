@@ -1,0 +1,6 @@
+# Repository-scoped Codex configuration. Codex loads this file only after the
+# repository is trusted.
+
+# Official, read-only OpenAI documentation search and page retrieval.
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"

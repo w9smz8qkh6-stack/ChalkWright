@@ -1,0 +1,215 @@
+import { spawn, type ChildProcess } from 'node:child_process';
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  openSync,
+  readFileSync,
+} from 'node:fs';
+import { join } from 'node:path';
+
+import { chromium, type Browser, type BrowserContext } from 'playwright-core';
+
+import { sanitizedChromeEnvironment } from './browser-runtime.js';
+
+export interface DirectCdpPowerSchoolSession {
+  readonly context: BrowserContext;
+  close(): Promise<void>;
+}
+
+/**
+ * Starts Chrome directly and attaches the locked Playwright client over CDP.
+ * This is reserved for the high-authority repair worker. Chrome starts on an
+ * inert local page in a fresh profile; the caller must install its context-wide
+ * network policy before the first application navigation.
+ */
+export async function launchDirectCdpPowerSchoolSession(options: {
+  readonly profileDirectory: string;
+  readonly chromeExecutablePath: string;
+  readonly headless: boolean;
+  readonly javaScriptEnabled: boolean;
+  readonly timeoutMs: number;
+  readonly environment?: NodeJS.ProcessEnv;
+  readonly signal?: AbortSignal;
+}): Promise<DirectCdpPowerSchoolSession> {
+  const arguments_ = [
+    '--disable-background-networking',
+    '--disable-component-update',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--no-default-browser-check',
+    '--no-first-run',
+    '--remote-debugging-address=127.0.0.1',
+    '--remote-debugging-port=0',
+    `--user-data-dir=${options.profileDirectory}`,
+    ...(options.headless ? ['--headless'] : []),
+    'about:blank',
+  ];
+  let child: ChildProcess;
+  try {
+    child = spawn(options.chromeExecutablePath, arguments_, {
+      detached: false,
+      env: sanitizedChromeEnvironment(options.environment ?? process.env),
+      shell: false,
+      stdio: 'ignore',
+    });
+  } catch {
+    throw new Error('powerschool-direct-chrome-start-failed');
+  }
+  let browser: Browser | undefined;
+  let context: BrowserContext | undefined;
+  let closed = false;
+  const close = async (): Promise<void> => {
+    if (closed) return;
+    closed = true;
+    await context?.close().catch(() => undefined);
+    await browser?.close().catch(() => undefined);
+    await terminateChromeChild(child, 2_000);
+  };
+  try {
+    const endpoint = await waitForDevToolsEndpoint({
+      child,
+      profileDirectory: options.profileDirectory,
+      timeoutMs: options.timeoutMs,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    });
+    browser = await chromium.connectOverCDP(endpoint, {
+      isLocal: true,
+      timeout: options.timeoutMs,
+    });
+    context = await browser.newContext({
+      acceptDownloads: false,
+      javaScriptEnabled: options.javaScriptEnabled,
+      serviceWorkers: 'block',
+    });
+    for (const existingContext of browser.contexts()) {
+      if (existingContext === context) continue;
+      for (const page of existingContext.pages()) {
+        await page.close({ runBeforeUnload: false }).catch(() => undefined);
+      }
+    }
+    return { context, close };
+  } catch (error: unknown) {
+    await close();
+    if (options.signal?.aborted === true) throw options.signal.reason;
+    throw error;
+  }
+}
+
+async function waitForDevToolsEndpoint(options: {
+  readonly child: ChildProcess;
+  readonly profileDirectory: string;
+  readonly timeoutMs: number;
+  readonly signal?: AbortSignal;
+}): Promise<string> {
+  let exited = options.child.exitCode !== null;
+  let startFailed = false;
+  const recordExit = (): void => {
+    exited = true;
+  };
+  const recordError = (): void => {
+    startFailed = true;
+  };
+  options.child.once('exit', recordExit);
+  options.child.once('error', recordError);
+  const startedAt = performance.now();
+  try {
+    while (performance.now() - startedAt < options.timeoutMs) {
+      if (options.signal?.aborted === true)
+        throw new Error('powerschool-direct-chrome-aborted');
+      if (startFailed)
+        throw new Error('powerschool-direct-chrome-start-failed');
+      if (exited) throw new Error('powerschool-direct-chrome-exited');
+      const endpoint = readDevToolsEndpoint(options.profileDirectory);
+      if (endpoint !== undefined) return endpoint;
+      await new Promise<void>((resolveWait) => setTimeout(resolveWait, 25));
+    }
+  } finally {
+    options.child.removeListener('exit', recordExit);
+    options.child.removeListener('error', recordError);
+  }
+  throw new Error('powerschool-direct-chrome-timeout');
+}
+
+function readDevToolsEndpoint(profileDirectory: string): string | undefined {
+  const path = join(profileDirectory, 'DevToolsActivePort');
+  let descriptor: number;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch (error: unknown) {
+    if (isErrno(error, 'ENOENT')) return undefined;
+    throw new Error('powerschool-direct-chrome-endpoint-unsafe');
+  }
+  try {
+    const state = fstatSync(descriptor);
+    if (
+      !state.isFile() ||
+      state.nlink !== 1 ||
+      state.uid !== effectiveUid() ||
+      state.size < 3 ||
+      state.size > 1_024
+    ) {
+      throw new Error('powerschool-direct-chrome-endpoint-unsafe');
+    }
+    const lines = readFileSync(descriptor, 'utf8').trimEnd().split('\n');
+    if (lines.length !== 2) {
+      throw new Error('powerschool-direct-chrome-endpoint-unsafe');
+    }
+    const port = Number(lines[0]);
+    if (
+      !Number.isSafeInteger(port) ||
+      port < 1 ||
+      port > 65_535 ||
+      !/^\/devtools\/browser\/[A-Za-z0-9-]{16,128}$/u.test(lines[1] ?? '')
+    ) {
+      throw new Error('powerschool-direct-chrome-endpoint-unsafe');
+    }
+    return `http://127.0.0.1:${port}`;
+  } finally {
+    closeSync(descriptor);
+  }
+}
+
+async function terminateChromeChild(
+  child: ChildProcess,
+  graceMs: number,
+): Promise<void> {
+  if (child.pid === undefined) return;
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  child.kill('SIGTERM');
+  if (await waitForChildExit(child, graceMs)) return;
+  child.kill('SIGKILL');
+  await waitForChildExit(child, 1_000);
+}
+
+async function waitForChildExit(
+  child: ChildProcess,
+  maximumMs: number,
+): Promise<boolean> {
+  if (child.exitCode !== null || child.signalCode !== null) return true;
+  return await new Promise<boolean>((resolveWait) => {
+    const timer = setTimeout(() => {
+      child.removeListener('exit', onExit);
+      resolveWait(false);
+    }, maximumMs);
+    const onExit = (): void => {
+      clearTimeout(timer);
+      resolveWait(true);
+    };
+    child.once('exit', onExit);
+  });
+}
+
+function effectiveUid(): number {
+  if (typeof process.geteuid === 'function') return process.geteuid();
+  if (typeof process.getuid === 'function') return process.getuid();
+  throw new Error('powerschool-direct-chrome-owner-unavailable');
+}
+
+function isErrno(error: unknown, code: string): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    (error as NodeJS.ErrnoException).code === code
+  );
+}

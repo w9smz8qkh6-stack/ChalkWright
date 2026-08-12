@@ -1,0 +1,44 @@
+[Unit]
+Description=Classroom Hub isolated mutation-disabled shadow HTTP service
+Documentation=file:///opt/classroom-hub-shadow/current/docs/migration/m11-review-package.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=5min
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/classroom-hub-shadow/current
+EnvironmentFile=/etc/classroom-hub/shadow/server.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/classroom-hub-shadow/current/dist/entrypoints/shadow-server.js
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/classroom-hub/shadow/refresh.env -/etc/classroom-hub/shadow/legacy.env -/etc/classroom-hub/providers/google-classroom/authorized-user.json -/var/lib/classroom-hub/powerschool-session
+ReadWritePaths=/var/lib/classroom-hub-shadow
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=512M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

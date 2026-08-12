@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+oauth/
+.auth/
+*.pem
+*.key
+*.p12
+*.pfx
+public/galloping-horse.mp4
+public/dismissal-loop.webm
+
+# Sensitive or local data
+student-data/
+data/
+browser-data/
+browser-profile/
+profiles/
+runtime/
+state/
+backups/
+
+# Generated output and caches
+dist/
+build/
+.test-dist/
+coverage/
+generated/
+artifacts/
+.cache/
+.npm/
+tmp/
+temp/
+*.tsbuildinfo
+
+# Logs and process state
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# Local databases
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite.metadata.json
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

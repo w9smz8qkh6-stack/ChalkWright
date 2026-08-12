@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "instance": "classroom-hub-m11-shadow",
+  "status": "authorized-seven-day-window",
+  "timeZone": "Asia/Ho_Chi_Minh",
+  "window": {
+    "startsOn": "2026-08-11",
+    "endsOn": "2026-08-17",
+    "calendarDays": 7,
+    "excludedWeekday": "Saturday"
+  },
+  "refreshLocalTime": "07:20:00",
+  "timer": "classroom-hub-shadow-refresh.timer",
+  "service": "classroom-hub-shadow-refresh.service",
+  "calendarCapability": "absent",
+  "routingChange": false
+}

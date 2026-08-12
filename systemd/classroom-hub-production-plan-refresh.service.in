@@ -1,0 +1,41 @@
+# classroom-hub-template-status=approved-m16-inert
+[Unit]
+Description=INERT approved M-16 Classroom Hub production plan refresh
+Documentation=file:///opt/classroom-hub/docs/migration/m16-review-package.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/classroom-hub
+EnvironmentFile=/etc/classroom-hub/jobs/production-plan-refresh.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/classroom-hub/dist/entrypoints/production-plan-refresh.js
+TimeoutStartSec=3min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/classroom-hub/providers/google-classroom -/etc/classroom-hub/providers/google-calendar -/etc/classroom-hub/providers/alert-delivery
+ReadWritePaths=/var/lib/classroom-hub/production /var/lib/classroom-hub/powerschool-session
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Chrome's enabled Linux sandbox requires user, PID, and network namespaces.
+RestrictNamespaces=user pid net
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=768M
+TasksMax=192
+
+# Accepted policy candidate only. The .in suffix and absent [Install] section
+# keep this provider-reading unit non-installable until the M-17 live gate.

@@ -1,0 +1,17 @@
+[Unit]
+Description=Seven-day Classroom Hub shadow refresh window
+
+[Timer]
+OnCalendar=Tue 2026-08-11 07:20:00 Asia/Ho_Chi_Minh
+OnCalendar=Wed 2026-08-12 07:20:00 Asia/Ho_Chi_Minh
+OnCalendar=Thu 2026-08-13 07:20:00 Asia/Ho_Chi_Minh
+OnCalendar=Fri 2026-08-14 07:20:00 Asia/Ho_Chi_Minh
+OnCalendar=Sun 2026-08-16 07:20:00 Asia/Ho_Chi_Minh
+OnCalendar=Mon 2026-08-17 07:20:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+# Do not catch up outside the explicitly authorized seven-day window.
+Persistent=false
+Unit=classroom-hub-shadow-refresh.service
+
+[Install]
+WantedBy=timers.target

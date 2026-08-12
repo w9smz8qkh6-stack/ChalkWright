@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "source": "repository-owned synthetic B407 fixture",
+  "state": "pre_checkin",
+  "instant": "2035-04-13T07:55:00Z",
+  "browser": "Google Chrome 150.0.7871.114",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "reducedMotion": true,
+  "foreignRequests": 0,
+  "consoleErrors": 0,
+  "pageErrors": 0,
+  "httpFailures": 0,
+  "image": "classroom-hub-preview.png",
+  "sha256": "03988f3ca24cd5fa49c3f1d1960a16bd34b1c705458362b02e83f4f4f22dc6df"
+}

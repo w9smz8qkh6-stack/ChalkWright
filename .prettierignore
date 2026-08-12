@@ -1,0 +1,9 @@
+node_modules/
+.codex/
+dist/
+.test-dist/
+coverage/
+generated/
+artifacts/
+docs/tooling.md
+package-lock.json

@@ -1,0 +1,36 @@
+# classroom-hub-template-status=pending-confirmation
+[Unit]
+Description=INERT pending Classroom Hub bounded job %i
+Documentation=file:///opt/classroom-hub/docs/migration-plan.md
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/classroom-hub
+EnvironmentFile=/etc/classroom-hub/classroom-hub.env
+Environment=NODE_ENV=production
+Environment=CLASSROOM_HUB_HOST=127.0.0.1
+ExecStart={{CLASSROOM_HUB_BOUNDED_JOB_COMMAND_PENDING}}
+RuntimeMaxSec={{RUNTIME_MAX_SEC_PENDING_CONFIRMATION}}
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/classroom-hub
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+# Validation template only. The .in suffix and invalid ExecStart placeholder
+# prevent activation until a later checkpoint confirms managed installation.

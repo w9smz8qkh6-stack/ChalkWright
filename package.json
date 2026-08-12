@@ -1,0 +1,69 @@
+{
+  "name": "chalkwright",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "description": "Host-native classroom display and schedule orchestration application",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/w9smz8qkh6-stack/chalkwright.git"
+  },
+  "bugs": {
+    "url": "https://github.com/w9smz8qkh6-stack/chalkwright/issues"
+  },
+  "homepage": "https://github.com/w9smz8qkh6-stack/chalkwright#readme",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && npm run client:build",
+    "client:build": "tsc -p tsconfig.client.json",
+    "client:check": "tsc -p tsconfig.client.json --noEmit",
+    "capture:public-preview": "npm run build --silent && node scripts/capture-public-preview.mjs --write",
+    "docs:check": "node scripts/update-tooling-index.mjs --check && node scripts/check-local-doc-links.mjs && node scripts/check-changelog.mjs",
+    "docs:check:portable": "node scripts/check-local-doc-links.mjs && node scripts/check-changelog.mjs",
+    "docs:check-links": "node scripts/check-doc-links.mjs",
+    "docs:sync": "node scripts/update-tooling-index.mjs --write",
+    "dependencies:audit": "npm audit --audit-level=high",
+    "fixtures:check": "node scripts/check-fixtures.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "ops:job": "node dist/entrypoints/job.js",
+    "ops:m14-calendar-qualify": "node dist/entrypoints/m14-calendar-live-qualification.js",
+    "ops:m15-calendar-trial": "node dist/entrypoints/m15-calendar-production-trial.js",
+    "ops:m15-provision": "node dist/entrypoints/m15-provision.js",
+    "ops:m16-rehearse": "npm run build --silent && node dist/entrypoints/m16-rehearsal.js",
+    "ops:m16-provision-production": "node scripts/operations/provision-m16-production.mjs --apply",
+    "ops:production-server": "node dist/entrypoints/production-server.js",
+    "ops:powerschool-bells": "node dist/entrypoints/powerschool-bell-collector.js",
+    "ops:powerschool-bells:compatibility": "node dist/entrypoints/powerschool-compatibility-bell-collector.js",
+    "ops:powerschool-jit-repair": "node dist/entrypoints/powerschool-jit-repair.js",
+    "ops:powerschool-session-bootstrap": "node dist/entrypoints/powerschool-session-bootstrap.js",
+    "ops:shadow-job": "node dist/entrypoints/shadow-job.js",
+    "ops:shadow-server": "node dist/entrypoints/shadow-server.js",
+    "ops:rehearse": "npm run build --silent && node dist/entrypoints/rehearsal.js",
+    "ops:verify": "node scripts/operations/verify-systemd.mjs && node scripts/operations/verify-repository-safety.mjs",
+    "publication:check": "node scripts/check-publication.mjs",
+    "publication:history:check": "node scripts/check-publication-history.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "npm run client:build --silent && tsc -p tsconfig.test.json && node --test --test-concurrency=1 \".test-dist/test/**/*.test.js\" \"test/**/*.test.mjs\"",
+    "check": "npm run docs:check && npm run fixtures:check && npm run ops:verify && npm run format:check && npm run typecheck && npm run client:check && npm test && npm run build && npm run smoke && node dist/entrypoints/rehearsal.js && node dist/entrypoints/m16-rehearsal.js",
+    "check:portable": "npm run docs:check:portable && npm run fixtures:check && npm run ops:verify && npm run format:check && npm run typecheck && npm run client:check && npm test && npm run build && npm run smoke && node dist/entrypoints/rehearsal.js && node dist/entrypoints/m16-rehearsal.js",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=24.15.0",
+    "npm": ">=10"
+  },
+  "packageManager": "npm@11.12.1",
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@googleapis/calendar": "16.0.0",
+    "@googleapis/classroom": "14.0.0",
+    "playwright-core": "1.62.0"
+  }
+}

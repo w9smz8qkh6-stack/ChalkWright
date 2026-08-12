@@ -1,0 +1,16 @@
+# Inert M-16 production directory contract. Protected files are provisioned
+# separately and atomically only after these directories pass metadata checks.
+d /opt/classroom-hub 0755 root root -
+d /opt/classroom-hub/releases 0755 root root -
+d /etc/classroom-hub 0755 root root -
+d /etc/classroom-hub/server 0700 classroom-hub classroom-hub -
+d /etc/classroom-hub/operator 0700 classroom-hub classroom-hub -
+d /etc/classroom-hub/jobs 0700 root root -
+d /etc/classroom-hub/providers 0711 root root -
+d /etc/classroom-hub/providers/google-classroom 0700 classroom-hub classroom-hub -
+d /etc/classroom-hub/providers/alert-delivery 0700 classroom-hub classroom-hub -
+d /var/lib/classroom-hub 0711 root root -
+d /var/lib/classroom-hub/production 0700 classroom-hub classroom-hub -
+d /var/lib/classroom-hub/production/state 0700 classroom-hub classroom-hub -
+d /var/lib/classroom-hub/production/backups 0700 classroom-hub classroom-hub -
+d /var/lib/classroom-hub/powerschool-session 0700 classroom-hub classroom-hub -

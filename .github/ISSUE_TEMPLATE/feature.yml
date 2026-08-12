@@ -1,0 +1,38 @@
+name: Feature proposal
+description: Propose a bounded product or engineering improvement
+title: 'proposal: '
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the behavior and how success could be verified.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Safety and compatibility boundaries
+      description: Note provider effects, privacy, authentication, migration, or parity implications.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: This proposal contains no credentials, student data, private routes, or live provider material.
+          required: true
