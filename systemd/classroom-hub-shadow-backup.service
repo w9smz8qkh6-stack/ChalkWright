@@ -1,0 +1,33 @@
+[Unit]
+Description=Classroom Hub isolated shadow SQLite backup
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/classroom-hub-shadow/current
+EnvironmentFile=/etc/classroom-hub/shadow/server.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/classroom-hub-shadow/current/dist/entrypoints/shadow-job.js sqlite-backup
+TimeoutStartSec=2min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/classroom-hub/shadow/refresh.env -/etc/classroom-hub/shadow/legacy.env -/etc/classroom-hub/providers/google-classroom/authorized-user.json -/var/lib/classroom-hub/powerschool-session
+ReadWritePaths=/var/lib/classroom-hub-shadow
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=256M
+TasksMax=64

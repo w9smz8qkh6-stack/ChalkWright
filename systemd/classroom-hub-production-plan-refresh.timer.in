@@ -1,0 +1,13 @@
+# classroom-hub-template-status=approved-m16-inert
+# classroom-hub-evidence=OPS-002 NET-001 AUTH-001
+[Unit]
+Description=INERT approved M-16 Classroom Hub production plan refresh timer
+
+[Timer]
+OnCalendar=Mon..Fri,Sun *-*-* 07:20:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+Persistent=false
+Unit=classroom-hub-production-plan-refresh.service
+
+# Accepted policy candidate only. The .in suffix and absent [Install] section
+# keep this timer non-installable until the M-17 live gate.

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-confirmation",
+  "timeZone": {
+    "status": "pending-confirmation",
+    "value": null,
+    "requirement": "deployment IANA timezone"
+  },
+  "schedulePlaceholder": "{{ON_CALENDAR_PENDING_CONFIRMATION}} {{TIME_ZONE_PENDING_CONFIRMATION}}",
+  "jobs": [
+    {
+      "name": "source-auth-preflight",
+      "implementation": "deferred-provider",
+      "schedule": "on-demand-prerequisite",
+      "timerTemplate": null
+    },
+    {
+      "name": "classroom-refresh",
+      "implementation": "deferred-provider",
+      "schedule": "pending-confirmation",
+      "timerTemplate": null
+    },
+    {
+      "name": "calendar-reconcile",
+      "implementation": "deferred-writer",
+      "schedule": "pending-confirmation",
+      "timerTemplate": null
+    },
+    {
+      "name": "operations-report",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-operations-report.timer.in"
+    },
+    {
+      "name": "alert-evaluate",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-alert-evaluate.timer.in"
+    },
+    {
+      "name": "brief-morning",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-brief-morning.timer.in"
+    },
+    {
+      "name": "brief-evening",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-brief-evening.timer.in"
+    },
+    {
+      "name": "sqlite-backup",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-sqlite-backup.timer.in"
+    },
+    {
+      "name": "sqlite-integrity",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-sqlite-integrity.timer.in"
+    },
+    {
+      "name": "state-retention",
+      "implementation": "offline",
+      "schedule": "pending-confirmation",
+      "timerTemplate": "classroom-hub-state-retention.timer.in"
+    }
+  ]
+}

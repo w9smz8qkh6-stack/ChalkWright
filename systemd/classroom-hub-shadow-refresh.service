@@ -1,0 +1,37 @@
+[Unit]
+Description=Classroom Hub isolated read-only shadow refresh
+Documentation=file:///opt/classroom-hub-shadow/current/docs/migration/m11-review-package.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/classroom-hub-shadow/current
+EnvironmentFile=/etc/classroom-hub/shadow/refresh.env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/classroom-hub-shadow/current/dist/entrypoints/shadow-job.js source-auth-preflight
+ExecStart=/usr/bin/node /opt/classroom-hub-shadow/current/dist/entrypoints/shadow-job.js classroom-refresh
+TimeoutStartSec=6min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=read-only
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/classroom-hub-shadow /var/lib/classroom-hub/powerschool-session
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Chrome's enabled Linux sandbox requires user, PID, and network namespaces.
+RestrictNamespaces=user pid net
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=768M
+TasksMax=192

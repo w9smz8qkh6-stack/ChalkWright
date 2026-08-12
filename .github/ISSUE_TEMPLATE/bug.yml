@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible defect using synthetic or non-sensitive data
+title: 'bug: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include student data, credentials, OAuth material, browser state,
+        provider responses, private URLs, or live configuration. Use the private
+        security-reporting process for vulnerabilities or sensitive disclosures.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic reproduction
+      description: Provide the smallest safe steps or fixture that reproduces the problem.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.x.y or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Safe OS, Node.js, browser, and deployment-mode versions only.
+      placeholder: Ubuntu 24.04, Node.js 24.15.0, fixture-backed mode
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include safe error codes or synthetic output, not raw provider content.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety confirmation
+      options:
+        - label: I removed credentials, private URLs, student data, provider payloads, and live configuration.
+          required: true

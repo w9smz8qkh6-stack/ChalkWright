@@ -1,0 +1,3 @@
+# Inert M-16 production identity. Applying this file creates no unit or job.
+u classroom-hub - "Classroom Hub service" /var/lib/classroom-hub /usr/sbin/nologin
+

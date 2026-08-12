@@ -1,0 +1,14 @@
+# classroom-hub-template-status=approved-m16-inert
+# classroom-hub-evidence=GC-001 OPS-002 NET-001
+[Unit]
+Description=INERT approved M-16 Classroom Hub active-class refresh timer
+
+[Timer]
+OnActiveSec=30s
+OnUnitInactiveSec=30s
+AccuracySec=1s
+Persistent=false
+Unit=classroom-hub-production-classroom-refresh.service
+
+# Accepted policy candidate only. The .in suffix and absent [Install] section
+# keep this timer non-installable until the M-17 live gate.

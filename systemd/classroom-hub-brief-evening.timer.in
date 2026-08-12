@@ -1,0 +1,12 @@
+# classroom-hub-template-status=pending-confirmation
+# classroom-hub-evidence=OPS-002 OPS-005
+[Unit]
+Description=INERT pending-confirmation Classroom Hub evening brief timer
+
+[Timer]
+OnCalendar={{ON_CALENDAR_PENDING_CONFIRMATION}} {{TIME_ZONE_PENDING_CONFIRMATION}}
+Persistent={{PERSISTENT_PENDING_CONFIRMATION}}
+Unit=classroom-hub-job@brief-evening.service
+
+# Validation template only. The unresolved placeholders and .in suffix are
+# intentional; do not rename, install, enable, or start this file.
