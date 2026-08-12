@@ -64,6 +64,6 @@
   "dependencies": {
     "@googleapis/calendar": "16.0.0",
     "@googleapis/classroom": "14.0.0",
-    "playwright-core": "1.62.0"
+    "playwright-core": "1.62.1"
   }
 }
