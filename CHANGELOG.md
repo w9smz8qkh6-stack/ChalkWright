@@ -10,6 +10,12 @@ omitted.
 
 ### Changed
 
+- Reworked the public README introduction around Chalkwright's classroom value:
+  schedule-driven display states and owned Calendar blocks, read-only upcoming
+  Classroom coursework, QR attendance check-in, learning objectives, textbook
+  and lesson references, rotating word-of-the-day vocabulary, configurable
+  classroom options, and next-class-day previews.
+
 - Prepared the M-17 candidate snapshot for public portfolio review: host-specific
   migration inputs now come from protected references, private Tailnet hostnames
   are excluded from source while their operational boundary remains hash-bound,
