@@ -39,7 +39,8 @@ capture metadata is recorded in
 - Loopback-only HTTP serving, Tailnet-oriented deployment design, hardened
   systemd templates, and rehearsed cutover/rollback ordering.
 - A parity-first migration process backed by ADRs, executable contracts,
-  synthetic fixtures, browser evidence, and 675 automated tests.
+  synthetic fixtures, browser evidence, and a comprehensive automated test
+  suite.
 
 ## Safety model
 
@@ -133,8 +134,15 @@ local policy selects an allowed operation.
 
 ## Current roadmap position
 
-Milestones M-01 through M-16 are recorded as promoted. M-17 has an accepted
-architecture but is not implemented or authorized for live execution.
+Milestones M-01 through M-16 are recorded as promoted. M-17's isolated
+parallel canary is implemented and live-qualified on a separate owned Calendar,
+private route, service topology, and state root. Physical-display qualification
+has accepted the course label, stable polling, and future-class-day preview.
+The latest header-parity refinements remain reviewed but undeployed.
+
+M-17 is not promoted. The remaining gates are the bounded parallel observation,
+scheduled refresh/backup/restart evidence, final comparison disposition, and an
+explicit handoff decision. The legacy application remains authoritative.
 
 M-17 will first run Chalkwright as an isolated parallel canary:
 

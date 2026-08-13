@@ -331,6 +331,7 @@ export class SqliteApplicationStateRepository
         plan !== undefined &&
         planMatchesRow(row, plan) &&
         plan.date > query.afterDate &&
+        plan.meetings.length > 0 &&
         plan.screenId === query.screenId &&
         plan.roomId === query.roomId
       )

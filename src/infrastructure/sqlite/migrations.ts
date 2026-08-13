@@ -270,6 +270,46 @@ export const schemaMigrations: readonly SchemaMigration[] = [
         ON calendar_execution_journal(scope_id, started_at DESC);
     `,
   },
+  {
+    version: 6,
+    name: 'bounded-calendar-intent-identities',
+    sql: `
+      CREATE TABLE calendar_execution_steps_v6 (
+        execution_fingerprint TEXT NOT NULL
+          REFERENCES calendar_execution_journal(execution_fingerprint)
+          ON DELETE CASCADE,
+        intent_id TEXT NOT NULL,
+        intent_kind TEXT NOT NULL
+          CHECK (intent_kind IN ('no-op', 'create', 'replace', 'delete')),
+        status TEXT NOT NULL
+          CHECK (status IN ('pending', 'attempted', 'succeeded', 'failed')),
+        outcome TEXT
+          CHECK (outcome IS NULL OR outcome IN (
+            'no-op', 'mutated', 'already-converged', 'refused'
+          )),
+        provider_reference_hash TEXT,
+        error_code TEXT,
+        PRIMARY KEY (execution_fingerprint, intent_id),
+        CHECK (length(intent_id) BETWEEN 1 AND 512),
+        CHECK (
+          provider_reference_hash IS NULL OR
+          length(provider_reference_hash) = 71
+        ),
+        CHECK (error_code IS NULL OR length(error_code) BETWEEN 1 AND 128)
+      ) STRICT;
+
+      INSERT INTO calendar_execution_steps_v6(
+        execution_fingerprint, intent_id, intent_kind, status, outcome,
+        provider_reference_hash, error_code
+      )
+      SELECT execution_fingerprint, intent_id, intent_kind, status, outcome,
+             provider_reference_hash, error_code
+      FROM calendar_execution_steps;
+
+      DROP TABLE calendar_execution_steps;
+      ALTER TABLE calendar_execution_steps_v6 RENAME TO calendar_execution_steps;
+    `,
+  },
 ] as const;
 
 const migrationTableSql = `

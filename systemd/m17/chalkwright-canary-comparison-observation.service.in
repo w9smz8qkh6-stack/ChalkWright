@@ -1,0 +1,38 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright continued normalized semantic observation
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/chalkwright-canary/current
+Environment=NODE_ENV=production
+Environment=CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=/etc/chalkwright/canary/server.json
+Environment=CHALKWRIGHT_M17_COMPARISON_REFERENCE=/etc/chalkwright/canary/comparison-input.json
+ExecCondition=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-canary-activation-manifest.js --verify-current /etc/chalkwright/canary/activation-manifest.json
+ExecStart=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-canary-comparison.js
+TimeoutStartSec=1min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/chalkwright/canary/providers -/var/lib/chalkwright/canary-powerschool-session
+ReadWritePaths=/var/lib/chalkwright/canary-production
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=256M
+TasksMax=64
+
+# The .in suffix and absent [Install] section keep this unit inert.

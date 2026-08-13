@@ -132,6 +132,29 @@ test('class content includes accessible carousel controls, hold state, and revea
   assert.match(html, /Held by operator/u);
 });
 
+test('class content renders the legacy minutes-until-bell header contract', () => {
+  const inClass = renderDisplayPage(model('in_class_content'));
+  assert.match(inClass, /class="header-status"/u);
+  assert.match(
+    inClass,
+    /class="clock-group">\s*<span class="date-label"[^>]*>[^<]+<\/span>\s*<time class="clock"/u,
+  );
+  assert.match(
+    inClass,
+    /class="header-bell-countdown" data-header-bell data-bell-target="2035-04-13T09:00:00Z" hidden aria-label="Minutes until bell"/u,
+  );
+  assert.match(inClass, /class="header-bell-icon"/u);
+  assert.match(inClass, /data-header-bell-number/u);
+  assert.doesNotMatch(inClass, /Dismissal begins in/u);
+
+  const checkIn = renderDisplayPage(model('pre_checkin'));
+  assert.match(
+    checkIn,
+    /class="header-bell-countdown" data-header-bell hidden/u,
+  );
+  assert.doesNotMatch(checkIn, /data-bell-target=/u);
+});
+
 test('dismissal scene uses two muted preloaded local media layers and a reveal fallback hook', () => {
   const html = renderDisplayPage(model('dismissal_warning'));
   assert.equal((html.match(/data-media-layer/gmu) ?? []).length, 2);

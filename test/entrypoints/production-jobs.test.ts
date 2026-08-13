@@ -39,9 +39,9 @@ test('production plan refresh stores only the verified read-only plan', async ()
       sourceForRun: () => {
         sourceConstructions += 1;
         return {
-          readSchedule: async () => ({
+          readSchedule: async (request) => ({
             status: 'observed',
-            observation: scheduleObservation(),
+            observation: scheduleObservationForDate(request.date, true),
           }),
         };
       },
@@ -64,6 +64,149 @@ test('production plan refresh stores only the verified read-only plan', async ()
       )?.meetings.length,
       1,
     );
+  } finally {
+    fixture.close();
+  }
+});
+
+test('production plan refresh stores the first verified future class day across an empty day', async () => {
+  const fixture = createFixture();
+  try {
+    const requestedDates: string[] = [];
+    const output = await runProductionPlanRefresh({
+      arguments: [],
+      environment: planEnvironment(fixture.environment),
+      now: () => requestedAt,
+      nextId: () => 'production-future-plan-refresh-test',
+      hardStop: () => {
+        throw new Error('unexpected-hard-stop');
+      },
+      sourceForRun: () => ({
+        readSchedule: async (request) => {
+          requestedDates.push(request.date);
+          const hasClasses = request.date !== '2035-04-14';
+          return {
+            status: 'observed' as const,
+            observation: scheduleObservationForDate(request.date, hasClasses),
+          };
+        },
+      }),
+    });
+    assert.equal(output.status, 'succeeded');
+    assert.deepEqual(requestedDates, [
+      '2035-04-13',
+      '2035-04-14',
+      '2035-04-15',
+    ]);
+    using database = new SqliteDatabase(fixture.databasePath, {
+      migration: { appliedAt: requestedAt },
+    });
+    const repository = repositoryFor(database);
+    assert.deepEqual(
+      (
+        await repository.findNextEffective({
+          screenId,
+          roomId,
+          afterDate: date,
+        })
+      )?.date,
+      '2035-04-15',
+    );
+  } finally {
+    fixture.close();
+  }
+});
+
+test('production plan refresh stops after seven verified empty future dates', async () => {
+  const fixture = createFixture();
+  try {
+    const requestedDates: string[] = [];
+    const output = await runProductionPlanRefresh({
+      arguments: [],
+      environment: planEnvironment(fixture.environment),
+      now: () => requestedAt,
+      nextId: () => 'production-future-plan-bound-test',
+      hardStop: () => {
+        throw new Error('unexpected-hard-stop');
+      },
+      sourceForRun: () => ({
+        readSchedule: async (request) => {
+          requestedDates.push(request.date);
+          return {
+            status: 'observed' as const,
+            observation: scheduleObservationForDate(
+              request.date,
+              request.date === date,
+            ),
+          };
+        },
+      }),
+    });
+    assert.equal(output.status, 'succeeded');
+    assert.deepEqual(requestedDates, [
+      '2035-04-13',
+      '2035-04-14',
+      '2035-04-15',
+      '2035-04-16',
+      '2035-04-17',
+      '2035-04-18',
+      '2035-04-19',
+      '2035-04-20',
+    ]);
+    using database = new SqliteDatabase(fixture.databasePath, {
+      migration: { appliedAt: requestedAt },
+    });
+    assert.equal(
+      await repositoryFor(database).findNextEffective({
+        screenId,
+        roomId,
+        afterDate: date,
+      }),
+      undefined,
+    );
+  } finally {
+    fixture.close();
+  }
+});
+
+test('production future lookahead preserves authentication repair without guessing', async () => {
+  const fixture = createFixture();
+  try {
+    const requestedDates: string[] = [];
+    const output = await runProductionPlanRefresh({
+      arguments: [],
+      environment: planEnvironment(fixture.environment),
+      now: () => requestedAt,
+      nextId: () => 'production-future-plan-auth-test',
+      hardStop: () => {
+        throw new Error('unexpected-hard-stop');
+      },
+      sourceForRun: () => ({
+        readSchedule: async (request) => {
+          requestedDates.push(request.date);
+          if (request.date === date)
+            return {
+              status: 'observed' as const,
+              observation: scheduleObservationForDate(request.date, true),
+            };
+          return {
+            status: 'repair-required' as const,
+            error: {
+              category: 'authentication-repair-required' as const,
+              code: 'session-state-rejected',
+              message: 'Repair required.',
+              retryable: false,
+              diagnostics: [],
+            },
+          };
+        },
+      }),
+    });
+    assert.equal(output.status, 'repair-required');
+    assert.equal(output.code, 'production-powerschool-session-state-rejected');
+    assert.deepEqual(requestedDates, ['2035-04-13', '2035-04-14']);
+    assert.equal(output.result?.attemptedExternalMutations, 0);
+    assert.equal(output.result?.completedExternalMutations, 0);
   } finally {
     fixture.close();
   }
@@ -323,22 +466,31 @@ function repositoryFor(database: SqliteDatabase) {
 }
 
 function scheduleObservation(): ScheduleObservation {
+  return scheduleObservationForDate(date, true);
+}
+
+function scheduleObservationForDate(
+  observedForDate: IsoDate,
+  hasClasses: boolean,
+): ScheduleObservation {
   return {
     contractVersion,
     observationId: 'production-plan-observation',
-    observedForDate: date,
-    kind: 'normal',
+    observedForDate,
+    kind: hasClasses ? 'normal' : 'no-classes',
     verification: 'verified',
-    periods: [
-      {
-        periodId: 'period-a',
-        courseKey: 'CODE-A',
-        blockLabel: 'A',
-        roomKey: roomId,
-        startsAt: '2035-04-13T01:00:00.000Z',
-        endsAt: '2035-04-13T06:00:00.000Z',
-      },
-    ],
+    periods: hasClasses
+      ? [
+          {
+            periodId: `period-${observedForDate}`,
+            courseKey: 'CODE-A',
+            blockLabel: 'A',
+            roomKey: roomId,
+            startsAt: `${observedForDate}T01:00:00.000Z`,
+            endsAt: `${observedForDate}T06:00:00.000Z`,
+          },
+        ]
+      : [],
     provenance: {
       source: 'powerschool',
       method: 'session-http',

@@ -10,6 +10,118 @@ omitted.
 
 ### Changed
 
+- Prepared the M-17 candidate snapshot for public portfolio review: host-specific
+  migration inputs now come from protected references, private Tailnet hostnames
+  are excluded from source while their operational boundary remains hash-bound,
+  the README reflects the live-qualified but unpromoted canary honestly, and
+  publication checks reject personal home roots and private Tailnet URLs.
+
+- Replaced the host-specific M-17 Calendar provisioning source with the generic
+  protected migration handoff
+  `/etc/chalkwright/migration/google-calendar-writer-config.json`, keeping
+  operator-specific home paths out of the publishable repository.
+
+- Restored the accepted legacy during-class header bell: while class content is
+  active, the upper-right status group now shows the original bell silhouette
+  beside a ceiling-rounded count of minutes until the official class end. The
+  value advances from the client clock without rebuilding the scene, briefly
+  shimmers only when the minute changes, exposes an exact accessible label,
+  respects reduced-motion preferences, and clears outside class-content state.
+  The adjacent current-time clock now also matches the legacy display by
+  showing hour and minute only while retaining second-level evaluation
+  internally. Its date precedes the clock on the same row, and the bell badge
+  is vertically centered against the clock instead of appearing as a
+  subscript. The redundant lower-left “Dismissal begins” countdown is no longer
+  rendered during class content.
+
+- Activated the isolated M-17 parallel canary on corrected release
+  `sha256:9986bbad0d320eea5dfe0b5fe705441a1927815f185767a6d24c9781789a8362`
+  for the exact 2026-08-13 12:20 through 2026-08-20 12:20
+  Asia/Ho_Chi_Minh window. The activation passed plan, Classroom, integrity,
+  verified-backup, server health/readiness, and manifest gates; created exactly
+  three owned events in `Auto Lesson 2`; and started five isolated timers. A
+  second reconciliation observed all three events and completed zero mutations.
+  The separate Tailnet HTTPS route on port 14443 is healthy and ready, while the
+  legacy 9443 route, Calendar, units, state, alerts, and Fully Kiosk URL remain
+  unchanged. M-17 remains in observation and is not promoted.
+
+- Corrected the live presentation label projection discovered during the first
+  canary display check. A verified meeting such as `Robotics (IC008.1)` now
+  renders the human title `Robotics` only when its parenthesized section code
+  normalizes to the meeting's exact course key; mismatched suffixes remain
+  intact and code-only inputs retain their normalized fallback.
+
+- Prevented unchanged 30-second display polls from replacing the complete scene
+  DOM and replaying its media fade. Healthy polls now update clock and status
+  metadata in place unless the rendered presentation fragment actually changes.
+
+- Closed the deferred end-of-day preview gap exposed by the physical canary.
+  The existing read-only PowerSchool refresh now scans at most seven subsequent
+  dates, stores verified no-class days without presenting them as class days,
+  and stops at the first verified non-empty future plan. The `day_complete`
+  scene can therefore show the next loaded class day across weekends and short
+  holidays without fabricating a schedule.
+
+- Added an inactive-only, exact-predecessor M-17 release upgrade path and a
+  recoverable fixed disposition for the failed zero-mutation activation
+  manifest, so the bounded Calendar intent-identity correction can be installed
+  without reusing or overwriting approved evidence.
+
+- Corrected the M-17 Calendar writer's bounded deterministic intent identity
+  contract after the first activation attempt failed closed with
+  `calendar-write-input-invalid`. Real intent IDs compose plan, scope, and
+  meeting identities and may exceed the generic 128-character identifier
+  limit; writer approvals and durable journal steps now consistently allow at
+  most 512 safe characters, while provider event IDs remain fixed SHA-256-based
+  values. Forward-only migration 6 rebuilds only the journal-step table with
+  that bound and preserves existing rows. The failed attempt completed zero
+  mutations, stopped the candidate server, and left every candidate timer and
+  route inactive.
+
+- Completed the authorized M-17 read-only live-preflight sequence without a new
+  PowerSchool sign-in. The existing legacy persistent browser passively renewed
+  its session; the strict bridge retained eleven PowerSchool cookies plus one
+  exact-origin local-storage record; and the canary plan and active-Classroom
+  preflights succeeded. The secondary `Auto Lesson 2` audit observed zero
+  events, proposed three intents, and attempted no mutations. A bounded
+  provider-inaccessible loopback comparison then matched three legacy and
+  candidate meetings using the established course-name-plus-section-code UI
+  label, with zero semantic differences and retained evidence fingerprint
+  `sha256:77071f2349eaf2a95ba25bdf1ee7236caa1251210cfdb666de01a49a70ba69af`.
+  Candidate Calendar semantics in that comparison are the three planned
+  reconciliation intents, while the separate provider preflight observed zero
+  existing events. A first protected activation manifest was bound but rejected
+  before use because its seven-day window began before activation; it must be
+  recoverably superseded immediately before any separately authorized
+  activation, and none of its inactive elapsed time counts as canary coverage.
+  No activation, routing, timer, Calendar mutation, or Fully Kiosk change
+  followed.
+
+- Added a fixed, operator-only M-17 recovery bridge for the explicitly
+  authorized legacy PowerSchool compatibility path. It binds the installed
+  OpenClaw 2026.6.11 read-only cookie interface and its generic evaluation
+  interface with one scanner-bound read-only expression containing no mutation
+  or network operation. It keeps the envelopes in memory, atomically binds local
+  storage to the returned document origin, requires both that origin and the
+  response URL to match the configured PowerSchool origin, drops root before
+  application imports, and filters cookies plus bounded exact-origin local
+  storage through the strict
+  PowerSchool-only validator, and atomically refreshes only the isolated canary
+  session state without profile copying or password, 1Password, or Google
+  credential access.
+
+- Added a create-once, release-bound M-17 SQLite initializer after the first
+  live preflight exposed that inert provisioning created the isolated
+  directories but left the required canary database absent. The initializer
+  drops root authority before importing application code and has no provider,
+  service, route, or legacy-state capability.
+
+- Completed the first M-17 live-preflight stage with isolated protected
+  provisioning, exact digest-bound inert installation, and a validated
+  privilege-dropped filtered PowerSchool state copy. The copy retained eleven
+  PowerSchool cookies and no origin storage, browser profile, Google state, or
+  provider request; all units remain stopped and routing remains unchanged.
+
 - Adopted Chalkwright as the public product, package, UI, documentation, and
   future repository name while retaining existing `CLASSROOM_HUB_*`,
   `classroom-hub` runtime paths, compatibility URLs, and ownership markers for
@@ -37,6 +149,19 @@ omitted.
   performed.
 
 ### Added
+
+- Added the offline M-17 parallel-canary package: distinct Chalkwright
+  configuration/state/release roots, inert hardened services and staggered
+  timers, an exact `Auto Lesson 2` writer with primary/legacy deny binding,
+  durable lease/journal/idempotency reuse, a filtered-state-only PowerSchool
+  copier, protected provisioning, digest-bound release/install tooling, and a
+  candidate-only stop path that quiesces every timer and in-flight oneshot.
+  Activation now requires provider-inaccessible SQLite integrity and verified
+  backup jobs before readiness/Calendar reconciliation, with separate nightly
+  maintenance timers. Synthetic tests cover cross-target drift,
+  malformed Calendar evidence, convergence, unsafe config/state, and unit
+  activation drift. No protected reference, provider, service, route, or kiosk
+  action is part of this offline change.
 
 - Adopted the OSI-approved Apache License 2.0 for the future Chalkwright public
   source release, including the canonical license text and package SPDX
@@ -176,7 +301,9 @@ omitted.
   and the fixed alert test are complete, while routine live wiring remains
   absent. The private route is SHA-bound and its future port-4317 handoff is
   approved but unchanged. The user approved the final evidence and promoted
-  M-16; M-17 has not begun and remains unauthorized.
+  M-16. At that checkpoint M-17 had not begun; its later offline canary
+  implementation is recorded separately above and still grants no live
+  authority.
   A separately authorized read-only production-reference/route preflight then
   found every exact future production path and service identity absent and no
   production units installed. It bound one private, non-Funnel
@@ -434,7 +561,8 @@ omitted.
   Saturday and post-window catch-up are disabled; Calendar, provider writes,
   production TV routing, kiosk changes, and M-12 remain absent. The
   pre-observation gate passed with a fully hardened system service running as
-  `bren`, exact installed-unit hashes, health 200, expected pre-plan readiness
+  the unprivileged application account, exact installed-unit hashes, health 200,
+  expected pre-plan readiness
   503, a successful restart and two verified backup/catalog pairs, distinct
   4318/20790 listeners, and the timer waiting for its first Tuesday event. The
   superseded combined environment was removed after exact comparison with the

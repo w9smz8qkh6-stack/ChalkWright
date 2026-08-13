@@ -42,7 +42,7 @@ export interface CalendarWriterExecutionManifest {
 }
 
 export type CalendarWriterExecutionEnvironment =
-  'non-production' | 'production-trial';
+  'non-production' | 'production-trial' | 'parallel-canary';
 
 export interface CalendarWriterQualificationOptions {
   readonly environment: CalendarWriterExecutionEnvironment;
@@ -619,7 +619,8 @@ function validManifestForExecution(
     manifest.version !== 1 ||
     manifest.kind !== 'calendar-writer-execution-approval' ||
     (options.environment !== 'non-production' &&
-      options.environment !== 'production-trial') ||
+      options.environment !== 'production-trial' &&
+      options.environment !== 'parallel-canary') ||
     manifest.environment !== options.environment ||
     !boundedId(manifest.approvalId) ||
     manifest.scopeId !== options.scopeId ||
@@ -628,7 +629,7 @@ function validManifestForExecution(
     manifest.auditFingerprint !== options.auditFingerprint ||
     manifest.intentSetFingerprint !== intentSetFingerprint ||
     !Array.isArray(manifest.allowedIntentIds) ||
-    manifest.allowedIntentIds.some((value) => !boundedId(value)) ||
+    manifest.allowedIntentIds.some((value) => !boundedIntentId(value)) ||
     new Set(manifest.allowedIntentIds).size !==
       manifest.allowedIntentIds.length ||
     !isIsoInstant(manifest.issuedAt) ||
@@ -655,7 +656,7 @@ function validIntent(intent: CalendarMutationIntent, scopeId: string): boolean {
   if (
     !isPlainObject(intent) ||
     intent.contractVersion !== contractVersion ||
-    !boundedId(intent.intentId) ||
+    !boundedIntentId(intent.intentId) ||
     !boundedId(intent.planId) ||
     intent.notifyAttendees !== false
   )
@@ -913,7 +914,7 @@ function validJournalRecord(
 function validJournalStep(step: CalendarExecutionStepRecord): boolean {
   if (
     !isPlainObject(step) ||
-    !boundedId(step.intentId) ||
+    !boundedIntentId(step.intentId) ||
     !['no-op', 'create', 'replace', 'delete'].includes(step.intentKind) ||
     !sha256Pattern.test(step.providerReferenceHash ?? '')
   )
@@ -1036,6 +1037,10 @@ function boundedId(value: unknown, maximum = 128): value is string {
     value.length <= maximum &&
     !/[\0\r\n]/u.test(value)
   );
+}
+
+function boundedIntentId(value: unknown): value is string {
+  return boundedId(value, 512);
 }
 
 function boundedEtag(value: unknown): value is string {

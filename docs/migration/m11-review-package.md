@@ -100,7 +100,7 @@ The host user manager rejects capability-reducing `PrivateDevices`,
 constraint. The first user-unit launch therefore failed before Node or SQLite
 and was immediately disabled. The user explicitly authorized switching to
 system-manager units that retain every sandbox control while running the
-application as the unprivileged `bren` account. No provider read occurred on
+application as the configured unprivileged account. No provider read occurred on
 the failed attempt.
 
 ## Accelerated live qualification evidence
@@ -175,7 +175,8 @@ production build, startup smoke, and the 6/6 temporary operations rehearsal.
 
 The clean built snapshot is deployed under the dedicated shadow path. All four
 installed system-unit hashes exactly match the repository artifacts. The
-service restarted successfully as `bren`; the system manager reports every
+service restarted successfully as the configured unprivileged account; the
+system manager reports every
 declared sandbox control active, including private devices, clock/kernel
 protections, strict/read-only filesystem views, namespace/address-family
 restrictions, and memory/task bounds. The active units separate server/backup

@@ -374,7 +374,7 @@ function validExecutionRecord(value: CalendarExecutionJournalRecord): boolean {
 
 function validStep(value: CalendarExecutionStepRecord): boolean {
   return (
-    boundedId(value.intentId) &&
+    boundedIntentId(value.intentId) &&
     intentKinds.has(value.intentKind) &&
     stepStatuses.has(value.status) &&
     (value.outcome === undefined || outcomes.has(value.outcome)) &&
@@ -402,6 +402,13 @@ function boundedId(value: unknown): value is string {
   return (
     typeof value === 'string' &&
     /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/u.test(value)
+  );
+}
+
+function boundedIntentId(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,511}$/u.test(value)
   );
 }
 

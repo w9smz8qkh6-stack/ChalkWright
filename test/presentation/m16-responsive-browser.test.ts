@@ -62,6 +62,31 @@ test('renders every accepted display state across the bounded kiosk viewport env
         );
         assert.equal(response?.status(), 200, `${viewport.name}:${state}`);
         await page.locator(`body.state-${state}`).waitFor();
+        const displayedClock = await page.locator('[data-clock]').textContent();
+        assert.match(displayedClock ?? '', /^\d{1,2}:\d{2} [AP]M$/u);
+        if (state === 'in_class_content')
+          assert.doesNotMatch(
+            await page.locator('body').innerText(),
+            /Dismissal begins/u,
+          );
+        const bell = await page
+          .locator('[data-header-bell]')
+          .evaluate((element) => ({
+            hidden: (element as HTMLElement).hidden,
+            value:
+              element.querySelector('[data-header-bell-number]')?.textContent ??
+              '',
+            label: element.getAttribute('aria-label'),
+          }));
+        if (state === 'in_class_content') {
+          assert.deepEqual(bell, {
+            hidden: false,
+            value: '60',
+            label: '60 minutes until bell',
+          });
+        } else {
+          assert.equal(bell.hidden, true, `${viewport.name}:${state}:bell`);
+        }
         const layout = await page.evaluate(() => {
           const rectangle = document.body.getBoundingClientRect();
           return {
@@ -150,6 +175,82 @@ test('renders every accepted display state across the bounded kiosk viewport env
       assert.deepEqual(consoleErrors, [], viewport.name);
       assert.deepEqual(pageErrors, [], viewport.name);
       assert.deepEqual(foreignRequests, [], viewport.name);
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+    await application.close();
+  }
+});
+
+test('during-class bell remains visible without horizontal overflow at tablet and mobile widths', async () => {
+  const application = await startFixtureBackedMvp(
+    {
+      nodeEnv: 'test',
+      logLevel: 'warn',
+      host: '127.0.0.1',
+      port: 0,
+    },
+    process.cwd(),
+    { legacyRouteCompatibility: true },
+  );
+  const browser = await chromium.launch({
+    executablePath: '/usr/bin/google-chrome',
+    headless: true,
+  });
+  try {
+    assert.match(browser.version(), supportedChromeBuild);
+    for (const viewport of [
+      { name: 'tablet', width: 768, height: 1_024 },
+      { name: 'mobile', width: 390, height: 844 },
+    ] as const) {
+      const context = await browser.newContext({
+        viewport,
+        reducedMotion: 'reduce',
+      });
+      const page = await context.newPage();
+      const response = await page.goto(
+        `${application.origin}/classroom-screen/preview/b407?view=display&now=${encodeURIComponent(b407StateInstants.in_class_content)}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      assert.equal(response?.status(), 200, viewport.name);
+      const result = await page.locator('.header-status').evaluate((status) => {
+        const bell = status.querySelector<HTMLElement>('[data-header-bell]');
+        const date = status.querySelector<HTMLElement>('[data-display-date]');
+        const clock = status.querySelector<HTMLElement>('[data-clock]');
+        if (!bell || !date || !clock) throw new Error('header-status-invalid');
+        const rectangle = bell.getBoundingClientRect();
+        const dateRectangle = date.getBoundingClientRect();
+        const clockRectangle = clock.getBoundingClientRect();
+        return {
+          hidden: bell.hidden,
+          value:
+            bell.querySelector('[data-header-bell-number]')?.textContent ?? '',
+          left: rectangle.left,
+          right: rectangle.right,
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+          reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+          dateRight: dateRectangle.right,
+          clockLeft: clockRectangle.left,
+          clockCenter: clockRectangle.top + clockRectangle.height / 2,
+          bellCenter: rectangle.top + rectangle.height / 2,
+        };
+      });
+      assert.equal(result.hidden, false, viewport.name);
+      assert.equal(result.value, '60', viewport.name);
+      assert.ok(result.left >= 0, viewport.name);
+      assert.ok(result.right <= result.innerWidth, viewport.name);
+      assert.ok(result.scrollWidth <= result.innerWidth, viewport.name);
+      assert.equal(result.reducedMotion, true, viewport.name);
+      assert.ok(
+        result.dateRight <= result.clockLeft,
+        `${viewport.name}:date-order`,
+      );
+      assert.ok(
+        Math.abs(result.clockCenter - result.bellCenter) <= 1,
+        `${viewport.name}:bell-clock-alignment`,
+      );
       await context.close();
     }
   } finally {

@@ -1,0 +1,39 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright Auto Lesson 2 reconciliation
+After=network-online.target chalkwright-canary-plan-refresh.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/chalkwright-canary/current
+Environment=NODE_ENV=production
+Environment=CHALKWRIGHT_M17_CANARY_CONFIG_REFERENCE=/etc/chalkwright/canary/calendar.json
+ExecCondition=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-canary-activation-manifest.js --verify-current /etc/chalkwright/canary/activation-manifest.json
+ExecStart=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-canary-calendar-sync.js --execute
+TimeoutStartSec=3min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/chalkwright/canary/providers/powerschool -/etc/chalkwright/canary/providers/google-classroom
+ReadWritePaths=/var/lib/chalkwright/canary-production
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=384M
+TasksMax=64
+
+# The .in suffix and absent [Install] section keep this unit inert.

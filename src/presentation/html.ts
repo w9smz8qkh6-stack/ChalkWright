@@ -134,12 +134,27 @@ function meetingLabel(meeting: PresentationMeeting | undefined): string {
 
 function header(model: DisplayPresentationModel): string {
   const icon = localPath(model.basePath, '/assets/chalkwright.svg');
+  const bellTarget =
+    model.state === 'in_class_content'
+      ? model.currentMeeting?.officialEndsAt
+      : undefined;
   return `<header class="display-header">
   <div class="brand"><img src="${escapeHtml(icon)}" alt="" width="44" height="44"><span>Chalkwright</span></div>
   <div class="meeting-label" data-course-label>${escapeHtml(meetingLabel(model.currentMeeting) || meetingLabel(model.nextMeeting))}</div>
-  <div class="clock-group">
-    <time class="clock" data-clock datetime="${escapeHtml(model.evaluatedAt)}">--:--</time>
-    <span class="date-label" data-display-date>${escapeHtml(displayDateLabel(model.date, model.timeZone))}</span>
+  <div class="header-status">
+    <div class="clock-group">
+      <span class="date-label" data-display-date>${escapeHtml(displayDateLabel(model.date, model.timeZone))}</span>
+      <time class="clock" data-clock datetime="${escapeHtml(model.evaluatedAt)}">--:--</time>
+    </div>
+    <div class="header-bell-countdown" data-header-bell${bellTarget === undefined ? '' : ` data-bell-target="${escapeHtml(bellTarget)}"`} hidden aria-label="Minutes until bell">
+      <svg class="header-bell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M10.3 21a2 2 0 0 0 3.4 0"></path>
+        <path d="M4.7 17h14.6"></path>
+        <path d="M18 17v-5.4a6 6 0 0 0-12 0V17"></path>
+        <path d="M9 5.1V4a3 3 0 0 1 6 0v1.1"></path>
+      </svg>
+      <span class="header-bell-number" data-header-bell-number></span>
+    </div>
   </div>
 </header>`;
 }
@@ -322,7 +337,7 @@ function mainScene(model: DisplayPresentationModel): string {
     case 'pre_checkin':
       return checkInScene(model);
     case 'in_class_content':
-      return `<section class="content-layout" aria-labelledby="scene-title"><h1 id="scene-title" class="visually-hidden">${escapeHtml(meetingLabel(current))} content</h1>${model.announcement === undefined ? '' : `<aside class="announcement" aria-label="Announcement">${escapeHtml(model.announcement)}</aside>`}${carousel(model)}${countdown(current?.dismissalStartsAt, 'Dismissal begins in')}</section>`;
+      return `<section class="content-layout" aria-labelledby="scene-title"><h1 id="scene-title" class="visually-hidden">${escapeHtml(meetingLabel(current))} content</h1>${model.announcement === undefined ? '' : `<aside class="announcement" aria-label="Announcement">${escapeHtml(model.announcement)}</aside>`}${carousel(model)}</section>`;
     case 'dismissal_warning':
       return dismissalScene(model);
     case 'post_end':

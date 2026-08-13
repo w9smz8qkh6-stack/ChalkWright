@@ -140,15 +140,100 @@ a {
   font-weight: 700;
 }
 
+.header-status {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(0.625rem, 1.2vw, 0.875rem);
+}
+
 .clock-group {
-  display: grid;
-  justify-items: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(0.625rem, 1.2vw, 1rem);
 }
 
 .clock {
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   font-size: clamp(1.5rem, 3vw, 2.75rem);
   font-weight: 800;
+}
+
+.header-bell-countdown {
+  position: relative;
+  min-width: 5.125rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.875rem;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  justify-items: center;
+  column-gap: 0.5625rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.875rem;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(248, 250, 252, 0.14),
+      rgba(255, 255, 255, 0.04)
+    ),
+    rgba(10, 24, 45, 0.58);
+  color: #f8fafc;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow:
+    0 0.75rem 2.125rem rgba(2, 10, 22, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(1.375rem) saturate(1.16);
+}
+
+.header-bell-countdown[hidden] {
+  display: none;
+}
+
+.header-bell-icon {
+  width: 1.5625rem;
+  height: 1.5625rem;
+  color: #ffb957;
+  stroke-width: 2.2;
+  filter: drop-shadow(0 0 0.625rem rgba(255, 185, 87, 0.26));
+  will-change: transform, filter;
+  backface-visibility: hidden;
+}
+
+.header-bell-number {
+  min-width: 2ch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: #f8fafc;
+  font-size: clamp(1.45rem, 2.15vw, 2.05rem);
+  line-height: 0.9;
+  font-weight: 900;
+  text-align: right;
+  text-shadow: 0 0.125rem 0.875rem rgba(2, 10, 22, 0.34);
+}
+
+.header-bell-countdown.shimmer .header-bell-icon {
+  animation: bell-shimmer 900ms ease-out;
+}
+
+@keyframes bell-shimmer {
+  0% {
+    transform: translateY(0);
+    filter: brightness(1);
+  }
+  32% {
+    transform: translateY(-1px);
+    filter: brightness(1.16) drop-shadow(0 0 1rem rgba(255, 185, 87, 0.34));
+  }
+  100% {
+    transform: translateY(0);
+    filter: brightness(1);
+  }
 }
 
 .date-label,
@@ -156,6 +241,10 @@ a {
 .countdown-label,
 .card-type {
   color: var(--muted);
+}
+
+.date-label {
+  white-space: nowrap;
 }
 
 .eyebrow,
@@ -1168,7 +1257,11 @@ a {
   }
 
   .clock-group {
-    justify-items: start;
+    justify-content: flex-start;
+  }
+
+  .header-status {
+    justify-content: space-between;
   }
 
   .meeting-list li {

@@ -39,11 +39,13 @@ test('serves the complete fixture-backed B407 slice and cleans temporary state',
     const payload = (await target.json()) as {
       readonly presentationHtml?: string;
       readonly state?: string;
+      readonly bellEndsAt?: string;
       readonly dateLabel?: string;
       readonly documentTitle?: string;
       readonly degraded?: boolean;
     };
     assert.equal(payload.state, 'in_class_content');
+    assert.equal(payload.bellEndsAt, '2035-04-13T09:00:00Z');
     assert.match(payload.presentationHtml ?? '', /data-carousel/u);
     assert.doesNotMatch(payload.presentationHtml ?? '', /<!doctype/u);
     assert.equal(payload.dateLabel, 'Friday, April 13');

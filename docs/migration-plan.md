@@ -891,9 +891,24 @@ final-handoff gate; candidate alerts remain report-only.
 
 ### M-17 — Run an isolated production canary, then hand off
 
-**Status:** Parallel-canary architecture accepted through ADR-0022; offline
-implementation, live activation, and final handoff have not begun and remain
-unauthorized. M-16 promotion and ADR-0022 acceptance grant no live authority.
+**Status:** Parallel-canary architecture accepted through ADR-0022 and the exact
+offline implementation passed its independent review in a clean isolated lane.
+Protected provisioning, exact digest-bound installation, isolated-state
+initialization, filtered PowerSchool-state recovery, provider preflights,
+provider-free semantic comparison, corrected activation, and the separate
+Tailnet route are complete. Release `sha256:9986bbad...a8362` passed plan,
+Classroom, integrity, backup, health, and readiness gates, created exactly three
+owned events in `Auto Lesson 2`, and started five isolated timers for the exact
+initial observation window. Immediate convergence observed all three events and
+completed zero further mutations. Subsequent reviewed inactive upgrades now run
+release `sha256:a1061444...b5fdf` under manifest
+`sha256:41cc8a7e...435d9`; its exact bounded window is 2026-08-13 16:15 through
+2026-08-20 16:15 Asia/Ho_Chi_Minh. The user accepted the physical Fully Kiosk
+course-title, stable-poll, and next-class-day preview corrections. The legacy
+route, Calendar, units, state, alerts, and authoritative role remain unchanged.
+M-17 is active but unpromoted; interval comparison, scheduled refresh,
+restart/backup observation, final canary acceptance, and the separately
+approved handoff remain open. M-18 has not begun.
 
 - **Objective:** Evaluate Classroom Hub beside the authoritative legacy app on
   a separate Tailnet URL and secondary Calendar before a separately approved

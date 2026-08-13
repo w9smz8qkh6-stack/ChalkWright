@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "status": "offline-qualified-pending-live-bindings",
+  "product": "Chalkwright",
+  "instanceId": "chalkwright-c509-canary-production",
+  "timeZone": "Asia/Ho_Chi_Minh",
+  "calendarSummary": "Auto Lesson 2",
+  "calendarTargetPolicy": "exact-secondary-owned-deny-primary-and-legacy",
+  "display": {
+    "host": "127.0.0.1",
+    "port": 4319,
+    "tailnetTarget": "pending-value-free-live-inventory",
+    "legacyRoutePolicy": "deny-change"
+  },
+  "stateRoot": "/var/lib/chalkwright/canary-production",
+  "configurationRoot": "/etc/chalkwright/canary",
+  "releaseRoot": "/opt/chalkwright-canary",
+  "buildPolicy": "sha256-bound-release",
+  "stopCommand": "/opt/chalkwright-canary/current/scripts/operations/stop-m17-canary.sh",
+  "observationPolicy": "explicit-1h-to-14d-window",
+  "alertMode": "report-only",
+  "missedRunPolicy": "no-catch-up",
+  "jobs": [
+    {
+      "name": "plan-refresh",
+      "authority": "powerschool-read-only",
+      "schedule": "Mon..Fri,Sun *-*-* 07:25:00 Asia/Ho_Chi_Minh"
+    },
+    {
+      "name": "classroom-refresh",
+      "authority": "classroom-read-only-active-class-only",
+      "schedule": "two-minutes-after-activation-or-prior-run-completion"
+    },
+    {
+      "name": "calendar-sync",
+      "authority": "exact-owned-events-on-auto-lesson-2-only",
+      "schedule": "Mon..Fri,Sun *-*-* 07:28:00 Asia/Ho_Chi_Minh"
+    },
+    {
+      "name": "sqlite-integrity",
+      "authority": "local-canary-state-only",
+      "schedule": "*-*-* 18:35:00 Asia/Ho_Chi_Minh"
+    },
+    {
+      "name": "sqlite-backup",
+      "authority": "local-canary-state-and-backup-only",
+      "schedule": "*-*-* 18:40:00 Asia/Ho_Chi_Minh"
+    }
+  ],
+  "stopOrder": [
+    "chalkwright-canary-classroom-refresh.timer",
+    "chalkwright-canary-calendar-sync.timer",
+    "chalkwright-canary-backup.timer",
+    "chalkwright-canary-integrity.timer",
+    "chalkwright-canary-plan-refresh.timer",
+    "chalkwright-canary-calendar-sync.service",
+    "chalkwright-canary-calendar-preflight.service",
+    "chalkwright-canary-comparison.service",
+    "chalkwright-canary-comparison-observation.service",
+    "chalkwright-canary-classroom-preflight.service",
+    "chalkwright-canary-classroom-refresh.service",
+    "chalkwright-canary-plan-preflight.service",
+    "chalkwright-canary-plan-refresh.service",
+    "chalkwright-canary-backup.service",
+    "chalkwright-canary-integrity.service",
+    "chalkwright-canary.service"
+  ],
+  "liveBindingsRequired": [
+    "release-digest",
+    "secondary-calendar-reference-hash",
+    "legacy-calendar-deny-hash",
+    "tailnet-target",
+    "legacy-route-deny-fingerprint",
+    "preactivation-comparison-evidence",
+    "observation-window"
+  ]
+}

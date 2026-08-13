@@ -41,6 +41,7 @@ export async function runProductionPlanRefresh(options: {
         config: context.production,
         plans: context.state,
         evidencePrefix: 'production',
+        futureClassDayLookaheadDays: 7,
         sourceForRun: (signal) =>
           options.sourceForRun?.(context, signal, environment) ??
           new PassivePowerSchoolBellScheduleSource(powerSchool, {

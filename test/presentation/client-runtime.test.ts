@@ -38,8 +38,35 @@ function clientHarness(options: {
       ...(options.pinnedAt === undefined ? {} : { pinnedAt: options.pinnedAt }),
     },
   };
-  const main = { innerHTML: '' };
+  let mainHtml = '';
+  let mainHtmlWrites = 0;
+  const main = {
+    get innerHTML() {
+      return mainHtml;
+    },
+    set innerHTML(value: string) {
+      mainHtml = value;
+      mainHtmlWrites += 1;
+    },
+  };
   const clock = { dateTime: '', textContent: '' };
+  const bellNumber = { textContent: '' };
+  const bellAttributes = new Map<string, string>();
+  const bell = {
+    hidden: true,
+    dataset: {} as { bellTarget?: string },
+    classList: new ClassList(),
+    isConnected: true,
+    setAttribute(name: string, value: string) {
+      bellAttributes.set(name, value);
+    },
+    getAttribute(name: string) {
+      return bellAttributes.get(name);
+    },
+    querySelector(selector: string) {
+      return selector === '[data-header-bell-number]' ? bellNumber : undefined;
+    },
+  };
   const dateLabel = { textContent: 'Friday, April 13' };
   const connectionStatus = { hidden: true };
   const body = {
@@ -71,6 +98,7 @@ function clientHarness(options: {
       if (selector === '#display-main') return main;
       if (selector === '[data-display-date]') return dateLabel;
       if (selector === '[data-connection-status]') return connectionStatus;
+      if (selector === '[data-header-bell]') return bell;
       return undefined;
     },
     querySelectorAll(selector: string) {
@@ -95,6 +123,10 @@ function clientHarness(options: {
     },
     clearTimeout(id: number) {
       timers.delete(id);
+    },
+    requestAnimationFrame(callback: () => unknown) {
+      callback();
+      return ++timerId;
     },
     prompt: () => '',
   };
@@ -130,11 +162,15 @@ function clientHarness(options: {
     root,
     main,
     clock,
+    bell,
+    bellNumber,
+    bellAttributes,
     dateLabel,
     connectionStatus,
     document,
     body,
     fetchCalls: () => fetchCalls,
+    mainHtmlWrites: () => mainHtmlWrites,
     advance(milliseconds: number) {
       fakeNow += milliseconds;
     },
@@ -199,10 +235,112 @@ test('failed polls retain the last scene without rewinding the synthetic clock',
   assert.equal(harness.clock.dateTime, '2035-04-13T08:02:30.000Z');
 });
 
+test('unchanged healthy polls retain the scene DOM without replaying transitions', async () => {
+  const payload = {
+    presentationHtml: '<section>Robotics</section>',
+    state: 'in_class_content',
+    meetingId: 'meeting-robotics',
+    courseLabel: 'Robotics',
+    evaluatedAt: '2035-04-13T08:02:00Z',
+  };
+  const harness = clientHarness({
+    targetUrl: '/target/screen-c509',
+    payloads: [payload, { ...payload, evaluatedAt: '2035-04-13T08:02:30Z' }],
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.mainHtmlWrites(), 1);
+  harness.advance(30_000);
+  await harness.runTimeout(30_000);
+  assert.equal(harness.fetchCalls(), 2);
+  assert.equal(harness.main.innerHTML, '<section>Robotics</section>');
+  assert.equal(harness.mainHtmlWrites(), 1);
+  assert.equal(harness.root.dataset.evaluatedAt, '2035-04-13T08:02:30.000Z');
+});
+
+test('legacy header bell rounds class time up to minutes and hides outside class content', async () => {
+  const first = {
+    presentationHtml: '<section>Robotics</section>',
+    state: 'in_class_content',
+    meetingId: 'meeting-robotics',
+    courseLabel: 'Robotics',
+    bellEndsAt: '2035-04-13T08:30:00Z',
+    evaluatedAt: '2035-04-13T08:00:00Z',
+  };
+  const harness = clientHarness({
+    targetUrl: '/target/screen-c509',
+    payloads: [
+      first,
+      {
+        ...first,
+        presentationHtml: '<section>Dismissal</section>',
+        state: 'dismissal_warning',
+        bellEndsAt: '',
+        evaluatedAt: '2035-04-13T08:01:00Z',
+      },
+    ],
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.bell.hidden, false);
+  assert.equal(harness.bellNumber.textContent, '30');
+  assert.equal(
+    harness.bellAttributes.get('aria-label'),
+    '30 minutes until bell',
+  );
+  assert.deepEqual([...harness.bell.classList], ['shimmer']);
+
+  harness.advance(60_000);
+  harness.tickClock();
+  assert.equal(harness.bellNumber.textContent, '29');
+  assert.equal(
+    harness.bellAttributes.get('aria-label'),
+    '29 minutes until bell',
+  );
+
+  await harness.runTimeout(30_000);
+  assert.equal(harness.bell.hidden, true);
+  assert.equal(harness.bellNumber.textContent, '');
+  assert.deepEqual([...harness.bell.classList], []);
+});
+
+test('legacy header bell uses a singular label and fails closed on a missing target', async () => {
+  const first = {
+    presentationHtml: '<section>Robotics</section>',
+    state: 'in_class_content',
+    meetingId: 'meeting-robotics',
+    courseLabel: 'Robotics',
+    bellEndsAt: '2035-04-13T08:01:00Z',
+    evaluatedAt: '2035-04-13T08:00:00Z',
+  };
+  const harness = clientHarness({
+    targetUrl: '/target/screen-c509',
+    payloads: [
+      first,
+      {
+        presentationHtml: '<section>Robotics next meeting</section>',
+        state: 'in_class_content',
+        meetingId: 'meeting-robotics-next',
+        courseLabel: 'Robotics',
+        evaluatedAt: '2035-04-13T08:00:30Z',
+      },
+    ],
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.bell.hidden, false);
+  assert.equal(harness.bellNumber.textContent, '1');
+  assert.equal(harness.bellAttributes.get('aria-label'), '1 minute until bell');
+
+  harness.advance(30_000);
+  await harness.runTimeout(30_000);
+  assert.equal(harness.bell.hidden, true);
+  assert.equal(harness.bellNumber.textContent, '');
+  assert.equal(harness.bell.dataset.bellTarget, undefined);
+});
+
 test('pinned client uses its fixture instant and performs no target polling', async () => {
   const pinnedAt = '2035-04-13T08:30:00Z';
   const harness = clientHarness({ targetUrl: '', pinnedAt });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(harness.fetchCalls(), 0);
   assert.equal(harness.clock.dateTime, '2035-04-13T08:30:00.000Z');
+  assert.equal(harness.clock.textContent, '8:30 AM');
 });
