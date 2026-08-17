@@ -98,9 +98,50 @@ test('rejects IDs, extra fields, malformed Unicode, and unsorted intervals', () 
     );
 });
 
-test('rejects comparison and interval instants outside the exact local date', () => {
+test('accepts a fresh future class-day comparison within the Sunday lookahead', () => {
+  const futureSnapshot: M17SemanticComparisonInput['reference'] = {
+    ...snapshot,
+    date: '2035-04-16',
+    meetings: [
+      {
+        startsAt: '2035-04-16T01:00:00.000Z',
+        endsAt: '2035-04-16T01:45:00.000Z',
+        summary: 'Computer Fundamentals',
+      },
+    ],
+    calendar: [
+      {
+        startsAt: '2035-04-16T01:00:00.000Z',
+        endsAt: '2035-04-16T01:45:00.000Z',
+        summary: 'Computer Fundamentals',
+      },
+    ],
+  };
+  const result = compareM17CanarySemantics({
+    ...input,
+    comparedAt: '2035-04-13T14:30:00.000Z',
+    date: '2035-04-16',
+    reference: futureSnapshot,
+    candidate: structuredClone(futureSnapshot),
+  });
+
+  assert.equal(result.equivalent, true);
+  assert.equal(result.evidence.scope.date, '2035-04-16');
+});
+
+test('rejects comparison instants before or beyond the bounded local lookahead', () => {
   for (const changed of [
-    { ...input, comparedAt: '2035-04-12T16:59:59.000Z' },
+    { ...input, comparedAt: '2035-04-13T17:00:00.000Z' },
+    { ...input, date: '2035-04-21' },
+  ])
+    assert.throws(
+      () => compareM17CanarySemantics(changed as M17SemanticComparisonInput),
+      /m17-comparison-input-invalid/u,
+    );
+});
+
+test('rejects interval instants outside the compared class date', () => {
+  for (const changed of [
     {
       ...input,
       candidate: {

@@ -74,6 +74,8 @@ export function createActiveClassroomRefreshJobHandler(
     }
     if (signal.aborted)
       return failed(request, 'classroom-refresh-aborted', true);
+    if (untrustedTarget === undefined)
+      return skipped(request, 'classroom-refresh-no-active-class');
     if (!isClassroomRefreshTriggerTarget(untrustedTarget))
       return failed(request, 'classroom-active-target-invalid', false);
     if (!eligibleStates.has(untrustedTarget.state))
@@ -125,7 +127,7 @@ export function projectClassroomRefreshTriggerTarget(
     !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(result.meetingId) ||
     !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(result.classId)
   )
-    return undefined;
+    return base;
   return {
     ...base,
     meetingId: result.meetingId,

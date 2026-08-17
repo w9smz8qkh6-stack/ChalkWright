@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getDomain } from 'tldts';
 
 import { isIsoDate } from '../domain/runtime-validation.js';
 
@@ -8,6 +9,16 @@ const defaultChromeExecutable = '/usr/bin/google-chrome';
 const approvedStatusPath = '/teachers/home.html';
 const approvedBellPathTemplate =
   '/teachers/aet_schedulebell.html?target_date={date-us}';
+const defaultGoogleBootstrapResourceOrigins = [
+  'https://ssl.gstatic.com',
+  'https://www.gstatic.com',
+  'https://fonts.gstatic.com',
+] as const;
+const approvedPowerSchoolSiblingLabels = [
+  'assets-sis',
+  'assets',
+  'services',
+] as const;
 export const powerSchoolCleanupReserveMs = 5_000;
 
 interface PowerSchoolSessionBaseConfig {
@@ -172,6 +183,12 @@ export function loadPowerSchoolBootstrapConfig(
     environment,
     environmentNames.bootstrapResourceOrigins,
     [base.powerSchoolOrigin, identityOrigin],
+    [
+      base.powerSchoolOrigin,
+      identityOrigin,
+      ...defaultGoogleBootstrapResourceOrigins,
+      ...approvedPowerSchoolSiblingOrigins(base.powerSchoolOrigin),
+    ],
   );
   return {
     ...base,
@@ -215,6 +232,12 @@ export function loadPowerSchoolCompatibilityConfig(
       environment,
       environmentNames.bootstrapResourceOrigins,
       [routine.powerSchoolOrigin, identityOrigin],
+      [
+        routine.powerSchoolOrigin,
+        identityOrigin,
+        ...defaultGoogleBootstrapResourceOrigins,
+        ...approvedPowerSchoolSiblingOrigins(routine.powerSchoolOrigin),
+      ],
     ),
     maxTopLevelRequests: boundedInteger(
       environmentNames.maxBootstrapRequests,
@@ -480,17 +503,37 @@ function originList(
   environment: NodeJS.ProcessEnv,
   name: string,
   requiredOrigins: readonly string[],
+  defaultOrigins: readonly string[] = requiredOrigins,
 ): readonly string[] {
-  const configured = environment[name] ?? requiredOrigins.join(',');
-  const origins = configured
+  const configured = environment[name];
+  const configuredOrigins = (configured ?? defaultOrigins.join(','))
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean)
     .map((value) => exactHttpOrigin(name, value));
-  if (requiredOrigins.some((origin) => !origins.includes(origin))) {
+  if (
+    configuredOrigins.length === 0 ||
+    requiredOrigins.some((origin) => !configuredOrigins.includes(origin))
+  ) {
     throw new Error(
       `${name} must include the PowerSchool and identity origins`,
     );
   }
-  return [...new Set(origins)];
+  return [...new Set([...defaultOrigins, ...configuredOrigins])];
+}
+
+function approvedPowerSchoolSiblingOrigins(
+  powerSchoolOrigin: string,
+): readonly string[] {
+  const url = new URL(powerSchoolOrigin);
+  if (url.protocol !== 'https:') return [];
+  const registrableSite = getDomain(url.hostname, {
+    allowPrivateDomains: true,
+    extractHostname: false,
+  });
+  return registrableSite === null
+    ? []
+    : approvedPowerSchoolSiblingLabels.map(
+        (label) => `https://${label}.${registrableSite}`,
+      );
 }

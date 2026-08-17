@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { presentationCourseLabel } from '../../src/app/mvp-controller.js';
+import {
+  presentationCard,
+  presentationCourseLabel,
+} from '../../src/app/mvp-controller.js';
 import type { DayPlanMeeting } from '../../src/contracts/v1/day-plan.js';
 
 function meeting(courseKey: string, blockLabel: string): DayPlanMeeting {
@@ -41,5 +44,43 @@ test('retains normalized-key and synthetic-fixture fallbacks', () => {
   assert.equal(
     presentationCourseLabel(meeting('course-a', 'Synthetic block A')),
     'Web Design',
+  );
+});
+
+test('preserves structured Classroom objective content for presentation icons', () => {
+  assert.deepEqual(
+    presentationCard({
+      cardId: 'card-objective',
+      type: 'objective',
+      title: 'Objective 1',
+      lines: [
+        'Changing the Wheels',
+        'Complete Lesson 3.',
+        'Open Classroom for full directions.',
+        'Due Tue, April 17.',
+      ],
+      featured: 'Changing the Wheels',
+      details: [
+        'Complete Lesson 3.',
+        'Open Classroom for full directions.',
+        'Due Tue, April 17.',
+      ],
+      accent: 'warm',
+      durationSeconds: 12,
+    }),
+    {
+      cardId: 'card-objective',
+      type: 'objective',
+      title: 'Objective 1',
+      lines: [],
+      featured: 'Changing the Wheels',
+      details: [
+        'Complete Lesson 3.',
+        'Open Classroom for full directions.',
+        'Due Tue, April 17.',
+      ],
+      accent: 'warm',
+      durationSeconds: 12,
+    },
   );
 });

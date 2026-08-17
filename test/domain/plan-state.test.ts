@@ -221,6 +221,54 @@ test('rejects malformed intervals and diagnoses missing or partial mappings with
   }
 });
 
+test('preserves ordered PowerSchool periods even when the dismissal warning window must be adjusted', () => {
+  const shortPeriod = {
+    ...observation(),
+    periods: [
+      buildPeriod(
+        'p1',
+        'course-alpha',
+        'Short block',
+        '2035-04-13T08:00:00Z',
+        '2035-04-13T08:05:00Z',
+        room,
+      ),
+    ],
+  };
+  const result = deriveCanonicalPlan(shortPeriod, room, mappings, {
+    timeZone: 'Etc/UTC',
+    checkInOpenMinutesBefore: 5,
+    dismissalWarningMinutesBefore: 5,
+  });
+
+  assert.equal(result.status, 'planned');
+  if (result.status === 'planned') {
+    assert.equal(result.plan.meetings.length, 1);
+    assert.equal(
+      result.plan.meetings[0]?.officialStartsAt,
+      '2035-04-13T08:00:00Z',
+    );
+    assert.equal(
+      result.plan.meetings[0]?.officialEndsAt,
+      '2035-04-13T08:05:00Z',
+    );
+    assert.equal(
+      result.plan.meetings[0]?.dismissalStartsAt,
+      '2035-04-13T08:02:30.000Z',
+    );
+    assert.ok(
+      result.diagnostics.some(
+        (item) => item.code === 'period-dismissal-window-adjusted',
+      ),
+    );
+    assert.ok(
+      !result.diagnostics.some(
+        (item) => item.code === 'period-interval-invalid',
+      ),
+    );
+  }
+});
+
 test('joins only delimiter-bounded embedded PowerSchool codes and reports mapping causes safely', () => {
   const timing = {
     timeZone: 'Etc/UTC',

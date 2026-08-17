@@ -81,9 +81,10 @@
   route or scheduler handoff.
 - [M-17 parallel-canary plan](migration/m17-review-package.md) — accepted
   two-gate architecture for an isolated candidate URL, secondary Calendar,
-  distinct runtime state, staggered jobs, and report-only alerts before a
-  separately approved final handoff. Implementation and live actions remain
-  unauthorized.
+  distinct runtime state, staggered jobs, report-only alerts, and the new
+  application-owned PowerSchool repair boundary before a separately approved
+  final handoff. The candidate is stopped and unpromoted; native repair remains
+  offline-only pending protected provisioning and live qualification.
 - [Offline PowerSchool collector](powerschool-bell-collector.md) — safe
   configuration, filtered and persistent protected-state handling, four-way
   passive/manual/JIT/compatibility capability split, containment limits, and

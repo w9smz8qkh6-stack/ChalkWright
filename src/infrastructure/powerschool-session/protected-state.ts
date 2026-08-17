@@ -30,6 +30,7 @@ import {
 } from 'node:path';
 
 import type { BrowserContext } from 'playwright-core';
+import { getDomain } from 'tldts';
 
 const stateFileName = '.classroom-hub-auth-state.json';
 const lockFileName = '.classroom-hub-session.lock';
@@ -38,10 +39,21 @@ export const temporaryProfilePrefix = 'classroom-hub-powerschool-session-';
 export const jitRepairTemporaryProfilePrefix =
   'classroom-hub-powerschool-jit-repair-';
 
-export type FilteredPowerSchoolStorageState = Exclude<
+type PlaywrightStorageState = Exclude<
   Parameters<BrowserContext['setStorageState']>[0],
   string
 >;
+type PlaywrightCookie = Awaited<ReturnType<BrowserContext['cookies']>>[number];
+type ChromiumPartitionedCookie = PlaywrightCookie & {
+  readonly _crHasCrossSiteAncestor?: boolean;
+};
+
+export type FilteredPowerSchoolStorageState = Omit<
+  PlaywrightStorageState,
+  'cookies'
+> & {
+  readonly cookies: readonly PlaywrightCookie[];
+};
 
 export interface PowerSchoolSessionLock {
   readonly path: string;
@@ -162,21 +174,41 @@ export function loadFilteredPowerSchoolState(
 export function filterPowerSchoolStorageState(
   state: Awaited<ReturnType<BrowserContext['storageState']>>,
   powerSchoolOrigin: string,
+  contextCookies: readonly ChromiumPartitionedCookie[],
 ): FilteredPowerSchoolStorageState {
   const host = new URL(powerSchoolOrigin).hostname;
+  const powerSchoolCookies = contextCookies.filter((cookie) =>
+    cookieBelongsToHost(cookie.domain, host),
+  );
+  for (const cookie of powerSchoolCookies) {
+    if (
+      cookie.partitionKey !== undefined &&
+      (!isAllowedPowerSchoolPartitionKey(
+        cookie.partitionKey,
+        powerSchoolOrigin,
+      ) ||
+        typeof cookie._crHasCrossSiteAncestor !== 'boolean')
+    ) {
+      throw new Error('powerschool-session-state-unsafe');
+    }
+  }
   const filtered = {
-    cookies: state.cookies
-      .filter((cookie) => cookieBelongsToHost(cookie.domain, host))
-      .map((cookie) => ({
-        name: cookie.name,
-        value: cookie.value,
-        domain: cookie.domain,
-        path: cookie.path,
-        expires: cookie.expires,
-        httpOnly: cookie.httpOnly,
-        secure: cookie.secure,
-        sameSite: cookie.sameSite,
-      })),
+    cookies: powerSchoolCookies.map((cookie) => ({
+      name: cookie.name,
+      value: cookie.value,
+      domain: cookie.domain,
+      path: cookie.path,
+      expires: cookie.expires,
+      httpOnly: cookie.httpOnly,
+      secure: cookie.secure,
+      sameSite: cookie.sameSite,
+      ...(cookie.partitionKey === undefined
+        ? {}
+        : {
+            partitionKey: cookie.partitionKey,
+            _crHasCrossSiteAncestor: cookie._crHasCrossSiteAncestor,
+          }),
+    })),
     origins: state.origins
       .filter((origin) => origin.origin === powerSchoolOrigin)
       .map((origin) => {
@@ -195,6 +227,20 @@ export function filterPowerSchoolStorageState(
   };
   assertFilteredState(filtered, powerSchoolOrigin);
   return filtered;
+}
+
+export async function applyFilteredPowerSchoolState(
+  context: BrowserContext,
+  state: FilteredPowerSchoolStorageState,
+): Promise<void> {
+  await context.setStorageState({
+    cookies: [],
+    origins: state.origins.map((origin) => ({
+      ...origin,
+      localStorage: origin.localStorage.map((item) => ({ ...item })),
+    })),
+  });
+  await context.addCookies(state.cookies.map((cookie) => ({ ...cookie })));
 }
 
 export function writeFilteredPowerSchoolState(
@@ -311,7 +357,19 @@ function assertFilteredState(value: unknown, powerSchoolOrigin: string): void {
   for (const cookie of value.cookies) {
     if (
       !isRecord(cookie) ||
-      !hasExactKeys(cookie, [
+      !hasOnlyKeys(cookie, [
+        'name',
+        'value',
+        'domain',
+        'path',
+        'expires',
+        'httpOnly',
+        'secure',
+        'sameSite',
+        'partitionKey',
+        '_crHasCrossSiteAncestor',
+      ]) ||
+      !hasRequiredKeys(cookie, [
         'name',
         'value',
         'domain',
@@ -338,7 +396,16 @@ function assertFilteredState(value: unknown, powerSchoolOrigin: string): void {
       cookie.domain.length > 253 ||
       !cookie.path.startsWith('/') ||
       cookie.path.length > 1_024 ||
-      !cookieBelongsToHost(cookie.domain, host)
+      !cookieBelongsToHost(cookie.domain, host) ||
+      (cookie.partitionKey !== undefined &&
+        (typeof cookie.partitionKey !== 'string' ||
+          !isAllowedPowerSchoolPartitionKey(
+            cookie.partitionKey,
+            powerSchoolOrigin,
+          ) ||
+          typeof cookie._crHasCrossSiteAncestor !== 'boolean')) ||
+      (cookie.partitionKey === undefined &&
+        cookie._crHasCrossSiteAncestor !== undefined)
     ) {
       throw new Error('powerschool-session-state-unsafe');
     }
@@ -372,6 +439,36 @@ function assertFilteredState(value: unknown, powerSchoolOrigin: string): void {
   if (value.cookies.length === 0 && value.origins.length === 0) {
     throw new Error('powerschool-session-state-empty');
   }
+}
+
+function isAllowedPowerSchoolPartitionKey(
+  partitionKey: string,
+  powerSchoolOrigin: string,
+): boolean {
+  let origin: URL;
+  let partition: URL;
+  try {
+    origin = new URL(powerSchoolOrigin);
+    partition = new URL(partitionKey);
+  } catch {
+    return false;
+  }
+  if (
+    partition.href !== `${partition.origin}/` ||
+    partition.protocol !== origin.protocol ||
+    partition.username.length > 0 ||
+    partition.password.length > 0 ||
+    partition.port.length > 0
+  ) {
+    return false;
+  }
+  if (partition.origin === origin.origin) return true;
+  if (origin.port.length > 0) return false;
+  const registrableDomain = getDomain(origin.hostname, {
+    allowPrivateDomains: true,
+    extractHostname: false,
+  });
+  return registrableDomain !== null && partition.hostname === registrableDomain;
 }
 
 function cookieBelongsToHost(domain: string, host: string): boolean {

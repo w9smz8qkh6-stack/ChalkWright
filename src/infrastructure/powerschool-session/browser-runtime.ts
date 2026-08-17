@@ -24,6 +24,21 @@ export function sanitizedChromeEnvironment(
 }
 
 /**
+ * Keeps the browser-authentication and credential-free session-HTTP lanes on
+ * the same installed-Chrome request identity without hard-coding a version.
+ */
+export function normalizedChromeUserAgent(userAgent: string): string {
+  if (
+    userAgent.length < 1 ||
+    userAgent.length > 512 ||
+    /[\r\n\u0000-\u001f\u007f]/u.test(userAgent)
+  ) {
+    throw new Error('powerschool-request-identity-unsafe');
+  }
+  return userAgent.replace('HeadlessChrome/', 'Chrome/');
+}
+
+/**
  * Launches the locked Playwright/Chrome tuple. Network routing can begin only
  * after Chrome starts, so callers must install a context route before any
  * application navigation and must not claim confinement of Chrome startup.

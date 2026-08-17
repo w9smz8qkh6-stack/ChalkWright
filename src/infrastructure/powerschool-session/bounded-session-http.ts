@@ -270,16 +270,18 @@ async function applicableCookiePairs(
   context: BrowserContext,
   url: string,
 ): Promise<readonly string[]> {
-  return (await context.cookies(url)).map((cookie) => {
-    if (
-      !/^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$/u.test(cookie.name) ||
-      cookie.value.length > 4_096 ||
-      /[;\r\n\u0000]/u.test(cookie.value)
-    ) {
-      throw new Error('powerschool-response-cookie-unsafe');
-    }
-    return `${cookie.name}=${cookie.value}`;
-  });
+  return (await context.cookies(url))
+    .filter((cookie) => cookie.partitionKey === undefined)
+    .map((cookie) => {
+      if (
+        !/^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,128}$/u.test(cookie.name) ||
+        cookie.value.length > 4_096 ||
+        /[;\r\n\u0000]/u.test(cookie.value)
+      ) {
+        throw new Error('powerschool-response-cookie-unsafe');
+      }
+      return `${cookie.name}=${cookie.value}`;
+    });
 }
 
 async function boundedText(
@@ -351,6 +353,7 @@ function parseSetCookie(header: string, target: URL): Cookie {
   let expires = -1;
   let httpOnly = false;
   let secure = false;
+  let partitioned = false;
   let sameSite: Cookie['sameSite'] = 'Lax';
   for (const part of parts) {
     const [rawName, ...rawValue] = part.split('=');
@@ -381,6 +384,12 @@ function parseSetCookie(header: string, target: URL): Cookie {
       case 'secure':
         secure = true;
         break;
+      case 'partitioned':
+        if (attributeValue !== '') {
+          throw new Error('powerschool-response-cookie-unsafe');
+        }
+        partitioned = true;
+        break;
       case 'samesite':
         if (/^strict$/iu.test(attributeValue)) sameSite = 'Strict';
         else if (/^none$/iu.test(attributeValue)) sameSite = 'None';
@@ -393,6 +402,7 @@ function parseSetCookie(header: string, target: URL): Cookie {
   }
   const normalizedDomain = domain.replace(/^\./u, '');
   if (
+    partitioned ||
     (normalizedDomain !== target.hostname &&
       !target.hostname.endsWith(`.${normalizedDomain}`)) ||
     !path.startsWith('/') ||

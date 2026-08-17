@@ -79,3 +79,68 @@ test('cookie diagnostic returns only an applicable-cookie count', async () => {
     2,
   );
 });
+
+test('Node session GET never flattens a partitioned cookie into its Cookie header', async () => {
+  const requests: Request[] = [];
+  const partitioned: Cookie & { _crHasCrossSiteAncestor: boolean } = {
+    ...cookies[0]!,
+    partitionKey: 'https://powerschool.example',
+    _crHasCrossSiteAncestor: false,
+  };
+  const result = await boundedSessionGet({
+    context: contextWithCookies([cookies[0]!, partitioned]),
+    exactUrl: 'https://powerschool.example/teachers/home.html',
+    maximumBytes: 1_024,
+    timeoutMs: 1_000,
+    signal: new AbortController().signal,
+    requestIdentity: {
+      userAgent: 'synthetic-browser',
+      referer: 'https://powerschool.example/',
+    },
+    fetchImplementation: async (input, init) => {
+      requests.push(new Request(input, init));
+      return new Response('<html></html>', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      });
+    },
+  });
+
+  assert.equal(result.status, 'captured');
+  assert.equal(requests[0]?.headers.get('cookie'), 'first=redacted-one');
+});
+
+test('rejects a Partitioned response cookie instead of broadening it', async () => {
+  const installed: Cookie[][] = [];
+  const context = {
+    cookies: async () => [],
+    addCookies: async (value: Cookie[]) => installed.push(value),
+  } as unknown as BrowserContext;
+  const result = await boundedSessionGet({
+    context,
+    exactUrl: 'https://powerschool.example/teachers/home.html',
+    maximumBytes: 1_024,
+    timeoutMs: 1_000,
+    signal: new AbortController().signal,
+    requestIdentity: {
+      userAgent: 'synthetic-browser',
+      referer: 'https://powerschool.example/',
+    },
+    fetchImplementation: async () =>
+      new Response('<html></html>', {
+        status: 200,
+        headers: {
+          'content-type': 'text/html',
+          'set-cookie':
+            'synthetic_session=refreshed; Path=/; Secure; SameSite=None; Partitioned',
+        },
+      }),
+  });
+
+  assert.deepEqual(result, {
+    status: 'failed',
+    code: 'request-policy-violation',
+    retryable: false,
+  });
+  assert.deepEqual(installed, []);
+});

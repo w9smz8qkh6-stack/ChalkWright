@@ -23,6 +23,7 @@ const valid = {
       sectionCode: 'English C509 CODE-A',
       providerCourseKey: '123456789',
       attendanceClassCode: 'C509-A',
+      attendanceCheckInUrl: 'https://attendance.example.invalid/check-in',
     },
   ]),
 } satisfies NodeJS.ProcessEnv;
@@ -34,6 +35,10 @@ test('loads an isolated loopback-only shadow contract', () => {
   assert.equal(config.courseMappings.length, 1);
   assert.equal(config.courseMappings[0]?.roomId, 'room-c509');
   assert.equal(config.courseMappings[0]?.attendanceClassCode, 'C509-A');
+  assert.equal(
+    config.courseMappings[0]?.attendanceCheckInUrl,
+    'https://attendance.example.invalid/check-in',
+  );
 });
 
 test('rejects production aliasing, broad paths, duplicate mappings, and mutation capability', () => {
@@ -52,6 +57,17 @@ test('rejects production aliasing, broad paths, duplicate mappings, and mutation
           sectionCode: 'A CODE-A',
           providerCourseKey: '1',
           attendanceClassCode: 'invalid\ncode',
+        },
+      ]),
+    },
+    {
+      ...valid,
+      CLASSROOM_HUB_SHADOW_COURSE_MAPPINGS: JSON.stringify([
+        {
+          classId: 'class-a',
+          sectionCode: 'A CODE-A',
+          providerCourseKey: '1',
+          attendanceCheckInUrl: 'javascript:alert(1)',
         },
       ]),
     },

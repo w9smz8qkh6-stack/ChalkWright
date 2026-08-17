@@ -147,7 +147,7 @@ export function isM17SemanticComparisonInput(
     record.kind === 'chalkwright-m17-semantic-comparison' &&
     isIsoInstant(record.comparedAt) &&
     isIsoDate(record.date) &&
-    localDate(record.comparedAt) === record.date &&
+    comparisonDateWithinLookahead(record.comparedAt, record.date) &&
     typeof record.screenId === 'string' &&
     /^[A-Za-z0-9][A-Za-z0-9._:-]{0,95}$/u.test(record.screenId) &&
     isSnapshot(record.reference, record.date) &&
@@ -218,6 +218,19 @@ function isMeetings(
     previous = record.startsAt;
   }
   return true;
+}
+
+function comparisonDateWithinLookahead(
+  comparedAt: string,
+  date: string,
+): boolean {
+  const observedDate = localDate(comparedAt);
+  if (date < observedDate) return false;
+  const observed = Date.parse(`${observedDate}T00:00:00.000Z`);
+  const compared = Date.parse(`${date}T00:00:00.000Z`);
+  return (
+    Number.isFinite(compared) && compared - observed <= 7 * 24 * 60 * 60_000
+  );
 }
 
 function localDate(instant: string): string {

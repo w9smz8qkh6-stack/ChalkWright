@@ -33,7 +33,7 @@ test('manual repair is operator-driven and cannot retrieve or fill credentials',
   assert.match(source, /removeTemporaryBrowserProfile/u);
 });
 
-test('accepted JIT repair authority is isolated from routine, service, scheduler, and Calendar paths', () => {
+test('accepted JIT repair authority is isolated from routine, scheduler, and Calendar paths', () => {
   const forbiddenConsumers = [
     'src/infrastructure/powerschool-session/passive-collector.ts',
     'src/infrastructure/powerschool-session/bell-schedule-source.ts',
@@ -86,7 +86,7 @@ test('persistent compatibility collection reuses identity state but cannot read 
   assert.match(boundary, /blockedbyclient/u);
 });
 
-test('persistent compatibility entrypoints remain absent from application and service wiring', () => {
+test('retained-profile collection is wired only to the dedicated credential-free M17 plan entrypoint', () => {
   for (const path of [
     'src/app/production-server.ts',
     'src/app/shadow-server.ts',
@@ -104,6 +104,43 @@ test('persistent compatibility entrypoints remain absent from application and se
       path,
     );
   }
+  const retained = read('src/entrypoints/production-retained-plan-refresh.ts');
+  assert.match(retained, /runPowerSchoolCompatibilityBellSupervisor/u);
+  assert.match(retained, /supervisedRetainedSource/u);
+  assert.doesNotMatch(
+    retained,
+    /PersistentCompatibilityPowerSchoolBellScheduleSource/u,
+  );
+  assert.match(retained, /rejectAmbientProductionAuthority/u);
+  assert.doesNotMatch(
+    retained,
+    /from ['"][^'"]*(?:jit-repair|repair-secret|one-password|1password)[^'"]*['"]|\.fill\(|\.click\(|\.type\(|\.press\(/iu,
+  );
+  assert.match(retained, /CLASSROOM_HUB_POWERSCHOOL_REPAIR_/u);
+  assert.match(retained, /CLASSROOM_HUB_POWERSCHOOL_ONEPASSWORD_/u);
+  assert.match(retained, /OP_SERVICE_ACCOUNT_TOKEN/u);
+  for (const path of [
+    'systemd/m17/chalkwright-canary-plan-preflight.service.in',
+    'systemd/m17/chalkwright-canary-plan-refresh.service.in',
+  ]) {
+    const unit = read(path);
+    assert.match(unit, /production-retained-plan-refresh\.js/u);
+    assert.match(unit, /canary-powerschool-compatibility-profile/u);
+    assert.match(
+      unit,
+      /CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https:\/\/accounts\.google\.com/u,
+    );
+    assert.doesNotMatch(unit, /powerschool-repair\.env|onepassword/iu);
+  }
+});
+
+test('native M17 repair starts through an installed release symlink', () => {
+  const repair = read('src/entrypoints/m17-powerschool-repair.ts');
+  assert.match(
+    repair,
+    /isDirectEntrypoint\(import\.meta\.url, process\.argv\[1\]\)/u,
+  );
+  assert.doesNotMatch(repair, /pathToFileURL\(resolve\(invokedPath\)\)/u);
 });
 
 test('only the dedicated JIT supervisor can import the 1Password repair reader', () => {
@@ -132,9 +169,16 @@ test('routing and saved state are installed before application navigation', () =
     'src/infrastructure/powerschool-session/passive-collector.ts',
   );
   const route = source.indexOf("context.route('**/*'");
-  const state = source.indexOf('context.setStorageState');
+  const state = source.indexOf('applyFilteredPowerSchoolState(context');
   const acquisition = source.indexOf('boundedSessionGet({');
   assert.ok(route >= 0 && state > route && acquisition > state);
+
+  const protectedState = read(
+    'src/infrastructure/powerschool-session/protected-state.ts',
+  );
+  const ordinaryState = protectedState.indexOf('context.setStorageState({');
+  const partitionedCookies = protectedState.indexOf('context.addCookies(');
+  assert.ok(ordinaryState >= 0 && partitionedCookies > ordinaryState);
 });
 
 test('locked browser launch disables downloads and service workers', () => {
@@ -190,4 +234,20 @@ test('collector remains opt-in and absent from existing service/job wiring', () 
     assert.equal(read(path).includes('powerschool-jit-repair'), false, path);
     assert.equal(read(path).includes('powerschool-compatibility'), false, path);
   }
+});
+
+test('schemeful-site parsing uses one exact pinned Public Suffix dependency', () => {
+  const manifest = JSON.parse(read('package.json')) as {
+    dependencies?: Record<string, string>;
+  };
+  const lock = JSON.parse(read('package-lock.json')) as {
+    packages?: Record<string, { version?: string }>;
+  };
+  assert.equal(manifest.dependencies?.tldts, '7.4.9');
+  assert.equal(lock.packages?.['node_modules/tldts']?.version, '7.4.9');
+  assert.equal(lock.packages?.['node_modules/tldts-core']?.version, '7.4.10');
+  assert.match(
+    read('src/infrastructure/powerschool-session/protected-state.ts'),
+    /getDomain\(origin\.hostname,[\s\S]*allowPrivateDomains: true/u,
+  );
 });

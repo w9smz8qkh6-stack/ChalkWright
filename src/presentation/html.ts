@@ -183,18 +183,174 @@ function meetingWindow(meeting: PresentationMeeting | undefined): string {
     : `<time datetime="${escapeHtml(meeting.officialStartsAt)}" data-local-time="${escapeHtml(meeting.officialStartsAt)}"></time> – <time datetime="${escapeHtml(meeting.officialEndsAt)}" data-local-time="${escapeHtml(meeting.officialEndsAt)}"></time>`;
 }
 
-function cardMarkup(card: PresentationCard, index: number): string {
+const dueDateMonths: Readonly<Record<string, string>> = {
+  jan: 'JANUARY',
+  january: 'JANUARY',
+  feb: 'FEBRUARY',
+  february: 'FEBRUARY',
+  mar: 'MARCH',
+  march: 'MARCH',
+  apr: 'APRIL',
+  april: 'APRIL',
+  may: 'MAY',
+  jun: 'JUNE',
+  june: 'JUNE',
+  jul: 'JULY',
+  july: 'JULY',
+  aug: 'AUGUST',
+  august: 'AUGUST',
+  sep: 'SEPTEMBER',
+  sept: 'SEPTEMBER',
+  september: 'SEPTEMBER',
+  oct: 'OCTOBER',
+  october: 'OCTOBER',
+  nov: 'NOVEMBER',
+  november: 'NOVEMBER',
+  dec: 'DECEMBER',
+  december: 'DECEMBER',
+};
+
+interface DueDateMarker {
+  readonly month: string;
+  readonly day: string;
+}
+
+function dueDateMarker(text: string): DueDateMarker | undefined {
+  if (!/(?:^|\b)(?:due|due dates?|date|deadline|by)\b/iu.test(text))
+    return undefined;
+  const monthName =
+    '(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t|tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)';
+  const monthFirst = new RegExp(
+    `\\b${monthName}\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`,
+    'iu',
+  ).exec(text);
+  const dayFirst = new RegExp(
+    `\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+${monthName}\\.?\\b`,
+    'iu',
+  ).exec(text);
+  const isoDate = /\b\d{4}-(\d{1,2})-(\d{1,2})\b/u.exec(text);
+  const slashDate = /\b(\d{1,2})[/-](\d{1,2})(?:[/-](?:\d{2}|\d{4}))?\b/u.exec(
+    text,
+  );
+  const month =
+    monthFirst?.[1] ?? dayFirst?.[2] ?? isoDate?.[1] ?? slashDate?.[1];
+  const day =
+    monthFirst?.[2] ?? dayFirst?.[1] ?? isoDate?.[2] ?? slashDate?.[2];
+  if (month === undefined || day === undefined) return undefined;
+  const numericDay = Number(day);
+  if (!Number.isInteger(numericDay) || numericDay < 1 || numericDay > 31)
+    return undefined;
+  const numericMonth = Number(month);
+  const monthLabel =
+    Number.isInteger(numericMonth) && numericMonth >= 1 && numericMonth <= 12
+      ? [
+          '',
+          'JANUARY',
+          'FEBRUARY',
+          'MARCH',
+          'APRIL',
+          'MAY',
+          'JUNE',
+          'JULY',
+          'AUGUST',
+          'SEPTEMBER',
+          'OCTOBER',
+          'NOVEMBER',
+          'DECEMBER',
+        ][numericMonth]
+      : Number.isNaN(numericMonth)
+        ? dueDateMonths[month.replaceAll('.', '').toLowerCase()]
+        : undefined;
+  return monthLabel === undefined
+    ? undefined
+    : { month: monthLabel, day: String(numericDay) };
+}
+
+function objectiveDetailMarkup(detail: string): string {
+  const date = dueDateMarker(detail);
+  if (date !== undefined) {
+    return `<li class="due-date-detail"><span class="date-badge" aria-hidden="true"><span class="date-badge-month">${escapeHtml(date.month)}</span><span class="date-badge-day">${escapeHtml(date.day)}</span></span><span class="objective-detail-text">${escapeHtml(detail)}</span></li>`;
+  }
+  const icon = detail.trim().toLowerCase().includes('open classroom')
+    ? '✅'
+    : '👉';
+  return `<li><span class="objective-detail-icon" data-objective-detail-icon aria-hidden="true">${icon}</span><span class="objective-detail-text">${escapeHtml(detail)}</span></li>`;
+}
+
+function cardDetailsMarkup(card: PresentationCard): string {
   const details = card.details ?? [];
+  if (details.length === 0) return '';
+  if (card.type === 'objective') {
+    return `<div class="card-details" data-reveal><ul class="objective-detail-list">${details.map(objectiveDetailMarkup).join('')}</ul></div>`;
+  }
+  return `<div class="card-details" data-reveal>${details.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}</div>`;
+}
+
+function vocabularyFace(
+  language: 'English' | 'Vietnamese',
+  value: {
+    readonly term?: string;
+    readonly definition?: string;
+    readonly example?: string;
+  },
+  metadata = '',
+): string {
+  return `<section class="vocabulary-face vocabulary-${language.toLowerCase()}" aria-label="${language} vocabulary">
+    <p class="vocabulary-language">${language}</p>
+    <h2>${escapeHtml(value.term ?? '')}</h2>
+    ${metadata}
+    <p class="vocabulary-definition">${escapeHtml(value.definition ?? '')}</p>
+    ${value.example === undefined ? '' : `<p class="vocabulary-example">${escapeHtml(value.example)}</p>`}
+  </section>`;
+}
+
+function vocabularyMarkup(card: PresentationCard): string | undefined {
+  const vocabulary = card.vocabulary;
+  if (vocabulary === undefined) return undefined;
+  const metadata = [vocabulary.partOfSpeech, vocabulary.pronunciation]
+    .filter((value): value is string => value !== undefined)
+    .map(escapeHtml)
+    .join(' · ');
+  const english = vocabularyFace(
+    'English',
+    {
+      term: vocabulary.term,
+      definition: vocabulary.definition,
+      ...(vocabulary.example === undefined
+        ? {}
+        : { example: vocabulary.example }),
+    },
+    metadata.length === 0
+      ? ''
+      : `<p class="vocabulary-metadata">${metadata}</p>`,
+  );
+  const vietnamese = vocabulary.vietnamese;
+  const translated =
+    vietnamese !== undefined &&
+    [vietnamese.term, vietnamese.definition, vietnamese.example].some(
+      (value) => value !== undefined && value.trim().length > 0,
+    )
+      ? vocabularyFace('Vietnamese', vietnamese)
+      : '';
+  return `<div class="vocabulary-stage${translated === '' ? ' single-face' : ''}"><div class="vocabulary-flip">${english}${translated}</div></div>`;
+}
+
+function cardMarkup(card: PresentationCard, index: number): string {
   const durationSeconds =
     Number.isFinite(card.durationSeconds) && (card.durationSeconds ?? 0) > 0
       ? (card.durationSeconds ?? 12)
       : 12;
+  const vocabulary = vocabularyMarkup(card);
+  const title =
+    card.type === 'bellringer'
+      ? card.title.replace(/^bellringer\s*:\s*/iu, '')
+      : card.title;
   return `<article class="carousel-card card-${escapeHtml(card.type)} accent-${escapeHtml(card.accent ?? 'ink')}" data-carousel-card data-card-id="${escapeHtml(card.cardId)}" data-duration-ms="${Math.max(5, durationSeconds) * 1000}" ${index === 0 ? '' : 'hidden'}>
   <p class="card-type">${escapeHtml(card.type.replaceAll('_', ' '))}</p>
-  <h2>${escapeHtml(card.title)}</h2>
+  ${vocabulary === undefined ? `<h2>${escapeHtml(title)}</h2>` : vocabulary}
   ${card.featured === undefined ? '' : `<p class="featured">${escapeHtml(card.featured)}</p>`}
-  <ul>${card.lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
-  ${details.length === 0 ? '' : `<div class="card-details" data-reveal>${details.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}</div>`}
+  ${vocabulary !== undefined || card.lines.length === 0 ? '' : `<ul>${card.lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`}
+  ${cardDetailsMarkup(card)}
 </article>`;
 }
 

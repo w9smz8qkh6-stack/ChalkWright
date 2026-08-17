@@ -104,7 +104,6 @@ export function verifyRepositorySafety(repositoryRoot = defaultRoot) {
       ) &&
       relativePath !== 'scripts/operations/verify-repository-safety.mjs' &&
       !isExactOfflineTelegramAdapter(relativePath, source) &&
-      !isExactM17LegacyStateBridge(relativePath, source) &&
       !isExactM17ManifestSupersession(relativePath, source)
     ) {
       findings.push(`${relativePath}: forbidden operational dependency`);
@@ -156,60 +155,6 @@ function isExactOfflineTelegramAdapter(relativePath, source) {
   );
 }
 
-function isExactM17LegacyStateBridge(relativePath, source) {
-  if (
-    relativePath !==
-    'scripts/operations/refresh-m17-powerschool-state-from-legacy.mjs'
-  )
-    return false;
-  const required = [
-    "const approvedOpenClawVersion = 'OpenClaw 2026.6.11 (e085fa1)';",
-    "const setprivExecutable = '/usr/bin/setpriv';",
-    "const nodeExecutable = '/usr/local/bin/node';",
-    "const openClawEntrypoint = '/usr/local/lib/node_modules/openclaw/openclaw.mjs';",
-    "'/etc/chalkwright/migration/legacy-operator-home';",
-    'const operatorHome = readOperatorHome();',
-    'if (!/^\\/home\\/[a-z_][a-z0-9_-]{0,31}$/u.test(value))',
-    "'() => ({ origin: window.location.origin, values: Object.fromEntries(Object.keys(window.localStorage).map((key) => [key, window.localStorage.getItem(key)])) })';",
-    "'--profile',",
-    "'workonly',",
-    "'--json',",
-    "'--browser-profile',",
-    "'powerschool',",
-    "actionArguments = ['cookies']",
-    "action === 'local-storage-evaluation'",
-    "'evaluate',",
-    "'--fn',",
-    'localStorageEvaluation,',
-    "'--clear-groups',",
-    "'--inh-caps=-all',",
-    "'--bounding-set=-all',",
-    "'--no-new-privs',",
-    'timeout: 30_000,',
-    'maxBuffer: 512 * 1024,',
-    'for (const buffer of captured) buffer.fill(0);',
-    'envelope.ok !== true',
-    "'cookies,ok,targetId'",
-    "'ok,result,targetId,url'",
-    "'origin,values'",
-    'resultOrigin !== powerSchoolOrigin',
-    'responseOrigin !== powerSchoolOrigin',
-    'filterPowerSchoolStorageState(',
-    'acquirePowerSchoolSessionLock(',
-    'writeFilteredPowerSchoolState(',
-  ];
-  return (
-    required.every((value) => source.includes(value)) &&
-    (source.match(/from ['"]node:child_process['"]/gu)?.length ?? 0) === 1 &&
-    (source.match(/spawnSync\s*\(/gu)?.length ?? 0) === 2 &&
-    !/\b(?:execFile|execSync|fork|spawn)\s*\(/u.test(source) &&
-    !/localStorage\.(?:setItem|removeItem|clear)|\bfetch\s*\(|XMLHttpRequest|WebSocket/iu.test(
-      source,
-    ) &&
-    !/systemctl|tailscale|calendar|googleapis|1password|op:\/\//iu.test(source)
-  );
-}
-
 function isExactM17ManifestSupersession(relativePath, source) {
   if (
     relativePath !== 'scripts/operations/supersede-m17-activation-manifest.mjs'
@@ -221,6 +166,7 @@ function isExactM17ManifestSupersession(relativePath, source) {
     "'sha256:3ef42b8d902a61b9add8afd6f15812f2076810050f9d275371d165922b2230bb':",
     "'sha256:69ccff3c358f0edd3cbd7a09f9e4d3ec8ccfac20eb2fe12a56f052903da99f7f':",
     "'sha256:41cc8a7ea7e73ba514862bdf72faaaa287ec19f28e6f603a4ae7dfbc475435d9':",
+    "'sha256:c3b9540d6e30ef6a4e8d5e73b6ccd69a80c59f251f1d4d74ad7e9cafbace53da':",
     "const manifestPath = '/etc/chalkwright/canary/activation-manifest.json';",
     "'sha256:6e6997a560c68f2f52894a4bb63a07615edc63b0e7e1b33dd80e19a04a8a7056'",
     'digestText(manifest.tailnetTarget) !== expectedTailnetTargetHash',

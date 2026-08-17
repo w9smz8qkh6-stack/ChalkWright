@@ -24,6 +24,8 @@ const activeFuturePreviewDefectFingerprint =
   'sha256:69ccff3c358f0edd3cbd7a09f9e4d3ec8ccfac20eb2fe12a56f052903da99f7f';
 const activeFuturePreviewFingerprint =
   'sha256:41cc8a7ea7e73ba514862bdf72faaaa287ec19f28e6f603a4ae7dfbc475435d9';
+const activeCardIconsPredecessorFingerprint =
+  'sha256:c3b9540d6e30ef6a4e8d5e73b6ccd69a80c59f251f1d4d74ad7e9cafbace53da';
 const manifest = {
   calendarReferenceHash:
     'sha256:25184522bd2f65a8a38badb6d2fc07e9f1b96fb45134d4b5f8dc5816c976d804',
@@ -113,6 +115,7 @@ test('production default is fixed to the recorded rejected fingerprint', () => {
     assert.ok(source.includes(activeVisualDefectFingerprint));
     assert.ok(source.includes(activeFuturePreviewDefectFingerprint));
     assert.ok(source.includes(activeFuturePreviewFingerprint));
+    assert.ok(source.includes(activeCardIconsPredecessorFingerprint));
   } finally {
     rmSync(paths.root, { recursive: true, force: true });
   }

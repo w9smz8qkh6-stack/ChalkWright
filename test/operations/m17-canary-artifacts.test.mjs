@@ -51,6 +51,26 @@ test('rejects broadened or duplicate service hardening assignments', () => {
   }
 });
 
+test('rejects reset or additive native repair path authority', () => {
+  for (const drift of [
+    '\nInaccessiblePaths=\n',
+    '\nReadWritePaths=/var/lib/chalkwright/canary-production\n',
+  ]) {
+    const root = mkdtempSync(join(tmpdir(), 'chalkwright-m17-repair-paths-'));
+    try {
+      cpSync('systemd/m17', join(root, 'systemd/m17'), { recursive: true });
+      const path = join(
+        root,
+        'systemd/m17/chalkwright-canary-powerschool-repair.service.in',
+      );
+      writeFileSync(path, `${readFileSync(path, 'utf8')}${drift}`);
+      assert.throws(() => verifyM17Canary(root), /must contain exactly one/u);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
 test('release and lifecycle scripts remain digest-bound and candidate-only', () => {
   const build = readFileSync(
     'scripts/operations/build-m17-canary-release.sh',
@@ -102,6 +122,7 @@ test('release and lifecycle scripts remain digest-bound and candidate-only', () 
     'chalkwright-canary-comparison-observation.service',
     'chalkwright-canary-classroom-preflight.service',
     'chalkwright-canary-classroom-refresh.service',
+    'chalkwright-canary-powerschool-repair.service',
     'chalkwright-canary-plan-preflight.service',
     'chalkwright-canary-plan-refresh.service',
     'chalkwright-canary-backup.service',
@@ -133,7 +154,10 @@ test('release and lifecycle scripts remain digest-bound and candidate-only', () 
   assert.match(supersede, /fsyncSync/u);
   assert.doesNotMatch(supersede, /rmSync|unlinkSync/u);
   assert.match(install, /chmod 0755.*activate-m17-canary\.sh/u);
-  assert.match(upgrade, /a1061444548f4f47d0d632e83425f1e5df24cd34e27631/u);
+  assert.match(
+    upgrade,
+    /a0354f63bcae4903d1b076eba1cb5fbbb152f0cd09203df617551a3fad4735b3/u,
+  );
   assert.match(upgrade, /systemctl show --property=ActiveState/u);
   assert.match(upgrade, /env -i LANG=C LC_ALL=C SYSTEMD_COLORS=0/u);
   assert.match(upgrade, /timeout --signal=KILL 5s/u);
@@ -142,10 +166,14 @@ test('release and lifecycle scripts remain digest-bound and candidate-only', () 
   assert.match(upgrade, /timeout --signal=KILL 30s/u);
   assert.match(upgrade, /sha256sum "\$snapshot"/u);
   assert.match(upgrade, /-xzf "\$snapshot"/u);
-  assert.match(upgrade, /cmp -s/u);
+  assert.match(build, /umask 077/u);
+  assert.match(build, /chmod 0600 "\$archive"/u);
+  assert.match(upgrade, /\.m17-upgrade-units/u);
+  assert.match(upgrade, /units_replaced/u);
+  assert.match(upgrade, /cp --reflink=never/u);
   assert.match(upgrade, /mv -T/u);
   assert.match(upgrade, /releases\/\$previous.*\$rollback/u);
-  assert.equal((upgrade.match(/readlink "\$current"/gu) ?? []).length, 4);
+  assert.equal((upgrade.match(/readlink "\$current"/gu) ?? []).length, 6);
   assert.equal(
     (upgrade.match(/systemctl show --property=ActiveState/gu) ?? []).length,
     2,
@@ -158,4 +186,5 @@ test('release and lifecycle scripts remain digest-bound and candidate-only', () 
   assert.match(supersede, /3ef42b8d902a61b9add8afd6f15812f2/u);
   assert.match(supersede, /69ccff3c358f0edd3cbd7a09f9e4d3ec/u);
   assert.match(supersede, /41cc8a7ea7e73ba514862bdf72faaaa28/u);
+  assert.match(supersede, /c3b9540d6e30ef6a4e8d5e73b6ccd69/u);
 });

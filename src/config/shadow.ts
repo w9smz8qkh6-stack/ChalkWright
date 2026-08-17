@@ -8,6 +8,8 @@ import { isIanaTimeZone, isIsoDate } from '../domain/runtime-validation.js';
 export interface ShadowCourseMapping extends CoursePlanMapping, CourseMapping {
   /** Optional legacy attendance check-in code; unrelated to provider credentials. */
   readonly attendanceClassCode?: string;
+  /** Optional external check-in form/link; Chalkwright redirects but never proxies submissions. */
+  readonly attendanceCheckInUrl?: string;
 }
 
 export interface ShadowConfig {
@@ -113,14 +115,25 @@ export function parseMappings(
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry))
       throw new Error(`Shadow mapping ${index + 1} has an invalid shape`);
     const record = entry as Record<string, unknown>;
-    const keys = Object.keys(record).sort().join(',');
+    const keys = Object.keys(record).sort();
+    const requiredKeys = ['classId', 'providerCourseKey', 'sectionCode'];
+    const allowedKeys = new Set([
+      ...requiredKeys,
+      'attendanceClassCode',
+      'attendanceCheckInUrl',
+    ]);
     if (
-      keys !== 'classId,providerCourseKey,sectionCode' &&
-      keys !== 'attendanceClassCode,classId,providerCourseKey,sectionCode'
+      requiredKeys.some((key) => !keys.includes(key)) ||
+      keys.some((key) => !allowedKeys.has(key))
     )
       throw new Error(`Shadow mapping ${index + 1} has an invalid shape`);
-    const { classId, sectionCode, providerCourseKey, attendanceClassCode } =
-      record;
+    const {
+      classId,
+      sectionCode,
+      providerCourseKey,
+      attendanceClassCode,
+      attendanceCheckInUrl,
+    } = record;
     if (
       typeof classId !== 'string' ||
       !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(classId)
@@ -150,12 +163,35 @@ export function parseMappings(
       throw new Error(
         `Shadow mapping ${index + 1} has an invalid attendance class code`,
       );
+    if (attendanceCheckInUrl !== undefined) {
+      if (
+        typeof attendanceCheckInUrl !== 'string' ||
+        attendanceCheckInUrl.length > 2_048
+      )
+        throw new Error(
+          `Shadow mapping ${index + 1} has an invalid attendance URL`,
+        );
+      try {
+        const url = new URL(attendanceCheckInUrl);
+        if (
+          url.protocol !== 'https:' ||
+          url.username.length > 0 ||
+          url.password.length > 0
+        )
+          throw new Error('invalid');
+      } catch {
+        throw new Error(
+          `Shadow mapping ${index + 1} has an invalid attendance URL`,
+        );
+      }
+    }
     return {
       classId: classId as ClassId,
       sectionCode,
       providerCourseKey,
       roomId,
       ...(attendanceClassCode === undefined ? {} : { attendanceClassCode }),
+      ...(attendanceCheckInUrl === undefined ? {} : { attendanceCheckInUrl }),
     };
   });
   if (

@@ -570,16 +570,41 @@ export function isDisplayCard(value: unknown): boolean {
       hasExactKeys(
         value,
         ['cardId', 'title'],
-        ['type', 'body', 'lines', 'accent', 'durationSeconds'],
+        [
+          'type',
+          'body',
+          'lines',
+          'featured',
+          'details',
+          'accent',
+          'durationSeconds',
+          'vocabulary',
+        ],
       ) &&
       isNonEmptyString(value.cardId) &&
       typeof value.title === 'string' &&
       isOptionalString(value.type) &&
       isOptionalString(value.body) &&
       (value.lines === undefined || isStringArray(value.lines)) &&
+      isOptionalString(value.featured) &&
+      (value.details === undefined || isStringArray(value.details)) &&
       isOptionalString(value.accent) &&
       (value.durationSeconds === undefined ||
-        (isFiniteNumber(value.durationSeconds) && value.durationSeconds > 0)),
+        (isFiniteNumber(value.durationSeconds) && value.durationSeconds > 0)) &&
+      (value.vocabulary === undefined ||
+        (isPlainObject(value.vocabulary) &&
+          hasExactKeys(
+            value.vocabulary,
+            ['term', 'definition'],
+            ['pronunciation', 'partOfSpeech', 'example', 'vietnamese'],
+          ) &&
+          isNonEmptyString(value.vocabulary.term) &&
+          isNonEmptyString(value.vocabulary.definition) &&
+          isOptionalString(value.vocabulary.pronunciation) &&
+          isOptionalString(value.vocabulary.partOfSpeech) &&
+          isOptionalString(value.vocabulary.example) &&
+          (value.vocabulary.vietnamese === undefined ||
+            isVietnamese(value.vocabulary.vietnamese)))),
   );
 }
 

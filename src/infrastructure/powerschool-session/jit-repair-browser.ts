@@ -6,6 +6,7 @@ import {
 } from '../../config/powerschool-session.js';
 import {
   launchPowerSchoolSessionContext,
+  normalizedChromeUserAgent,
   pageMatchesVerifiedMarker,
 } from './browser-runtime.js';
 import {
@@ -147,6 +148,10 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
     context.setDefaultTimeout(options.config.navigationTimeoutMs);
     context.setDefaultNavigationTimeout(options.config.navigationTimeoutMs);
     const page = context.pages()[0] ?? (await context.newPage());
+    const browserUserAgent = await page.evaluate(() => navigator.userAgent);
+    await context.setExtraHTTPHeaders({
+      'user-agent': normalizedChromeUserAgent(browserUserAgent),
+    });
     const bellUrl = new URL(
       renderPowerSchoolBellPath(
         options.config.bellPathTemplate,
@@ -199,6 +204,7 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
     const filtered = filterPowerSchoolStorageState(
       await context.storageState({ indexedDB: true }),
       options.config.powerSchoolOrigin,
+      await context.cookies(),
     );
     writeFilteredPowerSchoolState(
       options.config.sessionDirectory,

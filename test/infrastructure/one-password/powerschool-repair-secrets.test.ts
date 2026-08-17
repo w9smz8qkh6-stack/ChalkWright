@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -91,6 +92,7 @@ test('passes explicit service-account authority only to fixed op reads', async (
     Buffer.from('123456'),
   ];
   let index = 0;
+  let configurationDirectory: string | undefined;
   const secrets = await readPowerSchoolRepairSecrets({
     references,
     environment: {
@@ -99,20 +101,64 @@ test('passes explicit service-account authority only to fixed op reads', async (
       OP_CONNECT_TOKEN: 'must-not-propagate',
     },
     serviceAccountToken,
-    execute: async (_executable, _arguments, options) => {
+    execute: async (_executable, arguments_, options) => {
       assert.equal(
         options.environment.OP_SERVICE_ACCOUNT_TOKEN,
         serviceAccountToken.toString('ascii'),
       );
       assert.equal(options.environment.OP_CONNECT_HOST, undefined);
       assert.equal(options.environment.OP_CONNECT_TOKEN, undefined);
+      assert.equal(arguments_[0], '--config');
+      assert.match(
+        arguments_[1]!,
+        /^\/tmp\/chalkwright-onepassword-config-[A-Za-z0-9]+$/u,
+      );
+      configurationDirectory ??= arguments_[1]!;
+      assert.equal(arguments_[1], configurationDirectory);
+      assert.equal(existsSync(configurationDirectory), true);
+      assert.deepEqual(arguments_.slice(2), [
+        '--cache=false',
+        'read',
+        Object.values(references)[index + 1],
+        '--no-newline',
+      ]);
       return values[index++]!;
     },
   });
+  assert.equal(existsSync(configurationDirectory!), false);
   destroyPowerSchoolRepairSecrets(secrets);
   serviceAccountToken.fill(0);
   assert.equal(
     values.every((value) => value.every((byte) => byte === 0)),
     true,
   );
+});
+
+test('removes the private service-account configuration after failure', async () => {
+  const serviceAccountToken = Buffer.from(
+    `ops_${'Synthetic0123456789'.repeat(4)}`,
+  );
+  const username = Buffer.from('teacher@example.invalid');
+  let configurationDirectory: string | undefined;
+  let calls = 0;
+  await assert.rejects(
+    readPowerSchoolRepairSecrets({
+      references,
+      serviceAccountToken,
+      execute: async (_executable, arguments_) => {
+        configurationDirectory ??= arguments_[1]!;
+        assert.equal(existsSync(configurationDirectory), true);
+        calls += 1;
+        if (calls === 1) return username;
+        throw new Error('synthetic-op-failure');
+      },
+    }),
+    /powerschool-repair-secret-unavailable/u,
+  );
+  assert.equal(existsSync(configurationDirectory!), false);
+  assert.equal(
+    username.every((byte) => byte === 0),
+    true,
+  );
+  serviceAccountToken.fill(0);
 });

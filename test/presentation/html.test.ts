@@ -44,15 +44,32 @@ function model(
         cardId: 'card-alpha',
         type: 'objective',
         title: 'Synthetic objective',
-        lines: ['Build one safe fixture.'],
-        details: ['Explain the boundary.'],
+        lines: [],
+        featured: 'Build one safe fixture.',
+        details: [
+          'Explain the boundary.',
+          'Open Classroom for full directions.',
+          'Due Tue, April 17.',
+        ],
         durationSeconds: 12,
       },
       {
         cardId: 'card-beta',
         type: 'vocabulary',
-        title: 'Invariant',
-        lines: ['A condition that remains true.'],
+        title: 'Word of the day',
+        lines: [],
+        vocabulary: {
+          term: 'Invariant',
+          definition: 'A condition that remains true.',
+          pronunciation: 'in-VAIR-ee-uhnt',
+          partOfSpeech: 'noun',
+          example: 'The safety invariant remains true.',
+          vietnamese: {
+            term: 'bất biến',
+            definition: 'Một điều kiện luôn đúng.',
+            example: 'Điều kiện an toàn luôn đúng.',
+          },
+        },
       },
     ],
     attendance: {
@@ -130,6 +147,66 @@ test('class content includes accessible carousel controls, hold state, and revea
   assert.match(html, /data-reveal/u);
   assert.match(html, /data-duration-ms="12000"/u);
   assert.match(html, /Held by operator/u);
+});
+
+test('objective details preserve the legacy pointer, Classroom checkmark, and due-date badge', () => {
+  const html = renderDisplayPage(model('in_class_content'));
+  assert.match(
+    html,
+    /data-objective-detail-icon aria-hidden="true">👉<\/span><span class="objective-detail-text">Explain the boundary\.<\/span>/u,
+  );
+  assert.match(
+    html,
+    /data-objective-detail-icon aria-hidden="true">✅<\/span><span class="objective-detail-text">Open Classroom for full directions\.<\/span>/u,
+  );
+  assert.match(
+    html,
+    /class="date-badge" aria-hidden="true"><span class="date-badge-month">APRIL<\/span><span class="date-badge-day">17<\/span>/u,
+  );
+  assert.match(html, />Due Tue, April 17\.<\/span>/u);
+
+  const invalidDate = renderDisplayPage({
+    ...model('in_class_content'),
+    cards: [
+      {
+        cardId: 'card-invalid-date',
+        type: 'objective',
+        title: 'Synthetic objective',
+        lines: [],
+        details: ['Due 2035-00-17.'],
+      },
+    ],
+  });
+  assert.doesNotMatch(invalidDate, /class="date-badge"/u);
+  assert.match(invalidDate, />👉<\/span>/u);
+});
+
+test('vocabulary renders complete bilingual flip faces without flattening semantic text', () => {
+  const html = renderDisplayPage(model('in_class_content'));
+  assert.match(html, /class="vocabulary-stage"/u);
+  assert.match(html, /aria-label="English vocabulary"/u);
+  assert.match(html, />Invariant<\/h2>/u);
+  assert.match(html, />noun · in-VAIR-ee-uhnt<\/p>/u);
+  assert.match(html, /The safety invariant remains true\./u);
+  assert.match(html, /aria-label="Vietnamese vocabulary"/u);
+  assert.match(html, />bất biến<\/h2>/u);
+  assert.match(html, /Một điều kiện luôn đúng\./u);
+});
+
+test('bellringer removes only the redundant legacy title prefix', () => {
+  const html = renderDisplayPage({
+    ...model('in_class_content'),
+    cards: [
+      {
+        cardId: 'bellringer-alpha',
+        type: 'bellringer',
+        title: 'Bellringer: Sketch the drivetrain',
+        lines: ['Label each moving part.'],
+      },
+    ],
+  });
+  assert.match(html, /<h2>Sketch the drivetrain<\/h2>/u);
+  assert.doesNotMatch(html, /<h2>Bellringer:/u);
 });
 
 test('class content renders the legacy minutes-until-bell header contract', () => {
@@ -228,9 +305,11 @@ test('display values are escaped and bootstrap JSON cannot close its script', ()
     cards: [
       {
         cardId: 'card-safe',
-        type: 'generic',
+        type: 'objective',
         title: '<img src=x onerror=alert(1)>',
         lines: ['& safe'],
+        featured: '<strong>featured</strong>',
+        details: ['Open Classroom <svg onload=alert(1)>'],
       },
     ],
     diagnostics: [
@@ -239,6 +318,8 @@ test('display values are escaped and bootstrap JSON cannot close its script', ()
   });
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/u);
   assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/u);
+  assert.match(html, /&lt;strong&gt;featured&lt;\/strong&gt;/u);
+  assert.match(html, /Open Classroom &lt;svg onload=alert\(1\)&gt;/u);
   assert.match(html, /\u003c\/script\u003e/u);
 });
 

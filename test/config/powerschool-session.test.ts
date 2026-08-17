@@ -42,6 +42,12 @@ test('loads the separate operator-present bootstrap policy', () => {
   assert.deepEqual(config.allowedBootstrapResourceOrigins, [
     'https://powerschool.invalid',
     'https://accounts.google.com',
+    'https://ssl.gstatic.com',
+    'https://www.gstatic.com',
+    'https://fonts.gstatic.com',
+    'https://assets-sis.powerschool.invalid',
+    'https://assets.powerschool.invalid',
+    'https://services.powerschool.invalid',
   ]);
   assert.equal('roomId' in config, false);
 });
@@ -57,12 +63,82 @@ test('loads the separate persistent compatibility policy', () => {
       '/tmp/classroom-hub-powerschool-compatibility-test',
   });
   assert.equal(config.identityOrigin, 'https://accounts.google.com');
+  assert.deepEqual(config.allowedBootstrapResourceOrigins, [
+    'https://powerschool.invalid',
+    'https://accounts.google.com',
+    'https://ssl.gstatic.com',
+    'https://www.gstatic.com',
+    'https://fonts.gstatic.com',
+    'https://assets-sis.powerschool.invalid',
+    'https://assets.powerschool.invalid',
+    'https://services.powerschool.invalid',
+  ]);
   assert.equal(
     config.persistentProfileDirectory,
     '/tmp/classroom-hub-powerschool-compatibility-test',
   );
   assert.equal(config.overallTimeoutMs, 120_000);
   assert.equal('credentials' in config, false);
+});
+
+test('an explicit bootstrap resource list can add but cannot remove the fixed baseline', () => {
+  const config = loadPowerSchoolBootstrapConfig({
+    ...commonEnvironment(),
+    CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN: 'https://accounts.google.com',
+    CLASSROOM_HUB_POWERSCHOOL_BOOTSTRAP_RESOURCE_ORIGINS:
+      'https://powerschool.invalid,https://accounts.google.com,https://static.example.invalid',
+  });
+  assert.deepEqual(config.allowedBootstrapResourceOrigins, [
+    'https://powerschool.invalid',
+    'https://accounts.google.com',
+    'https://ssl.gstatic.com',
+    'https://www.gstatic.com',
+    'https://fonts.gstatic.com',
+    'https://assets-sis.powerschool.invalid',
+    'https://assets.powerschool.invalid',
+    'https://services.powerschool.invalid',
+    'https://static.example.invalid',
+  ]);
+});
+
+test('adds only the approved exact HTTPS PowerSchool sibling origins', () => {
+  const config = loadPowerSchoolBootstrapConfig({
+    ...commonEnvironment(),
+    CLASSROOM_HUB_POWERSCHOOL_ORIGIN: 'https://teachers.school.example.co.uk',
+    CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN: 'https://accounts.google.com',
+    CLASSROOM_HUB_POWERSCHOOL_BOOTSTRAP_RESOURCE_ORIGINS:
+      'https://teachers.school.example.co.uk,https://accounts.google.com',
+  });
+  assert.deepEqual(config.allowedBootstrapResourceOrigins, [
+    'https://teachers.school.example.co.uk',
+    'https://accounts.google.com',
+    'https://ssl.gstatic.com',
+    'https://www.gstatic.com',
+    'https://fonts.gstatic.com',
+    'https://assets-sis.example.co.uk',
+    'https://assets.example.co.uk',
+    'https://services.example.co.uk',
+  ]);
+  assert.equal(
+    config.allowedBootstrapResourceOrigins.includes(
+      'https://portal.example.co.uk',
+    ),
+    false,
+  );
+  const loopback = loadPowerSchoolBootstrapConfig({
+    ...commonEnvironment(),
+    CLASSROOM_HUB_POWERSCHOOL_ORIGIN: 'http://127.0.0.1:4319',
+    CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN: 'https://accounts.google.com',
+  });
+  assert.equal(
+    loopback.allowedBootstrapResourceOrigins.some(
+      (origin) =>
+        origin.startsWith('https://assets-sis.') ||
+        origin.startsWith('https://assets.') ||
+        origin.startsWith('https://services.'),
+    ),
+    false,
+  );
 });
 
 test('keeps the compatibility profile external and separate from filtered state', () => {

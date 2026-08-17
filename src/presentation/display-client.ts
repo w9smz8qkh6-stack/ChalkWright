@@ -228,20 +228,51 @@
     function show(index: number, userInitiated = false): void {
       if (!carouselState || cards.length === 0) return;
       stopCarouselTimer();
+      const previous = cards[carouselState.index];
       carouselState.index = (index + cards.length) % cards.length;
       const state = carouselState;
       cards.forEach((card, cardIndex) => {
-        card.hidden = cardIndex !== state.index;
+        if (cardIndex === state.index) {
+          card.hidden = false;
+          card.classList.remove('carousel-leaving');
+        } else if (card !== previous || previous === cards[state.index]) {
+          card.hidden = true;
+          card.classList.remove('carousel-leaving');
+        }
         card.classList.remove('revealed');
       });
+      if (
+        previous !== undefined &&
+        previous !== cards[state.index] &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ) {
+        previous.hidden = false;
+        previous.classList.add('carousel-leaving');
+        window.setTimeout(() => {
+          previous.classList.remove('carousel-leaving');
+          if (carouselState?.cards[carouselState.index] !== previous)
+            previous.hidden = true;
+        }, 420);
+      }
       dots.forEach((dot, dotIndex) => {
         dot.setAttribute('aria-selected', String(dotIndex === state.index));
       });
       const active = cards[state.index];
+      if (active !== undefined) {
+        window.requestAnimationFrame(() => fitCard(active));
+      }
       if (userInitiated && active) {
         announce(`Showing card ${state.index + 1} of ${cards.length}`);
       }
       schedule(active);
+    }
+
+    function fitCard(card: HTMLElement): void {
+      card.classList.remove('content-tight', 'content-compact');
+      if (card.scrollHeight <= card.clientHeight) return;
+      card.classList.add('content-tight');
+      if (card.scrollHeight <= card.clientHeight) return;
+      card.classList.add('content-compact');
     }
 
     function schedule(card: HTMLElement | undefined): void {

@@ -132,8 +132,10 @@ Each JSON entry in `CLASSROOM_HUB_SHADOW_COURSE_MAPPINGS` requires
 `classId`, `sectionCode`, and `providerCourseKey`. It may also include the
 bounded `attendanceClassCode` used by the legacy pre-check-in display. That
 code is independent of the PowerSchool/Classroom section code used for course
-mapping. Aggregate attendance links and counts come only from validated local
-SQLite continuity rows; absent data hides only the dependent element.
+mapping. An optional HTTPS-only `attendanceCheckInUrl` supplies the independent
+check-in/QR destination without proxying a submission through Chalkwright.
+Aggregate attendance links and counts come only from validated local SQLite
+continuity rows; absent data hides only the dependent element.
 
 The server and backup prohibit every namespace type. The refresh unit permits
 only `user`, `pid`, and `net` namespaces because the enabled Chrome Linux
@@ -438,7 +440,67 @@ loopback port `4319`, `/opt/chalkwright-canary`,
 filtered PowerSchool state directory, and the existing secondary owned
 Calendar named `Auto Lesson 2`. Candidate alerts are report-only.
 
+### Native PowerSchool authentication repair
+
+ADR-0024 replaces the legacy OpenClaw state bridge as Chalkwright's intended
+steady-state authentication repair. The native repair is deliberately absent
+from the routine plan unit and has no timer. Its inert systemd service reads the
+ordinary canary plan policy plus a separate root-owned environment containing
+only three fixed paths: the Chalkwright repair-reference file, the dedicated
+1Password service-account file, and the dedicated retained compatibility
+profile.
+
+Before first use, place a dedicated exact repair-reference JSON and dedicated
+service-account environment file at the two fixed owner-only migration handoff
+paths enforced by `provision-m17-powerschool-repair.mjs`. After exact offline
+review of the provisioner, provision the owner-only canary copies and profile.
+No provider request or unit start is part of provisioning.
+
+For an explicitly authorized live repair, start only
+`chalkwright-canary-powerschool-repair.service`. Accept only its sanitized
+`authenticated` result. Then start the credential-free
+`chalkwright-canary-plan-preflight.service`; the repair is not qualified unless
+that exact read succeeds without OpenClaw access. The plan service uses the
+same dedicated Chalkwright-owned retained profile through a separate
+credential-free entrypoint. It cannot read the protected repair directory or
+resolve credentials, but it may perform silent browser-native OIDC through the
+exact configured origins. Unknown Google challenges,
+CAPTCHA, passkey/security-key prompts, recovery, browser rejection, timeout, or
+policy violations stop the sequence. Do not start Calendar reconciliation or
+restore the candidate Tailnet route merely because authentication succeeded.
+
+The 2026-08-14 live gate completed native repair without OpenClaw. Its following
+credential-free job stored the current plan and acquired a future plan before
+the separate `production-future-plan-store-failed` persistence defect. A later
+repeat showed that headless repair and the routine session-HTTP reader used
+different request identities; repair reached the exact bell marker, but the
+fresh routine bell GET was redirected to authentication. The offline correction
+normalized the installed-Chrome request identity in both lanes, but a fresh
+live attempt proved that was insufficient. The current offline correction adds
+one exact application-owned browser-native bell retry only after that precise
+Node authentication redirect; every redirect, identity request, and
+subresource is blocked before the wire. Do not treat that correction as
+qualified until a fresh native repair is immediately followed by a successful
+credential-free exact-plan preflight.
+The first installed browser-native attempt remained repair-required. The next
+offline correction preserves only an exact PowerSchool cookie partition that
+the prior Playwright `storageState()` projection could omit; it never imports
+Google or legacy state and never removes a partition key to broaden a cookie.
+Repeat the same repair-then-preflight gate only after that superseding inert
+release is independently reviewed and installed. Complete partition-state
+preservation was also insufficient in the live tenant, so the next exact gate
+uses the accepted retained-profile reader rather than another state-copy
+variant. This is an application-owned profile, not a legacy bridge or profile.
+`refresh-m17-powerschool-state-from-legacy.mjs` is no longer part of the active
+recovery procedure. Its executable bridge and repository-safety exception have
+now been removed; the migration record retains the historical evidence.
+
 Run `npm run check` and `git diff --check` before proposing any live command.
+The inactive upgrade must retain its exact predecessor on every pre-switch
+failure, restore all ordinary installed units after a partial replacement, and
+commit the verified new release/unit pair before best-effort removal of its
+temporary rollback material. Do not bypass a failed upgrade or copy unit files
+manually.
 Then obtain separate authorization for each group below:
 
 1. Protected provisioning: run
@@ -473,22 +535,9 @@ Then obtain separate authorization for each group below:
    schema, and verifies integrity. Accept only `initialized-inert` with zero
    provider requests, services started, and route changes. It refuses an
    existing database.
-   If the copied session later fails closed at the status-page authentication
-   redirect, the separately authorized operator-only recovery may invoke the
-   legacy lane's bounded `repair_auth` once and then run the fixed
-   `refresh-m17-powerschool-state-from-legacy.mjs` launcher with `sudo node` and
-   the approved digest. The bridge is fixed to OpenClaw 2026.6.11's named
-   `powerschool` read-only cookie interface and invokes OpenClaw's generic
-   evaluation interface with one fixed, scanner-bound read-only expression. The
-   expression returns only `location.origin` and local storage from the same
-   document execution; it contains no mutation or network operation. The bridge
-   accepts the result only when both that origin and the response URL have the
-   configured PowerSchool origin, captures no profile files, and prints no
-   cookie or storage values,
-   permanently drops to the canary service owner, filters through the reviewed
-   ADR-0014 validator, and atomically replaces only the canary state under its
-   single-process lock. It reads no password, 1Password field, or Google
-   credential. Stop if repair requests interactive approval.
+   If the copied session later fails closed, use only the Chalkwright-owned
+   native repair service. No OpenClaw state-import fallback remains in the
+   operational surface.
 5. Preactivation evidence: first run the plan and Classroom services as
    separately authorized read-only preflights. Perform an exact read-only
    semantic Calendar audit of `Auto Lesson 2`. Prepare one owner-only exact

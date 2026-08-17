@@ -20,6 +20,8 @@ export interface OperationsJobRunnerDependencies {
   readonly signal?: AbortSignal;
   /** Process-isolation boundary if a trusted handler ignores cancellation. */
   readonly hardStop: () => never;
+  /** Bounded time for a trusted child supervisor to prove quiescence. */
+  readonly hardStopGraceMs?: number;
 }
 
 /** Runs one finite registry job and records its redacted outcome. */
@@ -55,6 +57,7 @@ export async function runOperationsJob(
         controller,
         dependencies.signal,
         dependencies.hardStop,
+        dependencies.hardStopGraceMs,
         async () => {
           await safeStore(
             dependencies.state,
@@ -122,8 +125,15 @@ async function withinDeadline(
   controller: AbortController,
   externalSignal?: AbortSignal,
   hardStop?: () => never,
+  hardStopGraceMs = 1_000,
   beforeHardStop?: () => Promise<void>,
 ): Promise<TypedJobResult> {
+  if (
+    !Number.isSafeInteger(hardStopGraceMs) ||
+    hardStopGraceMs < 1_000 ||
+    hardStopGraceMs > 10_000
+  )
+    throw new Error('operations-hard-stop-grace-invalid');
   let timeout: NodeJS.Timeout | undefined;
   let removeAbortListener: (() => void) | undefined;
   const deadline = new Promise<never>((_resolve, reject) => {
@@ -175,7 +185,7 @@ async function withinDeadline(
                 reject(stopError);
               }
             });
-          }, 1_000);
+          }, hardStopGraceMs);
         }),
       ]);
     } finally {

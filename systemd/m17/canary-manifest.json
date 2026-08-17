@@ -23,7 +23,7 @@
   "jobs": [
     {
       "name": "plan-refresh",
-      "authority": "powerschool-read-only",
+      "authority": "powerschool-read-only-with-bounded-silent-identity-session",
       "schedule": "Mon..Fri,Sun *-*-* 07:25:00 Asia/Ho_Chi_Minh"
     },
     {
@@ -45,6 +45,11 @@
       "name": "sqlite-backup",
       "authority": "local-canary-state-and-backup-only",
       "schedule": "*-*-* 18:40:00 Asia/Ho_Chi_Minh"
+    },
+    {
+      "name": "powerschool-repair",
+      "authority": "isolated-fixed-reference-identity-repair",
+      "schedule": "operator-only-no-timer"
     }
   ],
   "stopOrder": [
@@ -59,6 +64,7 @@
     "chalkwright-canary-comparison-observation.service",
     "chalkwright-canary-classroom-preflight.service",
     "chalkwright-canary-classroom-refresh.service",
+    "chalkwright-canary-powerschool-repair.service",
     "chalkwright-canary-plan-preflight.service",
     "chalkwright-canary-plan-refresh.service",
     "chalkwright-canary-backup.service",

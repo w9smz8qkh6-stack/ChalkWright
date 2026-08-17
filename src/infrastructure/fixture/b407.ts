@@ -137,7 +137,18 @@ export const b407FixtureData: DisplayFixtureData = {
           cardId: 'objective-b407-a',
           type: 'objective',
           title: "Today's objective",
-          lines: ['Explain a deterministic state transition.'],
+          lines: [
+            'Explain a deterministic state transition.',
+            'Review the state diagram.',
+            'Open Classroom for full directions.',
+            'Due Tue, April 17.',
+          ],
+          featured: 'Explain a deterministic state transition.',
+          details: [
+            'Review the state diagram.',
+            'Open Classroom for full directions.',
+            'Due Tue, April 17.',
+          ],
           durationSeconds: 12,
         },
         {

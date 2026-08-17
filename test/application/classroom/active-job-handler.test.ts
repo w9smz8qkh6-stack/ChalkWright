@@ -103,6 +103,23 @@ test('inactive states never construct source authority or touch cache', async ()
   }
 });
 
+test('missing local display target skips without source authority', async () => {
+  const cache = new MemoryCache();
+  let sourceConstructions = 0;
+  const handler = createActiveClassroomRefreshJobHandler({
+    ...policy(cache),
+    targetForRun: () => undefined,
+    sourceForRun: () => {
+      sourceConstructions += 1;
+      throw new Error('must-not-construct');
+    },
+  });
+  const result = await handler(request, new AbortController().signal);
+  assert.equal(result.category, 'skipped');
+  assert.equal(sourceConstructions, 0);
+  assert.deepEqual(cache.loaded, []);
+});
+
 test('invalid, wrong-date, and unmapped active targets fail before source construction', async () => {
   for (const target of [
     {
@@ -260,6 +277,38 @@ test('projects only the finite local trigger contract and rejects hostile shapes
     }),
     false,
   );
+});
+
+test('projects malformed active targets as invalid active shapes, not absence', () => {
+  const projected = projectClassroomRefreshTriggerTarget({
+    plan: {
+      contractVersion,
+      effectivePlanId: 'plan-a',
+      canonicalPlanId: 'canonical-a',
+      date,
+      roomId: 'room-a' as RoomId,
+      screenId: 'screen-a' as ScreenId,
+      timeZone: 'Asia/Ho_Chi_Minh',
+      verification: 'verified',
+      meetings: [],
+      diagnostics: [],
+    },
+    source: 'current',
+    degraded: false,
+    diagnostics: [],
+    evaluatedAt: now,
+    state: {
+      contractVersion,
+      caseId: 'case-a',
+      screenId: 'screen-a',
+      planId: 'plan-a',
+      evaluatedAt: now,
+      state: 'pre_checkin',
+    },
+    content: { cards: [], assignmentsVisible: true },
+  });
+  assert.deepEqual(projected, { state: 'pre_checkin', date });
+  assert.equal(isClassroomRefreshTriggerTarget(projected), false);
 });
 
 function policy(cache: ClassroomEnrichmentCache) {

@@ -25,6 +25,8 @@ const rejectedManifests = Object.freeze({
     '/etc/chalkwright/canary/rejected-activation-manifest-69ccff3c358f0edd3cbd7a09f9e4d3ec8ccfac20eb2fe12a56f052903da99f7f.json',
   'sha256:41cc8a7ea7e73ba514862bdf72faaaa287ec19f28e6f603a4ae7dfbc475435d9':
     '/etc/chalkwright/canary/rejected-activation-manifest-41cc8a7ea7e73ba514862bdf72faaaa287ec19f28e6f603a4ae7dfbc475435d9.json',
+  'sha256:c3b9540d6e30ef6a4e8d5e73b6ccd69a80c59f251f1d4d74ad7e9cafbace53da':
+    '/etc/chalkwright/canary/rejected-activation-manifest-c3b9540d6e30ef6a4e8d5e73b6ccd69a80c59f251f1d4d74ad7e9cafbace53da.json',
 });
 const manifestPath = '/etc/chalkwright/canary/activation-manifest.json';
 const candidateTailnetTargetHash =

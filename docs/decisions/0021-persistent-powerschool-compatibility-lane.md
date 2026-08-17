@@ -57,6 +57,14 @@ Add a fourth, separately invoked PowerSchool capability:
    this lane requires a later exact-path, single-owner lifecycle decision and
    separately authorized read-only verification.
 
+M-17's accepted ADR-0024 amendment now selects this lane for Chalkwright's two
+plan services after native repair plus complete filtered-state transfer could
+not reproduce the browser-bound session in a disposable profile. That later
+selection does not adopt a legacy profile: it uses only the dedicated
+Chalkwright-owned profile created by native repair. The plan entrypoint remains
+credential-, repair-, and form-free, and every unrelated unit is denied access
+to the retained profile.
+
 The profile must not be launched concurrently by OpenClaw and Classroom Hub.
 No profile copy or migration is implied. A later operator may either designate
 the existing legacy managed profile under an exclusive handoff or create a new

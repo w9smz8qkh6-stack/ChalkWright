@@ -9,6 +9,8 @@ import {
 import { runQuiescentChild } from '../infrastructure/process/quiescent-child.js';
 import type { PowerSchoolCompatibilityBellWorkerOutput } from './powerschool-compatibility-bell-collector-child.js';
 
+export const powerSchoolCompatibilitySupervisorCleanupMs = 3_000;
+
 export async function runPowerSchoolCompatibilityBellSupervisor(options: {
   readonly arguments: readonly string[];
   readonly environment?: NodeJS.ProcessEnv;

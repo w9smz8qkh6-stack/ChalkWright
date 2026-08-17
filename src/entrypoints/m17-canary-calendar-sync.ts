@@ -64,8 +64,16 @@ export async function runM17CanaryCalendarSync(options: {
       screenId: production.screenId as ScreenId,
       roomId: production.roomId as RoomId,
     });
-    if (plan === undefined || plan.verification !== 'verified')
+    if (plan === undefined || plan.verification !== 'verified') {
+      const nextPlan = await plans.findNextEffective({
+        screenId: production.screenId as ScreenId,
+        roomId: production.roomId as RoomId,
+        afterDate: date,
+      });
+      if (nextPlan !== undefined && nextPlan.verification === 'verified')
+        return skipped('m17-canary-calendar-no-current-plan');
       return rejected('m17-canary-plan-unavailable');
+    }
     const window = localDayWindow(date, config.timeZone);
     if (window === undefined) return rejected('m17-canary-clock-invalid');
     const writerClient =
@@ -172,6 +180,18 @@ function rejected(code: string) {
   return {
     exitCode: 1,
     status: 'failed',
+    code,
+    observedEventCount: 0,
+    intentCount: 0,
+    attemptedExternalMutations: 0,
+    completedExternalMutations: 0,
+  } as const;
+}
+
+function skipped(code: string) {
+  return {
+    exitCode: 0,
+    status: 'skipped',
     code,
     observedEventCount: 0,
     intentCount: 0,

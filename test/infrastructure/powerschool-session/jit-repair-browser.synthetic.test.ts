@@ -166,6 +166,80 @@ test('fixed username/password/TOTP repair retains only PowerSchool state and ena
   }
 });
 
+test('native repair and credential-free routine reuse one normalized Chrome request identity', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer({
+    repairFlow: 'credentials-totp',
+    bindSessionToUserAgent: true,
+    requireBrowserNavigationForBell: true,
+    browserBellSubresource: true,
+  });
+  const parent = mkdtempSync(join(tmpdir(), 'jit-repair-user-agent-'));
+  const sessionDirectory = join(parent, 'session');
+  try {
+    assert.deepEqual(
+      await repairPowerSchoolSessionWithCredentials({
+        config: repairConfig(
+          server.powerSchoolOrigin,
+          server.identityOrigin,
+          sessionDirectory,
+        ),
+        requestedDate: date,
+        credentials,
+        headless: true,
+      }),
+      { status: 'authenticated', phoneApprovalObserved: false },
+    );
+    const subresourceRequestsBeforeRoutine = server.requests.filter(
+      (request) => request.path === '/browser-native-subresource',
+    ).length;
+    const routine = await new PassivePowerSchoolBellScheduleSource(
+      routineConfig(server.powerSchoolOrigin, sessionDirectory),
+    ).readSchedule({
+      date,
+      roomId: 'room-synthetic' as RoomId,
+    });
+    assert.equal(routine.status, 'observed', JSON.stringify(routine));
+    if (routine.status === 'observed') {
+      assert.equal(routine.observation.provenance.method, 'browser-read');
+    }
+    const authenticatedRequests = server.requests.filter(
+      (request) =>
+        request.origin === 'powerschool' &&
+        (request.path.startsWith('/auth/callback') ||
+          request.path.startsWith('/status') ||
+          request.path.startsWith('/bell')),
+    );
+    assert.ok(authenticatedRequests.length >= 4);
+    for (const request of authenticatedRequests) {
+      assert.match(request.userAgent ?? '', /\bChrome\/\d+/u);
+      assert.doesNotMatch(request.userAgent ?? '', /HeadlessChrome/u);
+    }
+    const routineBellRequests = authenticatedRequests.filter((request) =>
+      request.path.startsWith('/bell'),
+    );
+    assert.ok(routineBellRequests.length >= 4);
+    assert.equal(routineBellRequests.at(-2)?.method, 'GET');
+    assert.equal(
+      routineBellRequests.at(-2)?.path,
+      '/bell?target_date=04/13/2035',
+    );
+    assert.equal(routineBellRequests.at(-1)?.method, 'GET');
+    assert.equal(
+      routineBellRequests.at(-1)?.path,
+      '/bell?target_date=04/13/2035',
+    );
+    assert.equal(
+      server.requests.filter(
+        (request) => request.path === '/browser-native-subresource',
+      ).length,
+      subresourceRequestsBeforeRoutine,
+    );
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
 test('recognized Google challenge-selection password and authenticator choices complete without broad interaction', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({
     repairFlow: 'challenge-selection',

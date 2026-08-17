@@ -1,6 +1,7 @@
+# No scheduling or enablement section: this high-authority repair is operator-invoked only.
 # chalkwright-template-status=m17-offline-qualified-inert
 [Unit]
-Description=INERT M-17 Chalkwright read-only PowerSchool plan preflight
+Description=INERT M-17 Chalkwright native PowerSchool authentication repair
 After=network-online.target
 Wants=network-online.target
 
@@ -10,11 +11,11 @@ User=classroom-hub
 Group=classroom-hub
 WorkingDirectory=/opt/chalkwright-canary/current
 EnvironmentFile=/etc/chalkwright/canary/jobs/plan-refresh.env
+EnvironmentFile=/etc/chalkwright/canary/jobs/powerschool-repair.env
 Environment=NODE_ENV=production
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
-Environment=CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY=/var/lib/chalkwright/canary-powerschool-compatibility-profile
-ExecStart=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/production-retained-plan-refresh.js
-TimeoutStartSec=3min
+ExecStart=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-powerschool-repair.js
+TimeoutStartSec=6min
 TimeoutStopSec=30s
 UMask=0077
 NoNewPrivileges=true
@@ -28,13 +29,11 @@ ProtectKernelLogs=true
 ProtectKernelModules=true
 ProtectKernelTunables=true
 ProtectSystem=strict
-InaccessiblePaths=-/etc/chalkwright/canary/providers/powerschool -/etc/chalkwright/canary/providers/google-classroom -/etc/chalkwright/canary/providers/google-calendar
-ReadWritePaths=/var/lib/chalkwright/canary-production /var/lib/chalkwright/canary-powerschool-session /var/lib/chalkwright/canary-powerschool-compatibility-profile
+InaccessiblePaths=-/etc/chalkwright/canary/providers/google-classroom -/etc/chalkwright/canary/providers/google-calendar -/etc/chalkwright/canary/operator -/var/lib/chalkwright/canary-production
+ReadWritePaths=/var/lib/chalkwright/canary-powerschool-session /var/lib/chalkwright/canary-powerschool-compatibility-profile
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictNamespaces=user pid net
 RestrictRealtime=true
 RestrictSUIDSGID=true
 MemoryMax=768M
 TasksMax=192
-
-# Separate preflight has no timer and cannot outlive operator invocation.

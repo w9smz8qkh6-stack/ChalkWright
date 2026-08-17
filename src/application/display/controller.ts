@@ -382,6 +382,7 @@ export class FixtureBackedDisplayController {
           classId,
           date,
           observedAt,
+          meetingId,
         );
         if (dynamic !== undefined) return structuredClone(dynamic);
       } catch {
@@ -640,7 +641,7 @@ export class FixtureBackedDisplayController {
   async readiness(checkedAt: IsoInstant): Promise<RuntimeReadiness> {
     if (!isIsoInstant(checkedAt))
       throw new DisplayRuntimeInputError('instant-invalid');
-    const date = checkedAt.slice(0, 10);
+    const date = this.dateFor(checkedAt);
     const missing: ScreenId[] = [];
     const degraded: ScreenId[] = [];
     for (const display of this.dependencies.data.displays) {

@@ -22,6 +22,7 @@ import {
   powerSchoolStatePath,
 } from '../../../src/infrastructure/powerschool-session/protected-state.js';
 import { startSyntheticPowerSchoolSessionServer } from '../../support/powerschool-session-server.js';
+import type { SyntheticRoutineMode } from '../../support/powerschool-session-server.js';
 
 const date = '2035-04-13';
 const credentials = {
@@ -192,6 +193,71 @@ test('empty persistent profile requests repair without submitting identity forms
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('retained-profile production boundary rejects popup, download, POST, WebSocket, declared oversize, and top-level budget drift', async () => {
+  const cases = [
+    'popup',
+    'download',
+    'post',
+    'websocket',
+    'oversize',
+    'top-level-budget',
+  ] as const satisfies readonly (SyntheticRoutineMode | 'top-level-budget')[];
+  const expectedReason = {
+    popup: 'untrusted-navigation',
+    download: 'download-attempted',
+    post: 'powerschool-method-blocked',
+    websocket: 'websocket-attempted',
+    oversize: 'declared-response-oversize',
+    'top-level-budget': 'top-level-budget-exceeded',
+  } as const;
+  for (const caseId of cases) {
+    const server = await startSyntheticPowerSchoolSessionServer({
+      repairFlow: 'credentials-totp',
+      routineMode: caseId === 'top-level-budget' ? 'normal' : caseId,
+    });
+    const parent = mkdtempSync(
+      join(tmpdir(), `powerschool-compatibility-${caseId}-`),
+    );
+    const config = compatibilityConfig(
+      server.powerSchoolOrigin,
+      server.identityOrigin,
+      join(parent, 'session'),
+      join(parent, 'persistent-profile'),
+    );
+    try {
+      assert.deepEqual(
+        await repairPowerSchoolSessionWithCredentials({
+          config,
+          requestedDate: date,
+          credentials,
+          persistentProfileDirectory: config.persistentProfileDirectory,
+          launchContext: headlessLauncher,
+        }),
+        { status: 'authenticated', phoneApprovalObserved: false },
+        caseId,
+      );
+      const result = await collectPersistentPowerSchoolBell({
+        config: {
+          ...config,
+          ...(caseId === 'oversize' ? { maxResponseBytes: 1_024 } : {}),
+          ...(caseId === 'top-level-budget' ? { maxTopLevelRequests: 1 } : {}),
+        },
+        requestedDate: date,
+        launchContext: headlessLauncher,
+      });
+      assert.equal(result.status, 'failed', caseId);
+      if (result.status === 'failed') {
+        assert.equal(result.code, 'request-policy-violation', caseId);
+        assert.equal(result.policyReason, expectedReason[caseId], caseId);
+        assert.equal(result.retryable, false, caseId);
+      }
+    } finally {
+      await server.close();
+      rmSync(parent, { recursive: true, force: true });
+    }
   }
 });
 

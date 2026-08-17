@@ -64,11 +64,55 @@ test('renders every accepted display state across the bounded kiosk viewport env
         await page.locator(`body.state-${state}`).waitFor();
         const displayedClock = await page.locator('[data-clock]').textContent();
         assert.match(displayedClock ?? '', /^\d{1,2}:\d{2} [AP]M$/u);
-        if (state === 'in_class_content')
+        if (state === 'in_class_content') {
           assert.doesNotMatch(
             await page.locator('body').innerText(),
             /Dismissal begins/u,
           );
+          const objective = await page
+            .locator('[data-carousel-card][data-card-id="objective-b407-a"]')
+            .evaluate((card) => {
+              const icons = [
+                ...card.querySelectorAll<HTMLElement>(
+                  '[data-objective-detail-icon]',
+                ),
+              ];
+              const list = card.querySelector<HTMLElement>(
+                '.objective-detail-list',
+              );
+              const badge = card.querySelector<HTMLElement>('.date-badge');
+              if (!list || !badge)
+                throw new Error('objective-detail-layout-missing');
+              const badgeRectangle = badge.getBoundingClientRect();
+              return {
+                icons: icons.map((icon) => icon.textContent),
+                iconsDecorative: icons.every(
+                  (icon) => icon.getAttribute('aria-hidden') === 'true',
+                ),
+                month:
+                  badge.querySelector('.date-badge-month')?.textContent ?? '',
+                day: badge.querySelector('.date-badge-day')?.textContent ?? '',
+                badgeDecorative: badge.getAttribute('aria-hidden') === 'true',
+                badgeWidth: badgeRectangle.width,
+                badgeHeight: badgeRectangle.height,
+                listPaddingLeft: getComputedStyle(list).paddingLeft,
+                listStyleType: getComputedStyle(list).listStyleType,
+              };
+            });
+          assert.deepEqual(
+            objective.icons,
+            ['👉', '✅'],
+            `${viewport.name}:objective-icons`,
+          );
+          assert.equal(objective.iconsDecorative, true, viewport.name);
+          assert.equal(objective.month, 'APRIL', viewport.name);
+          assert.equal(objective.day, '17', viewport.name);
+          assert.equal(objective.badgeDecorative, true, viewport.name);
+          assert.ok(objective.badgeWidth > 0, viewport.name);
+          assert.ok(objective.badgeHeight > 0, viewport.name);
+          assert.equal(objective.listPaddingLeft, '0px', viewport.name);
+          assert.equal(objective.listStyleType, 'none', viewport.name);
+        }
         const bell = await page
           .locator('[data-header-bell]')
           .evaluate((element) => ({
@@ -216,12 +260,20 @@ test('during-class bell remains visible without horizontal overflow at tablet an
       assert.equal(response?.status(), 200, viewport.name);
       const result = await page.locator('.header-status').evaluate((status) => {
         const bell = status.querySelector<HTMLElement>('[data-header-bell]');
+        const bellIcon = status.querySelector<HTMLElement>('.header-bell-icon');
+        const bellNumber = status.querySelector<HTMLElement>(
+          '[data-header-bell-number]',
+        );
         const date = status.querySelector<HTMLElement>('[data-display-date]');
         const clock = status.querySelector<HTMLElement>('[data-clock]');
-        if (!bell || !date || !clock) throw new Error('header-status-invalid');
+        if (!bell || !bellIcon || !bellNumber || !date || !clock)
+          throw new Error('header-status-invalid');
         const rectangle = bell.getBoundingClientRect();
+        const iconRectangle = bellIcon.getBoundingClientRect();
+        const numberRectangle = bellNumber.getBoundingClientRect();
         const dateRectangle = date.getBoundingClientRect();
         const clockRectangle = clock.getBoundingClientRect();
+        const numberStyle = getComputedStyle(bellNumber);
         return {
           hidden: bell.hidden,
           value:
@@ -235,6 +287,13 @@ test('during-class bell remains visible without horizontal overflow at tablet an
           clockLeft: clockRectangle.left,
           clockCenter: clockRectangle.top + clockRectangle.height / 2,
           bellCenter: rectangle.top + rectangle.height / 2,
+          iconNumberGap: numberRectangle.left - iconRectangle.right,
+          clusterCenter:
+            iconRectangle.left +
+            (numberRectangle.right - iconRectangle.left) / 2,
+          badgeCenter: rectangle.left + rectangle.width / 2,
+          numberJustification: numberStyle.justifyContent,
+          numberTextAlignment: numberStyle.textAlign,
         };
       });
       assert.equal(result.hidden, false, viewport.name);
@@ -251,6 +310,16 @@ test('during-class bell remains visible without horizontal overflow at tablet an
         Math.abs(result.clockCenter - result.bellCenter) <= 1,
         `${viewport.name}:bell-clock-alignment`,
       );
+      assert.ok(
+        result.iconNumberGap >= 0 && result.iconNumberGap <= 4.1,
+        `${viewport.name}:bell-number-gap`,
+      );
+      assert.ok(
+        Math.abs(result.clusterCenter - result.badgeCenter) <= 1,
+        `${viewport.name}:bell-content-centering`,
+      );
+      assert.equal(result.numberJustification, 'center', viewport.name);
+      assert.equal(result.numberTextAlignment, 'center', viewport.name);
       await context.close();
     }
   } finally {

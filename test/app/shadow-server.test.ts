@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -15,6 +16,7 @@ import type { ShadowConfig } from '../../src/config/shadow.js';
 import type { CourseworkEnrichment } from '../../src/domain/coursework.js';
 import type { ClassId, RoomId, ScreenId } from '../../src/domain/identities.js';
 import type { EffectiveDayPlan } from '../../src/domain/plans.js';
+import { stableSerialize } from '../../src/domain/pure-values.js';
 import { SqliteClassroomEnrichmentCache } from '../../src/infrastructure/sqlite/classroom-cache.js';
 import { applyContinuityImport } from '../../src/infrastructure/sqlite/continuity-import.js';
 import { SqliteDatabase } from '../../src/infrastructure/sqlite/database.js';
@@ -47,6 +49,8 @@ test('starts, restarts, and persists the isolated mutation-disabled shadow reade
         providerCourseKey: '123456789',
         roomId: 'room-c509' as RoomId,
         attendanceClassCode: 'C509-A',
+        attendanceCheckInUrl:
+          'https://attendance.example.invalid/check-in/C509-A',
       },
     ],
     checkInOpenMinutesBefore: 5,
@@ -186,6 +190,69 @@ test('starts, restarts, and persists the isolated mutation-disabled shadow reade
     ).status,
     'stored',
   );
+  const contentSnapshot = {
+    snapshotId: 'content-shadow-a',
+    classId: 'class-c509-a',
+    screenId: config.screenId,
+    roomId: config.roomId,
+    date,
+    refreshedAt: '2035-04-13T01:16:00.000Z',
+    items: [
+      {
+        type: 'bellringer',
+        title: 'Bellringer: Inspect the synthetic reference',
+        lines: ['Compare the mechanism with the lesson diagram.'],
+      },
+    ],
+    diagnostics: [],
+  };
+  const vocabularySelection = {
+    selectionId: 'vocabulary-shadow-a',
+    classId: 'class-c509-a',
+    meetingKey: 'meeting-shadow-a',
+    date,
+    term: 'iteration',
+    definition: 'A repeated design process.',
+    source: 'subject',
+    partOfSpeech: 'noun',
+    vietnamese: {
+      term: 'sự lặp lại',
+      definition: 'Một quá trình thiết kế được lặp lại.',
+    },
+    selectionContext: {
+      assignmentRefs: [],
+      classroomCourseId: '123456789',
+      meetingDate: date,
+      vocabularyPolicy: 'unused_focused',
+      vocabularyReuse: 'new',
+      candidateCount: 1,
+      usedCandidateCount: 0,
+      unusedCandidateCount: 1,
+    },
+  };
+  const insertContinuity = database.connection.prepare(
+    `INSERT INTO continuity_records(
+       collection, identity, checksum, record_json, source_reference, imported_at
+     ) VALUES (?, ?, ?, ?, ?, ?)`,
+  );
+  for (const [collection, identity, value] of [
+    ['contentSnapshots', contentSnapshot.snapshotId, contentSnapshot],
+    [
+      'vocabularySelections',
+      vocabularySelection.selectionId,
+      vocabularySelection,
+    ],
+  ] as const) {
+    const payload = stableSerialize(value);
+    insertContinuity.run(
+      collection,
+      identity,
+      createHash('sha256').update(payload).digest('hex'),
+      payload,
+      `fixture:${collection}`,
+      '2035-04-13T01:17:00.000Z',
+    );
+  }
   database.close();
 
   try {
@@ -217,6 +284,21 @@ test('starts, restarts, and persists the isolated mutation-disabled shadow reade
           objective.lines?.includes('Synthetic Unit 1 project'),
           'fresh normalized Classroom cache must project into shadow display content',
         );
+        assert.equal(
+          target.content?.cards?.some(
+            (card) =>
+              card.title === 'Bellringer: Inspect the synthetic reference',
+          ),
+          true,
+          'copied static lesson content must project independently of the legacy runtime',
+        );
+        assert.equal(
+          target.content?.cards?.some(
+            (card) => card.title === 'Word of the day',
+          ),
+          true,
+          'meeting-scoped vocabulary must project from Chalkwright-owned SQLite',
+        );
 
         runtimeInstant = '2035-04-13T00:57:00.000Z' as IsoInstant;
         const preCheckIn = (await (
@@ -228,7 +310,10 @@ test('starts, restarts, and persists the isolated mutation-disabled shadow reade
           readonly attendance?: { readonly presentCount?: number };
         };
         assert.equal(preCheckIn.state, 'pre_checkin');
-        assert.equal(preCheckIn.qrTarget, undefined);
+        assert.equal(
+          preCheckIn.qrTarget,
+          'https://attendance.example.invalid/check-in/C509-A',
+        );
         assert.equal(preCheckIn.attendanceClassCode, 'C509-A');
         assert.equal(preCheckIn.attendance?.presentCount, 16);
         const preCheckInDisplay = await (
@@ -238,14 +323,14 @@ test('starts, restarts, and persists the isolated mutation-disabled shadow reade
         ).text();
         assert.match(preCheckInDisplay, />C509-A</u);
         assert.match(preCheckInDisplay, />Present<\/span><strong[^>]*>16</u);
-        assert.doesNotMatch(preCheckInDisplay, /Attendance check-in QR code/u);
+        assert.match(preCheckInDisplay, /Attendance check-in QR code/u);
         assert.equal(
           (
             await fetch(
               `${application.origin}/qr/${config.screenId}/meeting-shadow-a.png?date=${date}`,
             )
           ).status,
-          404,
+          200,
         );
 
         runtimeInstant = '2035-04-13T06:01:00.000Z' as IsoInstant;

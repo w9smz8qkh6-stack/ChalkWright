@@ -10,6 +10,7 @@ import {
 } from './browser-runtime.js';
 import {
   installAuthenticatedNetworkBoundary,
+  type AuthenticatedNetworkViolationReason,
   type AuthenticatedNavigationSafetyState,
 } from './authenticated-network-boundary.js';
 import {
@@ -37,18 +38,22 @@ export type PersistentPowerSchoolCompatibilityResult =
         | 'session-state-unsafe'
         | 'timeout';
       readonly retryable: boolean;
+      readonly policyReason?: AuthenticatedNetworkViolationReason;
     };
 
 type NavigationResult =
   | { readonly status: 'verified' }
   | { readonly status: 'authentication-required' }
   | { readonly status: 'marker-missing' }
-  | { readonly status: 'policy-violation' }
+  | {
+      readonly status: 'policy-violation';
+      readonly reason: AuthenticatedNetworkViolationReason;
+    }
   | { readonly status: 'timeout' };
 
 /**
- * Transitional legacy-compatible schedule reader. Unlike the passive ADR-0014
- * collector, this isolated capability intentionally retains a dedicated
+ * Retained-profile schedule reader. Unlike the passive ADR-0014 collector,
+ * this isolated application-owned capability intentionally retains a dedicated
  * Google-bearing profile so browser-native OIDC can silently renew a
  * PowerSchool session. It remains GET/HEAD-only on PowerSchool and never
  * receives credential values.
@@ -227,13 +232,17 @@ async function navigateToVerifiedMarker(options: {
       origin !== options.config.powerSchoolOrigin &&
       origin !== options.config.identityOrigin
     ) {
-      return { status: 'policy-violation' };
+      return { status: 'policy-violation', reason: 'top-level-origin-blocked' };
     }
   }
   const deadline = Date.now() + options.config.navigationTimeoutMs;
   let retriedExactTarget = false;
   while (Date.now() < deadline && !options.signal.aborted) {
-    if (options.safety.violation) return { status: 'policy-violation' };
+    if (options.safety.violation)
+      return {
+        status: 'policy-violation',
+        reason: options.safety.violationReason ?? 'network-control-failed',
+      };
     if (
       await pageMatchesVerifiedMarker({
         page: options.page,
@@ -264,7 +273,7 @@ async function navigateToVerifiedMarker(options: {
           .catch(() => undefined);
       }
     } else if (origin !== null && origin !== 'null') {
-      return { status: 'policy-violation' };
+      return { status: 'policy-violation', reason: 'top-level-origin-blocked' };
     }
     await pause(100);
   }
@@ -334,6 +343,7 @@ function navigationFailure(
         status: 'failed',
         code: 'request-policy-violation',
         retryable: false,
+        policyReason: result.reason,
       };
     case 'timeout':
       return abortedResult(timeoutSignal);

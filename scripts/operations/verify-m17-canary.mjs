@@ -19,6 +19,7 @@ const EXPECTED = [
   'chalkwright-canary-plan-refresh.service.in',
   'chalkwright-canary-plan-refresh.timer.in',
   'chalkwright-canary-plan-preflight.service.in',
+  'chalkwright-canary-powerschool-repair.service.in',
   'chalkwright-canary.service.in',
 ].sort();
 const HARDENING = [
@@ -96,6 +97,31 @@ export function verifyM17Canary(repositoryRoot) {
           required.slice(separator + 1),
         );
       }
+    if (
+      file.endsWith('.service.in') &&
+      ![
+        'chalkwright-canary-powerschool-repair.service.in',
+        'chalkwright-canary-plan-preflight.service.in',
+        'chalkwright-canary-plan-refresh.service.in',
+      ].includes(file)
+    ) {
+      const inaccessible = serviceAssignments(content, 'InaccessiblePaths');
+      const paths = new Set(
+        inaccessible.length === 1
+          ? inaccessible[0]
+              .split(/\s+/u)
+              .map((value) => (value.startsWith('-') ? value.slice(1) : value))
+          : [],
+      );
+      if (
+        !paths.has(
+          '/var/lib/chalkwright/canary-powerschool-compatibility-profile',
+        ) ||
+        (!paths.has('/etc/chalkwright/canary/providers') &&
+          !paths.has('/etc/chalkwright/canary/providers/powerschool'))
+      )
+        errors.push(`${file} can access native PowerSchool repair authority`);
+    }
   }
   const server = readFileSync(
     join(directory, 'chalkwright-canary.service.in'),
@@ -112,6 +138,70 @@ export function verifyM17Canary(repositoryRoot) {
     join(directory, 'chalkwright-canary-plan-refresh.service.in'),
     'utf8',
   );
+  const planPreflight = readFileSync(
+    join(directory, 'chalkwright-canary-plan-preflight.service.in'),
+    'utf8',
+  );
+  const repair = readFileSync(
+    join(directory, 'chalkwright-canary-powerschool-repair.service.in'),
+    'utf8',
+  );
+  requireExactServiceAssignment(
+    errors,
+    'chalkwright-canary-powerschool-repair.service.in',
+    repair,
+    'InaccessiblePaths',
+    '-/etc/chalkwright/canary/providers/google-classroom -/etc/chalkwright/canary/providers/google-calendar -/etc/chalkwright/canary/operator -/var/lib/chalkwright/canary-production',
+  );
+  for (const [file, content] of [
+    ['chalkwright-canary-plan-preflight.service.in', planPreflight],
+    ['chalkwright-canary-plan-refresh.service.in', plan],
+  ]) {
+    requireExactServiceAssignment(
+      errors,
+      file,
+      content,
+      'InaccessiblePaths',
+      '-/etc/chalkwright/canary/providers/powerschool -/etc/chalkwright/canary/providers/google-classroom -/etc/chalkwright/canary/providers/google-calendar',
+    );
+    requireExactServiceAssignment(
+      errors,
+      file,
+      content,
+      'ReadWritePaths',
+      '/var/lib/chalkwright/canary-production /var/lib/chalkwright/canary-powerschool-session /var/lib/chalkwright/canary-powerschool-compatibility-profile',
+    );
+    if (
+      !content.includes(
+        'dist/entrypoints/production-retained-plan-refresh.js',
+      ) ||
+      !content.includes(
+        'CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY=/var/lib/chalkwright/canary-powerschool-compatibility-profile',
+      ) ||
+      !content.includes(
+        'CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com',
+      ) ||
+      /powerschool-repair\.env|onepassword/iu.test(content)
+    )
+      errors.push(`${file} retained-session authority drifted`);
+  }
+  requireExactServiceAssignment(
+    errors,
+    'chalkwright-canary-powerschool-repair.service.in',
+    repair,
+    'ReadWritePaths',
+    '/var/lib/chalkwright/canary-powerschool-session /var/lib/chalkwright/canary-powerschool-compatibility-profile',
+  );
+  if (
+    !repair.includes('dist/entrypoints/m17-powerschool-repair.js') ||
+    !repair.includes('/etc/chalkwright/canary/jobs/powerschool-repair.env') ||
+    !repair.includes(
+      'CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com',
+    ) ||
+    repair.includes('ExecCondition=') ||
+    repair.includes('[Install]')
+  )
+    errors.push('native PowerSchool repair isolation drifted');
   requireExactServiceAssignment(
     errors,
     'chalkwright-canary-plan-refresh.service.in',
@@ -250,6 +340,7 @@ export function verifyM17Canary(repositoryRoot) {
       'chalkwright-canary-comparison-observation.service',
       'chalkwright-canary-classroom-preflight.service',
       'chalkwright-canary-classroom-refresh.service',
+      'chalkwright-canary-powerschool-repair.service',
       'chalkwright-canary-plan-preflight.service',
       'chalkwright-canary-plan-refresh.service',
       'chalkwright-canary-backup.service',

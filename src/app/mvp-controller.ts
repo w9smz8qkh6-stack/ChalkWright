@@ -109,7 +109,7 @@ function presentationMeeting(meeting: DayPlanMeeting): PresentationMeeting {
   };
 }
 
-function presentationCard(card: DisplayCard): PresentationCard {
+export function presentationCard(card: DisplayCard): PresentationCard {
   const type =
     card.type === 'announcement' ||
     card.type === 'bellringer' ||
@@ -124,15 +124,28 @@ function presentationCard(card: DisplayCard): PresentationCard {
     card.accent === 'ink'
       ? card.accent
       : 'ink';
+  const lines = card.lines ?? (card.body === undefined ? [] : [card.body]);
+  const structuredObjectiveLines =
+    card.type === 'objective' &&
+    card.featured !== undefined &&
+    card.details !== undefined &&
+    lines.length === card.details.length + 1 &&
+    lines[0] === card.featured &&
+    card.details.every((detail, index) => lines[index + 1] === detail);
   return {
     cardId: card.cardId,
     type,
     title: card.title,
-    lines: card.lines ?? (card.body === undefined ? [] : [card.body]),
+    lines: structuredObjectiveLines ? [] : lines,
+    ...(card.featured === undefined ? {} : { featured: card.featured }),
+    ...(card.details === undefined ? {} : { details: card.details }),
     accent,
     ...(card.durationSeconds === undefined
       ? {}
       : { durationSeconds: card.durationSeconds }),
+    ...(card.vocabulary === undefined
+      ? {}
+      : { vocabulary: structuredClone(card.vocabulary) }),
   };
 }
 

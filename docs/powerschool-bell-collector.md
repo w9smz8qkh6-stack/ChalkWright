@@ -33,6 +33,11 @@ legacy environment file; the supervisor securely parses only
 `OP_SERVICE_ACCOUNT_TOKEN` as data and never evaluates that file as shell.
 That service-account token reaches only the three fixed `op read` processes,
 is scrubbed before browser launch, and is never forwarded to the worker.
+Service-account mode gives those reads one fresh private, cache-disabled
+1Password CLI configuration directory and removes it before returning; it
+does not depend on or write the service account's home directory. A cleanup
+failure scrubs any acquired value and fails the repair closed. Desktop-backed
+mode retains the operator's existing CLI configuration path.
 Each fixed reference read has a 60-second deadline inside the five-minute
 top-level repair deadline. Desktop-backed mode permits a visible 1Password
 approval; service-account mode requires no desktop app.
@@ -103,9 +108,11 @@ single-launch, close-context, and no-default-profile contracts at
 An exact version-pinned 1.62 online page was not available; locked local 1.62
 types and the synthetic Chrome suite are the exact-version evidence.
 
-The lane is not referenced by a job, service, timer, route, or deployment. A
-live run still requires an exact profile lifecycle/ownership decision and
-separate provider authorization. It does not justify another manual sign-in.
+M-17's two plan units now select this lane through the fixed supervised
+retained-session entrypoint. No other job, service, timer, or route may access
+the profile. Live use still requires the exact Chalkwright-owned profile,
+credential-free process boundary, and separately authorized provider read; it
+does not justify another manual sign-in.
 
 ## Protected state
 
@@ -155,11 +162,17 @@ The routine supervisor forwards only a fixed allowlist of passive settings to a
 fixed child process. The child loads validated filtered state, launches
 headless Chrome with downloads disabled and service workers blocked, installs
 an all-network-abort route, disables JavaScript, and injects the saved state.
-Node.js then performs
-one exact status `GET` followed by one exact dated bell `GET`. Redirects are not
-followed, response types are restricted to HTML, and the combined body is
-streamed beneath a hard byte cap. The bounded HTML is rendered only in the
-network-blocked page so scripts cannot expand provider access.
+Node.js then performs one exact status `GET` followed, when policy permits, by
+one exact dated bell `GET`. Redirects are not followed, response types are
+restricted to HTML, and the combined body is streamed beneath a hard byte cap.
+The bounded HTML is rendered only in the network-blocked page so scripts cannot
+expand provider access. The tenant's authenticated bell session may redirect
+the auxiliary teacher-home status path to a recognized same-origin
+authentication endpoint. In that one case the collector continues to the bell
+request and accepts the session only when the exact private bell page passes
+its marker and expected-school-text checks. Unauthorized, forbidden,
+cross-origin, invalid, unrelated same-origin, and teacher-page status outcomes
+still stop before the bell read.
 
 Each HTTP read uses a bounded user-agent derived from the installed Chrome
 context, with only the exact `HeadlessChrome/` product token normalized to
@@ -175,6 +188,49 @@ redirect, legacy-recognized authentication redirect, legacy-recognized teacher
 redirect, and other same-origin redirect outcomes. Redirects remain blocked in
 every category.
 
+The live tenant additionally accepts the browser-authenticated bell page while
+redirecting a replay of the same filtered cookies through Node's HTTP stack.
+Only after the exact Node bell request returns the recognized authentication
+redirect, the same disposable credential-free Chrome context may retry that
+one exact bell URL as a browser-native main-document `GET`. Chrome protocol
+request interception allows only that first exact request and fails every
+redirect, identity request, and subresource before the wire. JavaScript,
+downloads, service workers, popups, credentials, forms, and identity-origin
+authority remain absent. The successful body must still be HTML, remain within
+the configured streamed byte limit, and pass the exact URL, marker, and
+school-text checks before its filtered PowerSchool state is refreshed. The
+capture is labelled `browser-read`; an unsuccessful retry preserves the
+sanitized authentication-repair result.
+
+The live tenant's first installed browser-native retry still received that
+authentication redirect after a successful native repair. The retained-state
+filter had been using `storageState()` cookies, whose locked Playwright 1.62
+return type omits the optional CHIPS partition key even though
+`context.cookies()` and `context.addCookies()` support it. Repair and routine
+refresh now capture cookies through `context.cookies()`. They retain a
+partitioned cookie only when its partition key is the exact configured
+PowerSchool origin or Chrome's immediate schemeful parent site, and preserve
+Chromium's exact `hasCrossSiteAncestor` component exposed by locked Playwright
+1.62. They reject every foreign, broader, or incomplete partition and restore
+filtered cookies separately after local state. The bounded Node lane never
+flattens a retained partitioned cookie into a raw `Cookie` header and rejects
+`Partitioned` response cookies because a Set-Cookie header alone does not carry
+the complete browser partition key.
+This prevents both loss of an applicable PowerSchool partition and accidental
+conversion to a broader unpartitioned cookie. A disposable installed-Chrome
+regression round-trips both ancestor values. The current Playwright
+authentication guide confirms that browser
+state is sensitive impersonation material; exact 1.62 behavior is additionally
+bound by the installed runtime source and Chrome regression because the public
+guide tracks the current release rather than an archived 1.62 page:
+<https://playwright.dev/docs/auth>.
+
+The schemeful site is the URL scheme plus registrable domain, not a fixed
+number of DNS labels. Chalkwright therefore uses exact-pinned `tldts` 7.4.9
+with ICANN and private Public Suffix List rules enabled. Its official package
+documentation defines `getDomain` as the registrable-domain operation and
+documents the private-suffix option: <https://www.npmjs.com/package/tldts>.
+
 The runtime contract was checked against exact installed Node 24.15.0 with
 bundled Undici 7.24.4. Node documents `fetch` as a stable Undici-backed Web API,
 and the Fetch Standard defines parsing `Location` relative to the response URL.
@@ -188,18 +244,30 @@ version-specific behavior is inferred. The collector recognizes that one exact
 path as authentication-required and still does not follow it. The reference is
 <https://ps.powerschool-docs.com/pssis-admin/25.1/powerschool-sis-as-oidc-service-provider-for-sso>.
 
-Missing/rejected state, authentication redirects, or missing expected markers
-return `repair-required` without Google, credentials, or SSO. Filtered state is
-refreshed atomically only after both authenticated markers pass. Bell content
-continues through the approved M-07A/M-07B parser and schedule-observation port;
-M-07C adds no parallel bell model.
+Missing/rejected state, a rejected bell request, or a missing required marker
+returns `repair-required` without Google, credentials, or SSO. Filtered state is
+refreshed atomically only after the status marker passes or its narrowly
+recognized authentication redirect is superseded by the exact authenticated
+bell marker. Bell content continues through the approved M-07A/M-07B parser and
+schedule-observation port; M-07C adds no parallel bell model.
 
 ## Containment limitations
+
+Both the ordinary Node path and the narrowly triggered browser-native retry
+retain a hard streamed byte cap. The latter pauses the exact response at
+Chrome's protocol boundary, rejects an oversized declared length, reads the
+body through a bounded sequential stream, and only then fulfills the local
+page. Its request surface remains one exact PowerSchool document GET with no
+followed redirect.
 
 The fixed process-group supervisor enforces the overall deadline while the
 worker stops five seconds earlier to reserve profile/lock cleanup time. It
 propagates external aborts, sends graceful termination, escalates to forced
 process-group teardown, and verifies descendant quiescence before returning.
+The retained-plan production parent remains alive for a bounded 3.5-second
+post-cancellation interval, which exceeds the supervisor's two-second graceful
+termination plus one-second forced-quiescence proof. Other production jobs
+retain the ordinary one-second hard-stop grace.
 The manual operator-present bootstrap uses normal browser identity navigation
 and does not claim application-level origin, method, request-count, or
 response-byte confinement. The direct-CDP JIT browser necessarily starts
@@ -209,6 +277,8 @@ attached context has its guards. The JIT browser installs context-wide HTTP and
 WebSocket guards before navigation, permits PowerSchool GET/HEAD plus expected
 identity GET/HEAD/POST flows, enforces a main-frame navigation count, permits
 GET/HEAD child-frame loads only from the same exact resource-origin allowlist,
+and treats non-top-level HTTPS PowerSchool same-site `OPTIONS`/`POST` requests
+as browser-internal resource traffic rather than top-level application writes,
 rejects pre-frame/foreign popups and downloads, and rejects declared oversized
 responses. Browser-
 native SSO still prevents a hard cap on an undeclared response body, so the
@@ -347,3 +417,85 @@ periods. A durable live marker stronger than visible `body`, session longevity,
 and the separate canonical room/period mapping difference remain later work.
 The routine phase must still avoid Google, 1Password, credential automation,
 and private page evidence.
+
+Accepted ADR-0024 composes the existing JIT worker into Chalkwright's own M-17
+operator-invoked repair service. The service has no timer, uses a dedicated
+Chalkwright-owned retained profile and fixed protected 1Password
+references, and writes only filtered canary session state. This removes the
+legacy OpenClaw browser from the intended steady-state authentication path
+without granting repair authority to routine collection. The legacy bridge
+has been removed from the executable repository; the independently running
+legacy application remains available only as the rollback display while the
+native repair followed by a credential-free exact plan read is qualified.
+
+Complete locked-version cookie-partition preservation still did not reproduce
+the repaired session inside a disposable profile. That evidence does not prove
+which provider feature binds the session to the profile. Chrome's current DBSC
+documentation does confirm that browser-held key material can make cookie-only
+transfer insufficient, and Playwright documents the session-data role and
+single-owner constraint of a persistent user-data directory. M-17 therefore
+uses the already accepted ADR-0021 collector for the credential-free plan job.
+It reopens only Chalkwright's dedicated retained profile, may perform bounded
+silent OIDC between the exact configured origins, and has no credential,
+1Password, form-fill, repair, OpenClaw, or legacy-profile capability.
+
+The retained reader reports request-policy failures using a fixed, value-free
+reason class. Those classes distinguish blocked origins or methods, popups,
+downloads, WebSockets, declared response-size violations, navigation-budget
+violations, and browser-network control failures. They never retain or print a
+URL, request body, response body, header, page title, or schedule observation.
+This diagnostic surface narrows an operator's remediation without weakening
+the boundary or turning protected browser state into debugging output.
+Blocked resource origins are further reduced to fixed families for Google font
+CSS, Google Accounts static content, Google user content, other Google
+resources, the exact PowerSchool parent origin, a child of the configured
+PowerSchool host, a sibling in its registrable site, non-HTTP resources, or an
+unknown origin. The classifier retains neither the origin nor any URL
+component and does not grant access to any of those families.
+Single-label siblings are narrowed further to the fixed `www`, `static`,
+`cdn`, `assets`, `auth`, `sso`, or `login` roles; every other single-label or
+nested sibling remains a fixed `other` class. These labels are diagnostic only
+and do not become an origin allowlist.
+After the operator explicitly authorized a one-time exact blocked-origin
+diagnostic, the inert diagnostic build may append one strictly validated DNS
+label to the sanitized sibling code. It still omits the scheme, registrable
+domain, port, path, query, fragment, headers, content, credentials, and browser
+state, and still aborts the request before transmission. This temporary output
+exists only to permit an exact destination decision and must be removed again
+after that decision. The contained diagnostic identified `assets-sis`; the
+operator approved only the corresponding exact HTTPS sibling beneath the
+configured PowerSchool registrable site. The ordinary policy now derives that
+single origin using the pinned Public Suffix List, permits it only as a
+GET/HEAD resource origin, and has removed the label-bearing diagnostic output.
+No wildcard or other sibling is accepted.
+The next contained run identified the distinct fixed sibling role `assets`.
+After separate operator approval, the ordinary policy derives that exact HTTPS
+origin through the same pinned registrable-site calculation and permits it only
+for resource GET/HEAD requests. All other siblings remain blocked.
+The next contained run reached a nested same-site sibling. The follow-up
+classifier does not retain or emit its prefix; it reports only whether the
+blocked origin is beneath the already approved `assets-sis` origin, beneath the
+approved `assets` origin, beneath a fixed common sibling role (`www`, `static`,
+`cdn`, `auth`, `sso`, or `login`), or another nested sibling. This
+classification grants no new origin and the request remains blocked before
+transmission.
+The separately authorized terminal-only diagnostic identified another
+PowerSchool same-site sibling, confirming that PowerSchool loads a resource
+graph across sibling hosts. To avoid repeating per-host approvals, the ordinary
+policy now permits HTTPS PowerSchool same-site origins as subresources only,
+with GET/HEAD plus browser-internal `OPTIONS`/`POST` methods for non-top-level
+resource requests. Exact PowerSchool top-level reads remain GET/HEAD-only, and
+top-level sibling navigation, non-HTTPS origins, unrelated registrable sites,
+form methods, downloads, popups, WebSockets, and non-resource authority remain
+blocked. The label-bearing diagnostic is removed.
+
+The first value-free live reason was `resource-origin-blocked`. The proven
+predecessor collector already required three fixed Google identity-page static
+origins: `https://ssl.gstatic.com`, `https://www.gstatic.com`, and
+`https://fonts.gstatic.com`. Chalkwright now enforces that same closed baseline
+for both repair and retained-profile collection, including when an older
+protected environment supplies an explicit origin list. It does not derive an
+origin from migrated browser state or permit a registrable-domain wildcard.
+An explicit list must still include the exact PowerSchool and identity origins
+and may add only individually validated exact origins; it cannot remove the
+fixed reviewed baseline.

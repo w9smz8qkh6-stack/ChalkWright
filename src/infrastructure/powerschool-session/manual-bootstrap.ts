@@ -120,6 +120,7 @@ export async function bootstrapPowerSchoolSession(options: {
     const filtered = filterPowerSchoolStorageState(
       await context.storageState({ indexedDB: true }),
       options.config.powerSchoolOrigin,
+      await context.cookies(),
     );
     writeFilteredPowerSchoolState(
       options.config.sessionDirectory,

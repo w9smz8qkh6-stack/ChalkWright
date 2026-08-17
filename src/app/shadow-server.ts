@@ -7,7 +7,7 @@ import type {
   DisplayFixtureData,
   DisplayPlanSource,
 } from '../application/display/contracts.js';
-import type { IsoDate, IsoInstant } from '../contracts/v1/common.js';
+import type { IsoDate, IsoInstant, OpaqueId } from '../contracts/v1/common.js';
 import {
   sectionCodeContainsCourseKey,
   type ClassId,
@@ -29,6 +29,7 @@ import { SqliteDatabase } from '../infrastructure/sqlite/database.js';
 import { SqliteClassroomEnrichmentCache } from '../infrastructure/sqlite/classroom-cache.js';
 import { SqliteApplicationStateRepository } from '../infrastructure/sqlite/repository.js';
 import { SqliteAttendanceProjectionSource } from '../infrastructure/sqlite/attendance-projection.js';
+import { SqliteDisplayContentProjection } from '../infrastructure/sqlite/display-content-projection.js';
 import {
   B407MvpHttpController,
   type MvpRuntimeClock,
@@ -79,33 +80,60 @@ class ShadowPlanSource implements DisplayPlanSource, DisplayNextClassDaySource {
 
 class ShadowContentSource implements DisplayContentSource {
   private readonly cache: SqliteClassroomEnrichmentCache;
+  private readonly local: SqliteDisplayContentProjection;
 
   constructor(database: SqliteDatabase) {
     this.cache = new SqliteClassroomEnrichmentCache(database);
+    this.local = new SqliteDisplayContentProjection(database);
   }
 
-  async read(classId: ClassId, date: IsoDate, observedAt: IsoInstant) {
+  async read(
+    classId: ClassId,
+    date: IsoDate,
+    observedAt: IsoInstant,
+    meetingId?: OpaqueId,
+  ) {
     const entry = await this.cache.load(classId, date, observedAt);
-    if (entry?.enrichment === undefined) return undefined;
+    const local = this.local.read(classId, date, meetingId);
+    if (
+      entry?.enrichment === undefined &&
+      (local.staticContent.items?.length ?? 0) === 0 &&
+      local.vocabularyCard === undefined
+    )
+      return undefined;
     const resolved = resolveClassContent({
-      configuration: {},
+      configuration: {
+        dateOverrides: { [date]: { [classId]: local.staticContent } },
+      },
       date,
       classId,
-      coursework: [...entry.enrichment.recent, ...entry.enrichment.upcoming],
-      courseworkFresh: entry.enrichment.freshness === 'fresh',
+      ...(entry?.enrichment === undefined
+        ? {}
+        : {
+            coursework: [
+              ...entry.enrichment.recent,
+              ...entry.enrichment.upcoming,
+            ],
+            courseworkFresh: entry.enrichment.freshness === 'fresh',
+          }),
     });
     return {
       assignmentsVisible: true,
-      cards: resolved.items.map((card, index) => ({
-        cardId: stableId('classroom', classId, date, index, card.title),
-        type: card.type,
-        title: card.title,
-        lines: card.lines,
-        ...(card.accent === undefined ? {} : { accent: card.accent }),
-        ...(card.durationSeconds === undefined
-          ? {}
-          : { durationSeconds: card.durationSeconds }),
-      })),
+      cards: [
+        ...resolved.items.map((card, index) => ({
+          cardId: stableId('content', classId, date, index, card.title),
+          type: card.type,
+          title: card.title,
+          lines: card.lines,
+          ...(card.featured === undefined ? {} : { featured: card.featured }),
+          ...(card.details === undefined ? {} : { details: card.details }),
+          ...(card.accent === undefined ? {} : { accent: card.accent }),
+          ...(card.durationSeconds === undefined
+            ? {}
+            : { durationSeconds: card.durationSeconds }),
+        })),
+        ...(local.vocabularyCard === undefined ? [] : [local.vocabularyCard]),
+      ],
     };
   }
 }
@@ -180,6 +208,13 @@ export function createPersistentDisplayController(
         : [[mapping.classId, mapping.attendanceClassCode]],
     ),
   );
+  const attendanceCheckInUrls = Object.fromEntries(
+    config.courseMappings.flatMap((mapping) =>
+      mapping.attendanceCheckInUrl === undefined
+        ? []
+        : [[mapping.classId, mapping.attendanceCheckInUrl]],
+    ),
+  );
   return new FixtureBackedDisplayController({
     data,
     plans,
@@ -190,6 +225,7 @@ export function createPersistentDisplayController(
     attendance: new SqliteAttendanceProjectionSource(
       database,
       attendanceClassCodes,
+      attendanceCheckInUrls,
     ),
     nextClassDays: plans,
     dateForInstant: (instant) => localDate(instant, config.timeZone),

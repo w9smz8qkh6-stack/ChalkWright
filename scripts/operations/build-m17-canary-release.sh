@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 archive=/tmp/chalkwright-m17-canary-runtime.tar.gz
 stage=$(/usr/bin/mktemp -d /tmp/chalkwright-m17-build.XXXXXXXX)
@@ -19,6 +20,7 @@ npm run build --silent
   npm ci --omit=dev --ignore-scripts --silent
 )
 /usr/bin/tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -cf - -C "$stage/runtime" . | /usr/bin/gzip -n -9 > "$archive"
+/usr/bin/chmod 0600 "$archive"
 digest=$(/usr/bin/sha256sum "$archive" | /usr/bin/cut -d ' ' -f 1)
 bytes=$(/usr/bin/stat -c %s "$archive")
 echo "{\"status\":\"built-inert\",\"archive\":\"$archive\",\"sha256\":\"$digest\",\"bytes\":$bytes,\"providerRequests\":0,\"servicesStarted\":0,\"routeChanges\":0}"

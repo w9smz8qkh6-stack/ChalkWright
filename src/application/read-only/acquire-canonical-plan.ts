@@ -7,7 +7,10 @@ import type {
 import { deriveCanonicalPlan } from '../../domain/plan-derivation.js';
 import type { RoomId } from '../../domain/identities.js';
 import type { CanonicalPlan } from '../../domain/plans.js';
-import { isScheduleObservation } from '../../domain/runtime-validation.js';
+import {
+  isCanonicalPlan,
+  isScheduleObservation,
+} from '../../domain/runtime-validation.js';
 import type {
   ScheduleObservationRequest,
   ScheduleObservationSource,
@@ -98,6 +101,20 @@ export async function acquireCanonicalPlan(
   );
   if (derived.status === 'rejected') {
     return { status: 'not-found', diagnostics: derived.diagnostics };
+  }
+  if (!isCanonicalPlan(derived.plan)) {
+    return {
+      status: 'not-found',
+      diagnostics: [
+        ...derived.diagnostics,
+        {
+          code: 'canonical-plan-invalid',
+          severity: 'error',
+          message:
+            'The derived schedule did not satisfy the canonical plan contract.',
+        },
+      ],
+    };
   }
   return {
     status: 'planned',
