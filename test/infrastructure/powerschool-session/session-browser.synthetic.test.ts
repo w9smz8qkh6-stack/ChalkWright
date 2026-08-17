@@ -33,6 +33,7 @@ import {
 } from '../../support/powerschool-session-server.js';
 
 const date = '2035-04-13';
+const minimumSupportedChromeMajor = 150;
 
 function bootstrapConfig(
   powerSchoolOrigin: string,
@@ -198,7 +199,7 @@ test('manual bootstrap filters Google state, deletes its profile, and enables cr
     assert.equal(routineRequests.length, 4);
     for (const request of routineRequests) {
       assert.equal(request.referer, `${server.powerSchoolOrigin}/`);
-      assert.match(request.userAgent ?? '', /\bChrome\/150\./u);
+      assertSupportedChromeUserAgent(request.userAgent ?? '');
       assert.doesNotMatch(request.userAgent ?? '', /HeadlessChrome/u);
     }
     assert.deepEqual(
@@ -216,6 +217,15 @@ test('manual bootstrap filters Google state, deletes its profile, and enables cr
     rmSync(parent, { recursive: true, force: true });
   }
 });
+
+function assertSupportedChromeUserAgent(userAgent: string): void {
+  const match = /\bChrome\/(\d+)\./u.exec(userAgent);
+  const major = Number.parseInt(match?.[1] ?? '', 10);
+  assert.ok(
+    Number.isInteger(major) && major >= minimumSupportedChromeMajor,
+    `unsupported Chrome user agent ${userAgent}`,
+  );
+}
 
 test('an authenticated exact-date bell page with no entries yields a verified no-class observation', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({

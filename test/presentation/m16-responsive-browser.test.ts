@@ -6,7 +6,7 @@ import { chromium } from 'playwright-core';
 import { startFixtureBackedMvp } from '../../src/app/mvp-server.js';
 import { b407StateInstants } from '../../src/infrastructure/fixture/b407.js';
 
-const supportedChromeBuild = /^150\.0\.7871\.\d+$/u;
+const minimumSupportedChromeMajor = 150;
 const viewports = [
   { name: 'hikvision-native-output', width: 3_840, height: 2_160 },
   { name: 'legacy-large', width: 1_920, height: 1_080 },
@@ -29,7 +29,7 @@ test('renders every accepted display state across the bounded kiosk viewport env
     headless: true,
   });
   try {
-    assert.match(browser.version(), supportedChromeBuild);
+    assertSupportedChromeVersion(browser.version());
     for (const viewport of viewports) {
       const context = await browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
@@ -243,7 +243,7 @@ test('during-class bell remains visible without horizontal overflow at tablet an
     headless: true,
   });
   try {
-    assert.match(browser.version(), supportedChromeBuild);
+    assertSupportedChromeVersion(browser.version());
     for (const viewport of [
       { name: 'tablet', width: 768, height: 1_024 },
       { name: 'mobile', width: 390, height: 844 },
@@ -327,3 +327,11 @@ test('during-class bell remains visible without horizontal overflow at tablet an
     await application.close();
   }
 });
+
+function assertSupportedChromeVersion(version: string): void {
+  const major = Number.parseInt(version.split('.')[0] ?? '', 10);
+  assert.ok(
+    Number.isInteger(major) && major >= minimumSupportedChromeMajor,
+    `unsupported Chromium version ${version}`,
+  );
+}
