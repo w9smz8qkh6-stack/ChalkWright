@@ -62,6 +62,10 @@ if (value.host !== '127.0.0.1' || !Number.isInteger(value.port) || value.port < 
 process.stdout.write(`http://127.0.0.1:${value.port}/classroom-screen`);
 NODE
 ) || { rollback; reject production-deploy-health-config-invalid; }
+for _ in {1..20}; do
+  if /usr/bin/curl --fail --silent --show-error --max-time 2 --output /dev/null "$health_url/health" && /usr/bin/curl --fail --silent --show-error --max-time 2 --output /dev/null "$health_url/ready"; then break; fi
+  /usr/bin/sleep 0.25
+done
 if ! /usr/bin/curl --fail --silent --show-error --max-time 2 --output /dev/null "$health_url/health" || ! /usr/bin/curl --fail --silent --show-error --max-time 2 --output /dev/null "$health_url/ready"; then
   rollback
   reject production-deploy-health-failed

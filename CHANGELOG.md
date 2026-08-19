@@ -24,7 +24,8 @@ omitted.
   `main`, and retargets validated effective plans from the legacy shadow screen
   to the permanent production screen. The deploy wrapper is also copied into the
   digest-bound root admin directory and can reuse an already staged same-commit
-  archive/release after a preflight retry.
+  archive/release after a preflight retry, then waits briefly for local
+  health/readiness before rolling back a restarted display.
 
 - Corrected the deployment record after live inventory: the historical shadow
   service remains the active display, while the permanent Chalkwright
