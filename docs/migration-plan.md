@@ -891,11 +891,10 @@ final-handoff gate; candidate alerts remain report-only.
 
 ### M-17 — Run an isolated production canary, then hand off
 
-**Current status (2026-08-19):** The historical shadow service is the active
-display path. The prior M-17 release and units remain installed but lack their
-protected runtime configuration. The permanent Chalkwright production lane is
-therefore being re-grounded from the current repository; the detailed record
-below preserves the preceding canary and readiness evidence.
+**Current status (2026-08-20):** Cutover to the standalone Chalkwright
+production lane is complete, and the classroom display has been validated in
+routine use. The historical shadow service is obsolete. The detailed record
+below preserves the preceding canary, rollback, and readiness evidence.
 
 **Historical implementation record:** Parallel-canary architecture accepted through ADR-0022 and the exact
 offline implementation passed its independent review in a clean isolated lane.

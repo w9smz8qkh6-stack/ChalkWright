@@ -11,16 +11,17 @@ the screen with learning objectives, textbook references, vocabulary, and
 other lesson materials. The result is a classroom screen that changes with the
 schedule instead of acting as a static digital noticeboard.
 
-The project is being extracted from a working classroom automation system into
-a self-contained application with typed capability boundaries, SQLite state,
-synthetic fixtures, deterministic display behavior, fail-closed provider
-adapters, and a tested migration and rollback path.
+Chalkwright was developed from a working classroom automation system and now
+operates as the standalone application serving the classroom display. It uses
+typed capability boundaries, SQLite state, synthetic fixtures, deterministic
+display behavior, fail-closed provider adapters, and a tested rollback path.
 
-> **Project status:** pre-release public preview. The offline fixture-backed
-> application and migration components are extensively tested. The current live
-> display still uses the historical shadow service while the permanent
-> Chalkwright production lane is re-grounded. General installation and public
-> production deployment are not yet released. See the
+> **Project status:** live classroom deployment and pre-release public
+> distribution. Cutover to standalone Chalkwright is complete, and the classroom
+> display has been validated in routine use. The former shadow service is
+> obsolete and no longer serves the display. The public repository remains a
+> pre-release distribution for external adopters: general installation support
+> and unsupported public-production readiness are not yet claimed. See the
 > [publication gate](docs/publication-readiness.md) for the exact evidence and
 > limitations of this source snapshot.
 
@@ -170,9 +171,11 @@ private route, service topology, and state root. Physical-display qualification
 has accepted the course label, stable polling, and future-class-day preview.
 The latest header-parity refinements remain reviewed but undeployed.
 
-The historical shadow service is currently serving the display. The permanent
-Chalkwright production lane, including its Calendar synchronization boundary,
-is being rebuilt from the current repository and protected configuration.
+The standalone Chalkwright production lane now serves the classroom display.
+The completed migration retained a documented rollback path during cutover; the
+former service is now obsolete. Remaining roadmap work concerns external
+installation, configuration, documentation, portability, and public-release
+readiness rather than migration of the live classroom display.
 
 M-17 used an isolated parallel canary with:
 
@@ -183,9 +186,9 @@ M-17 used an isolated parallel canary with:
 - report-only candidate alerts.
 
 Those parallel-canary controls remain documented as the reversible deployment
-design. Future stabilization will determine when the retained legacy fallback
-can be removed. See the [migration plan](docs/migration-plan.md) and [M-17
-review package](docs/migration/m17-review-package.md).
+design used during cutover. The former fallback is now obsolete. See the
+[migration plan](docs/migration-plan.md) and [M-17 review
+package](docs/migration/m17-review-package.md).
 
 ## Configuration direction
 
@@ -202,9 +205,10 @@ generated JSON.
 
 The public product and repository name is now **Chalkwright**. Existing
 `CLASSROOM_HUB_*` environment keys, service accounts, filesystem paths, URLs,
-and ownership markers remain compatibility contracts during the pre-release
-migration. They will move through an explicit, tested deprecation path rather
-than a risky wholesale rename. Historical migration records retain the name
+and ownership markers remain compatibility contracts for deployed configuration
+and historical continuity. They will move through an explicit, tested
+deprecation path rather than a risky wholesale rename. Historical migration
+records retain the name
 they had when the evidence was produced.
 
 ## Optional dismissal media

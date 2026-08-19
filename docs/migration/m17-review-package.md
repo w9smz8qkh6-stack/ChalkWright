@@ -2,11 +2,11 @@
 
 ## Status
 
-The M-17 parallel canary release and unit templates remain installed, but its
-protected runtime configuration is absent and it is not active. The historical
-shadow service is currently serving the display. The detailed material below is
-retained as the canary and handoff evidence record while a permanent production
-lane is re-grounded from the current repository.
+The M-17 parallel canary material is retained as a historical evidence record.
+Cutover to the standalone Chalkwright production lane is complete, the
+classroom display has been validated in routine use, and the former shadow
+service is obsolete. The detailed material below preserves the canary,
+rollback, and handoff evidence that preceded the completed cutover.
 
 The current offline parity delta closes the derived-plan/persistence contract
 split that produced the last sanitized future-plan failure class: a period too

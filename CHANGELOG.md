@@ -10,6 +10,12 @@ omitted.
 
 ### Changed
 
+- Completed cutover to the standalone Chalkwright production lane and
+  validated the classroom display in routine use. The former shadow service is
+  obsolete; remaining release work concerns external installation,
+  configuration, documentation, portability, and public-distribution
+  readiness.
+
 - Deferred permanent-production Calendar preflight until activation has
   established the canonical local plan. Deploy now stages and health-checks the
   reviewed release without calling Calendar against absent plan state; the
@@ -35,9 +41,9 @@ omitted.
   archive/release after a preflight retry, then waits briefly for local
   health/readiness before rolling back a restarted display.
 
-- Corrected the deployment record after live inventory: the historical shadow
-  service remains the active display, while the permanent Chalkwright
-  production lane is being re-grounded with protected configuration.
+- Recorded the pre-cutover deployment state after live inventory: the
+  historical shadow service remained the active display while the permanent
+  Chalkwright production lane was re-grounded with protected configuration.
 
 - Accepted a permanent delivery lane: protected GitHub `main` is the canonical
   release source, with immediate atomic deployment, rollback, and bounded
