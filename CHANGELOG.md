@@ -10,6 +10,10 @@ omitted.
 
 ### Changed
 
+- Recorded the completed M-17 operational handoff: Chalkwright is the working
+  preferred production application, while the retained legacy application is
+  available only as an obsolete fallback.
+
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified
   pronunciation or illustration BLOBs. The catalog validates media digests and

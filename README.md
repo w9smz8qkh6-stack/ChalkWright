@@ -17,10 +17,10 @@ synthetic fixtures, deterministic display behavior, fail-closed provider
 adapters, and a tested migration and rollback path.
 
 > **Project status:** pre-release public preview. The offline fixture-backed
-> application and migration components are extensively tested, and an isolated
-> M-17 parallel canary has completed initial live qualification. M-17 remains
-> unpromoted, and general installation and production deployment are not yet
-> released. See the
+> application and migration components are extensively tested. Chalkwright has
+> completed its operational handoff and is the preferred production application;
+> the legacy application remains available only as an obsolete fallback. General
+> installation and public production deployment are not yet released. See the
 > [publication gate](docs/publication-readiness.md) for the exact evidence and
 > limitations of this source snapshot.
 
@@ -170,9 +170,9 @@ private route, service topology, and state root. Physical-display qualification
 has accepted the course label, stable polling, and future-class-day preview.
 The latest header-parity refinements remain reviewed but undeployed.
 
-M-17 is not promoted. The remaining gates are the bounded parallel observation,
-scheduled refresh/backup/restart evidence, final comparison disposition, and an
-explicit handoff decision. The legacy application remains authoritative.
+M-17 completed the operational handoff. Chalkwright is the working preferred
+production application. The legacy application remains available as a fallback,
+but is obsolete for production use.
 
 M-17 will first run Chalkwright as an isolated parallel canary:
 
@@ -182,10 +182,10 @@ M-17 will first run Chalkwright as an isolated parallel canary:
 - staggered read-only provider acquisition; and
 - report-only candidate alerts.
 
-The legacy application remains authoritative until a later, separately
-approved final handoff. M-18 then covers stabilization and explicit removal of
-legacy dependencies. See the [migration plan](docs/migration-plan.md) and
-[M-17 review package](docs/migration/m17-review-package.md).
+The parallel-canary controls remain documented as the reversible deployment
+design. Future stabilization will determine when the retained legacy fallback
+can be removed. See the [migration plan](docs/migration-plan.md) and [M-17
+review package](docs/migration/m17-review-package.md).
 
 ## Configuration direction
 

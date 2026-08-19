@@ -891,7 +891,13 @@ final-handoff gate; candidate alerts remain report-only.
 
 ### M-17 — Run an isolated production canary, then hand off
 
-**Status:** Parallel-canary architecture accepted through ADR-0022 and the exact
+**Current status (2026-08-19):** The user confirmed that Chalkwright's latest
+state completed the operational handoff: it is the working preferred production
+application. The legacy application remains available as a fallback, but is
+obsolete for production use. The detailed record below preserves the preceding
+canary and readiness evidence.
+
+**Historical implementation record:** Parallel-canary architecture accepted through ADR-0022 and the exact
 offline implementation passed its independent review in a clean isolated lane.
 Protected provisioning, exact digest-bound installation, isolated-state
 initialization, filtered PowerSchool-state recovery, provider preflights,
@@ -951,12 +957,9 @@ URLs, and richer legacy presentation behavior without an OpenClaw runtime
 dependency. Live confirmation of the former persistence failure remains open.
 The user accepted the
 physical Fully Kiosk course-title, stable-poll, and next-class-day preview
-corrections. The legacy
-route, Calendar, units, state, alerts, and authoritative role remain unchanged.
-M-17 is inactive and unpromoted pending the persistence diagnosis; interval
-comparison, scheduled refresh, restart/backup observation, final canary
-acceptance, and the separately approved handoff remain open. M-18 has not
-begun.
+corrections. Before the later handoff, the legacy route, Calendar, units,
+state, alerts, and authoritative role remained unchanged. The subsequent
+status update above supersedes that checkpoint.
 
 - **Objective:** Evaluate Classroom Hub beside the authoritative legacy app on
   a separate Tailnet URL and secondary Calendar before a separately approved

@@ -2,11 +2,10 @@
 
 ## Status
 
-The M-17 parallel canary is currently stopped and unpromoted in the isolated
-`codex/m17-parallel-canary` review lane. The legacy application remains
-authoritative. The candidate retains its separate `Auto Lesson 2` state and
-route configuration, but its Tailnet route is absent; final handoff remains
-unauthorized.
+The M-17 parallel canary completed the operational handoff. Chalkwright is now
+the working preferred production application. The legacy application remains
+available as a fallback, but is obsolete for production use. The detailed
+material below is retained as the canary and handoff evidence record.
 
 The current offline parity delta closes the derived-plan/persistence contract
 split that produced the last sanitized future-plan failure class: a period too
@@ -452,13 +451,14 @@ top-level reads remain GET/HEAD-only. Top-level sibling navigation, non-HTTPS
 origins, unrelated registrable sites, form methods, downloads, popups,
 WebSockets, and non-resource authority remain blocked.
 
-## Remaining live gates
+## Historical remaining live gates
 
-Initial provisioning, filtered-state recovery, provider preflights, semantic
-comparison, earlier activation, first reconciliation/readback, and the separate
-Tailnet route were completed. The candidate is currently stopped, its route is
-absent, and the superseding future-preview release remains inert. The remaining
-gates are:
+Before the completed operational handoff, initial provisioning, filtered-state
+recovery, provider preflights, semantic comparison, earlier activation, first
+reconciliation/readback, and the separate Tailnet route were completed. At
+that historical checkpoint, the candidate was stopped, its route was absent,
+and the superseding future-preview release remained inert. The remaining gates
+at that time were:
 
 - physical Fully Kiosk evaluation during bounded windows, with the legacy URL
   retained as the immediate fallback;
@@ -490,10 +490,10 @@ fresh cache-disabled directory only to those fixed reads, removes it on every
 path, and fails closed while scrubbing acquired buffers if cleanup cannot be
 proven. The legacy bridge remains retired from the active recovery procedure.
 
-The legacy application remains authoritative. M-17 is stopped and unpromoted,
-the final handoff is unauthorized, and M-18 cannot begin.
+This was the pre-handoff status. The current status is the completed handoff
+recorded at the top of this document.
 
-## Next bounded readiness sequence
+## Historical bounded readiness sequence
 
 After the full offline gate passes, the shortest reversible sequence is:
 
