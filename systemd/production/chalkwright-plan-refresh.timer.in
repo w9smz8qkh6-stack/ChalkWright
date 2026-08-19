@@ -1,0 +1,11 @@
+# chalkwright-template-status=permanent-production-inert
+[Unit]
+Description=Chalkwright production PowerSchool plan refresh timer
+
+[Timer]
+OnCalendar=Mon..Fri,Sun *-*-* 07:25:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+Persistent=false
+Unit=chalkwright-plan-refresh.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

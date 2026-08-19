@@ -1,0 +1,11 @@
+# chalkwright-template-status=permanent-production-inert
+[Unit]
+Description=Chalkwright production Classroom refresh timer
+
+[Timer]
+OnUnitInactiveSec=2min
+AccuracySec=5s
+Persistent=false
+Unit=chalkwright-classroom-refresh.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

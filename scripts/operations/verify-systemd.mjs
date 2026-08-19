@@ -131,6 +131,7 @@ export function verifySystemdArtifacts(repositoryRoot) {
   );
   if (m16Manifest !== undefined)
     verifyM16ProductionArtifacts(systemdDirectory, m16Manifest, fail);
+  verifyPermanentProductionArtifacts(systemdDirectory, fail);
 
   const service = readUnit(
     join(systemdDirectory, 'classroom-hub.service.in'),
@@ -224,6 +225,48 @@ export function verifySystemdArtifacts(repositoryRoot) {
     inertTimerTemplates: timerTemplates.length,
     jobs: EXPECTED_JOB_NAMES.length,
   });
+}
+
+function verifyPermanentProductionArtifacts(directory, fail) {
+  const production = join(directory, 'production');
+  const expected = [
+    'chalkwright-calendar-sync.service.in',
+    'chalkwright-calendar-sync.timer.in',
+    'chalkwright-classroom-refresh.service.in',
+    'chalkwright-classroom-refresh.timer.in',
+    'chalkwright-plan-refresh.service.in',
+    'chalkwright-plan-refresh.timer.in',
+    'chalkwright.service.in',
+  ];
+  let files;
+  try {
+    files = readdirSync(production).sort();
+  } catch {
+    fail('permanent production systemd directory is missing');
+    return;
+  }
+  equalList(files, expected, 'permanent production templates', fail);
+  for (const file of expected) {
+    const content = readFileSync(join(production, file), 'utf8');
+    if (!content.startsWith('# chalkwright-template-status=permanent-production-inert\n'))
+      fail(`${file} is missing its inert status marker`);
+    if (/^\[Install\]/mu.test(content))
+      fail(`${file} must remain inert without an Install section`);
+    verifyForbiddenContent(`production/${file}`, content, fail);
+  }
+  const service = readFileSync(join(production, 'chalkwright.service.in'), 'utf8');
+  for (const required of [
+    'WorkingDirectory=/opt/chalkwright/current',
+    'CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=/etc/chalkwright/production/server.json',
+    'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-server.js',
+    'IPAddressDeny=any',
+    'IPAddressAllow=localhost',
+  ]) if (!service.includes(required)) fail(`chalkwright.service.in is missing ${required}`);
+  const calendar = readFileSync(join(production, 'chalkwright-calendar-sync.service.in'), 'utf8');
+  for (const required of [
+    'CHALKWRIGHT_PRODUCTION_CALENDAR_CONFIG_REFERENCE=/etc/chalkwright/production/calendar.json',
+    'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-calendar-sync.js --execute',
+  ]) if (!calendar.includes(required)) fail(`chalkwright-calendar-sync.service.in is missing ${required}`);
 }
 
 function verifyShadowArtifacts(directory, fail) {
