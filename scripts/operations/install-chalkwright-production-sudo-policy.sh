@@ -4,24 +4,35 @@ umask 077
 
 reject() { echo "{\"status\":\"rejected\",\"code\":\"$1\"}" >&2; exit 1; }
 [[ ${EUID} -eq 0 ]] || reject chalkwright-sudo-policy-root-required
-[[ $# -eq 1 && $1 == --install ]] || reject chalkwright-sudo-policy-usage-invalid
+[[ $# -eq 1 && ( $1 == --install || $1 == --replace ) ]] || reject chalkwright-sudo-policy-usage-invalid
 
 admin=/usr/local/sbin/chalkwright-production-admin
 admin_root=/usr/local/lib/chalkwright-production-admin
 sudoers=/etc/sudoers.d/chalkwright-production-admin
 bootstrap=/home/bren/src/chalkwright-m17-canary/scripts/operations/bootstrap-permanent-production.mjs
 provision=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-production-inert.sh
+bootstrap_helper=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-m16-production.mjs
 bootstrap_digest=d6f26009f6bdf02924930da112b6288d032aaffbce2daf749469f71252d3bb10
 provision_digest=73a51a833f3469f756b6c4edccfae2272fc0a38cd88209cf87023709847aae76
+bootstrap_helper_digest=72d7ad3023fa1fb9292499073ae42b02b2c30f2fe06630cff85762d790b6edbb
 
 [[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing
-for path in "$bootstrap" "$provision"; do
+for path in "$bootstrap" "$provision" "$bootstrap_helper"; do
   [[ -f $path && ! -L $path ]] || reject chalkwright-sudo-policy-source-missing
 done
-[[ ! -e $admin && ! -L $admin && ! -e $admin_root && ! -L $admin_root && ! -e $sudoers && ! -L $sudoers ]] || reject chalkwright-sudo-policy-target-exists
 actual_bootstrap=$(/usr/bin/sha256sum "$bootstrap" | /usr/bin/cut -d ' ' -f 1)
 actual_provision=$(/usr/bin/sha256sum "$provision" | /usr/bin/cut -d ' ' -f 1)
-[[ $actual_bootstrap == "$bootstrap_digest" && $actual_provision == "$provision_digest" ]] || reject chalkwright-sudo-policy-source-drift
+actual_bootstrap_helper=$(/usr/bin/sha256sum "$bootstrap_helper" | /usr/bin/cut -d ' ' -f 1)
+[[ $actual_bootstrap == "$bootstrap_digest" && $actual_provision == "$provision_digest" && $actual_bootstrap_helper == "$bootstrap_helper_digest" ]] || reject chalkwright-sudo-policy-source-drift
+if [[ $1 == --install ]]; then
+  [[ ! -e $admin && ! -L $admin && ! -e $admin_root && ! -L $admin_root && ! -e $sudoers && ! -L $sudoers ]] || reject chalkwright-sudo-policy-target-exists
+else
+  for path in "$admin" "$admin_root" "$sudoers"; do
+    [[ -e $path && ! -L $path ]] || reject chalkwright-sudo-policy-replace-target-invalid
+  done
+  /usr/bin/rm -rf -- "$admin_root"
+  /usr/bin/rm -f -- "$admin" "$sudoers"
+fi
 
 created=()
 cleanup() { for path in "${created[@]}"; do /usr/bin/rm -rf -- "$path"; done; }
@@ -29,6 +40,7 @@ trap cleanup EXIT INT TERM
 /usr/bin/install -d -o root -g root -m 0755 "$admin_root"
 created+=("$admin_root")
 /usr/bin/install -o root -g root -m 0700 "$bootstrap" "$admin_root/bootstrap.mjs"
+/usr/bin/install -o root -g root -m 0700 "$bootstrap_helper" "$admin_root/provision-m16-production.mjs"
 /usr/bin/install -o root -g root -m 0700 "$provision" "$admin_root/provision.sh"
 
 wrapper_candidate=$admin_root/wrapper.candidate
