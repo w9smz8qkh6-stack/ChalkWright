@@ -23,8 +23,9 @@ omitted.
   credentials, target identity, and runtime state outside the repository.
 
 - Added inert, verified permanent-production systemd templates for the
-  loopback display, PowerSchool and Classroom refreshes, and owned Calendar
-  synchronization. They remain uninstalled and contain no protected values.
+  loopback display, PowerSchool and Classroom refreshes, owned Calendar
+  synchronization, SQLite integrity checks, and verified backups. They remain
+  uninstalled and contain no protected values.
 
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified

@@ -1,0 +1,11 @@
+# chalkwright-template-status=permanent-production-inert
+[Unit]
+Description=Chalkwright production verified SQLite backup timer
+
+[Timer]
+OnCalendar=*-*-* 18:40:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+Persistent=false
+Unit=chalkwright-backup.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

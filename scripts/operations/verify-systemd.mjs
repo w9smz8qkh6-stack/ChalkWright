@@ -230,10 +230,14 @@ export function verifySystemdArtifacts(repositoryRoot) {
 function verifyPermanentProductionArtifacts(directory, fail) {
   const production = join(directory, 'production');
   const expected = [
+    'chalkwright-backup.service.in',
+    'chalkwright-backup.timer.in',
     'chalkwright-calendar-sync.service.in',
     'chalkwright-calendar-sync.timer.in',
     'chalkwright-classroom-refresh.service.in',
     'chalkwright-classroom-refresh.timer.in',
+    'chalkwright-integrity.service.in',
+    'chalkwright-integrity.timer.in',
     'chalkwright-plan-refresh.service.in',
     'chalkwright-plan-refresh.timer.in',
     'chalkwright.service.in',
@@ -281,6 +285,18 @@ function verifyPermanentProductionArtifacts(directory, fail) {
   ])
     if (!calendar.includes(required))
       fail(`chalkwright-calendar-sync.service.in is missing ${required}`);
+  for (const name of [
+    'chalkwright-backup.service.in',
+    'chalkwright-integrity.service.in',
+  ]) {
+    const content = readFileSync(join(production, name), 'utf8');
+    for (const required of [
+      'EnvironmentFile=/etc/chalkwright/production/jobs/maintenance.env',
+      'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/job.js',
+      'ReadWritePaths=/var/lib/chalkwright/production',
+    ])
+      if (!content.includes(required)) fail(`${name} is missing ${required}`);
+  }
 }
 
 function verifyShadowArtifacts(directory, fail) {
