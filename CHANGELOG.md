@@ -40,6 +40,17 @@ omitted.
   new target, and restores the prior mapping automatically if verification
   fails. It remains uninvoked.
 
+- Added an inert first-release provisioner that validates the complete
+  protected configuration set, creates the isolated deploy checkout, stages a
+  digest-bound release, and installs the permanent unit files without starting
+  services, enabling timers, changing routes, or contacting providers.
+
+- Added a separate explicit first-release activation script. It requires all
+  local refresh, backup, display health/readiness, and owned Calendar sync
+  gates before starting the six persistent production timers. External routing
+  and the retained shadow service remain untouched until separate cutover
+  acceptance.
+
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified
   pronunciation or illustration BLOBs. The catalog validates media digests and

@@ -51,12 +51,22 @@ repository.
 
 Initial provision also creates `/var/lib/chalkwright/deploy/source` as an
 isolated checkout of the canonical GitHub repository and installs the
-`systemd/production` templates. These operations are separate from normal
-deploys because they create host state and activate services. They require a
+`systemd/production` templates through
+`scripts/operations/provision-production-inert.sh`. It stages and selects the
+first immutable release but does not start or enable any unit. These operations
+are separate from normal deploys because they create host state. They require a
 controlled first-release acceptance that proves display health/readiness,
 PowerSchool and Classroom freshness, Calendar convergence, verified backup,
 restore, and rollback. The shadow service and retained M-17 lane remain
 available during that acceptance window.
+
+`scripts/operations/activate-production.sh` is the subsequent explicit
+activation step. It proves integrity and backup, runs both read-only refreshes,
+starts the loopback display, requires health/readiness, starts the owned
+Calendar synchronization, and adds only the six permanent timers to
+`multi-user.target`. It does not alter the external route or stop the shadow;
+the separately controlled Tailscale cutover follows only after this local
+acceptance succeeds.
 
 The controlled cutover changes only the exact current Tailscale Serve handler
 that points at the shadow's loopback listener. It snapshots the complete Serve
