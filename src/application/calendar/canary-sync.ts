@@ -11,6 +11,7 @@ import {
   executeCalendarWriterQualification,
   fingerprintCalendarIntentSet,
   hashCalendarReference,
+  type CalendarWriterExecutionEnvironment,
 } from './writer-qualification.js';
 
 export interface M17CanarySyncOptions {
@@ -29,6 +30,9 @@ export interface M17CanarySyncOptions {
   readonly mutationTransport?: CalendarMutationTransport;
   readonly state: CalendarExecutionStatePort;
   readonly execute: boolean;
+  /** Defaults to the historical canary identity for compatibility. */
+  readonly environment?: CalendarWriterExecutionEnvironment;
+  readonly ownerId?: OpaqueId;
 }
 
 export interface M17CanarySyncEvidence {
@@ -44,6 +48,8 @@ export interface M17CanarySyncEvidence {
 export async function synchronizeM17CanaryCalendar(
   options: M17CanarySyncOptions,
 ): Promise<M17CanarySyncEvidence> {
+  const environment = options.environment ?? 'parallel-canary';
+  const ownerId = options.ownerId ?? ('chalkwright-m17-canary' as OpaqueId);
   if (options.execute && options.mutationTransport === undefined)
     return failed('m17-canary-mutation-capability-required');
   const projection = projectCalendarDay({
@@ -116,7 +122,7 @@ export async function synchronizeM17CanaryCalendar(
   const issuedAt = options.clock();
   const expiresAt = new Date(Date.parse(issuedAt) + 15 * 60_000).toISOString();
   const result = await executeCalendarWriterQualification({
-    environment: 'parallel-canary',
+    environment,
     calendarId: options.calendarId,
     scopeId: options.scopeId,
     auditFingerprint: audit.evidence.auditFingerprint,
@@ -124,9 +130,9 @@ export async function synchronizeM17CanaryCalendar(
     manifest: {
       version: 1,
       kind: 'calendar-writer-execution-approval',
-      environment: 'parallel-canary',
+      environment,
       approvalId:
-        `m17:${audit.evidence.auditFingerprint.slice(-32)}` as OpaqueId,
+        `${environment}:${audit.evidence.auditFingerprint.slice(-32)}` as OpaqueId,
       scopeId: options.scopeId,
       calendarReferenceHash: hashCalendarReference(options.calendarId),
       auditFingerprint: audit.evidence.auditFingerprint,
@@ -136,8 +142,8 @@ export async function synchronizeM17CanaryCalendar(
       expiresAt,
     },
     leaseId:
-      `m17-lease:${audit.evidence.auditFingerprint.slice(-24)}` as OpaqueId,
-    ownerId: 'chalkwright-m17-canary' as OpaqueId,
+      `${environment}-lease:${audit.evidence.auditFingerprint.slice(-24)}` as OpaqueId,
+    ownerId,
     leaseDurationSeconds: options.leaseDurationSeconds,
     requestTimeoutMs: options.requestTimeoutMs,
     clock: options.clock,
