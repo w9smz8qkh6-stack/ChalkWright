@@ -15,7 +15,7 @@ migration=/home/bren/src/chalkwright-m17-canary/scripts/operations/migrate-produ
 bootstrap_helper=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-m16-production.mjs
 bootstrap_digest=d6f26009f6bdf02924930da112b6288d032aaffbce2daf749469f71252d3bb10
 provision_digest=73a51a833f3469f756b6c4edccfae2272fc0a38cd88209cf87023709847aae76
-migration_digest=ba6090fa0b9f4c21930989229ceec2f1dd6f450cbb6badd544e8525929aa5891
+migration_digest=4c53af23ab185287a9c6baa9496588facb83cb0ea10fe40049d9789d692ad4e7
 bootstrap_helper_digest=72d7ad3023fa1fb9292499073ae42b02b2c30f2fe06630cff85762d790b6edbb
 
 [[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing

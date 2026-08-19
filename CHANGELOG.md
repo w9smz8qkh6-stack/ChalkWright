@@ -18,7 +18,9 @@ omitted.
   caches untouched.
   The same constrained admin wrapper now exposes the fixed deploy controller so
   the first permanent release can be manually advanced before the deploy timer
-  is active.
+  is active. The migration wrapper accepts the legacy shadow state's actual
+  owner-only local-state root in addition to the older expected local-state
+  prefix.
 
 - Corrected the deployment record after live inventory: the historical shadow
   service remains the active display, while the permanent Chalkwright

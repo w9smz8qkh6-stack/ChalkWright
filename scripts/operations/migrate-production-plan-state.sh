@@ -41,7 +41,13 @@ for (const rawLine of readFileSync(process.argv[2], 'utf8').split(/\r?\n/u)) {
   }
 }
 const database = value.CLASSROOM_HUB_DATABASE_PATH;
-if (typeof database !== 'string' || !database.startsWith('/home/bren/.local/state/classroom-hub/')) process.exit(1);
+if (
+  typeof database !== 'string' ||
+  (
+    !database.startsWith('/home/bren/.local/state/classroom-hub/') &&
+    !database.startsWith('/home/bren/.local/state/classroom-hub-shadow/state/')
+  )
+) process.exit(1);
 process.stdout.write(database);
 NODE
 ) || reject production-plan-state-migration-legacy-config-invalid
