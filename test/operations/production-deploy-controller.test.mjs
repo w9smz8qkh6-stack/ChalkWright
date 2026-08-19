@@ -32,6 +32,14 @@ test('production deploy waits for restarted display readiness before rollback', 
   );
 });
 
+test('production deploy defers Calendar preflight until activation establishes a canonical plan', () => {
+  assert.doesNotMatch(deploy, /production-calendar-sync\.js" --preflight/u);
+  assert.match(
+    deploy,
+    /calendarPreflight\\?":\\?"deferred-until-canonical-plan/u,
+  );
+});
+
 test('production sudo policy pins the current deploy controller digest', () => {
   const expected = createHash('sha256').update(deploy).digest('hex');
   assert.match(

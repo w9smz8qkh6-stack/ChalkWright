@@ -44,7 +44,6 @@ if [[ -e $release || -L $release ]]; then
 else
   /usr/bin/bash "$work/repository/scripts/operations/install-production-release.sh" "$archive" "$digest"
 fi
-CHALKWRIGHT_PRODUCTION_CALENDAR_CONFIG_REFERENCE="$calendar" /usr/sbin/runuser -u classroom-hub -- /usr/bin/node "$release/dist/entrypoints/production-calendar-sync.js" --preflight >/dev/null || reject production-deploy-calendar-preflight-failed
 previous=
 if [[ -L "$release_root/current" ]]; then previous=$(/usr/bin/readlink "$release_root/current"); fi
 /usr/bin/bash "$work/repository/scripts/operations/switch-production-release.sh" "$digest" >/dev/null
@@ -70,4 +69,4 @@ if ! /usr/bin/curl --fail --silent --show-error --max-time 2 --output /dev/null 
   rollback
   reject production-deploy-health-failed
 fi
-echo "{\"status\":\"deployed\",\"commit\":\"$commit\",\"release\":\"sha256:$digest\",\"calendarPreflight\":\"passed\",\"health\":\"passed\"}"
+echo "{\"status\":\"deployed\",\"commit\":\"$commit\",\"release\":\"sha256:$digest\",\"calendarPreflight\":\"deferred-until-canonical-plan\",\"health\":\"passed\"}"
