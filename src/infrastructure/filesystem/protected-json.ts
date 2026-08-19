@@ -92,18 +92,31 @@ export function readProtectedJson<Value>(
   path: string,
   validate: (value: unknown) => value is Value,
 ): Value {
+  return readProtectedJsonOwnedBy(path, undefined, validate);
+}
+
+export function readProtectedJsonOwnedBy<Value>(
+  path: string,
+  ownerUid: number | undefined,
+  validate: (value: unknown) => value is Value,
+): Value {
   let descriptor: number | undefined;
   try {
     assertNormalizedAbsolute(path);
-    const effectiveUid = process.geteuid?.();
-    if (effectiveUid === undefined) throw unsafe();
-    assertProtectedDirectory(dirname(path), effectiveUid);
+    const expectedUid = ownerUid ?? process.geteuid?.();
+    if (
+      expectedUid === undefined ||
+      !Number.isSafeInteger(expectedUid) ||
+      expectedUid < 0
+    )
+      throw unsafe();
+    assertProtectedDirectory(dirname(path), expectedUid);
     const before = lstatSync(path);
     if (
       !before.isFile() ||
       before.isSymbolicLink() ||
       before.nlink !== 1 ||
-      before.uid !== effectiveUid ||
+      before.uid !== expectedUid ||
       (before.mode & 0o077) !== 0 ||
       before.size < 2 ||
       before.size > maximumProtectedJsonBytes ||
@@ -117,7 +130,7 @@ export function readProtectedJson<Value>(
       opened.dev !== before.dev ||
       opened.ino !== before.ino ||
       opened.nlink !== 1 ||
-      opened.uid !== effectiveUid ||
+      opened.uid !== expectedUid ||
       (opened.mode & 0o077) !== 0 ||
       opened.size !== before.size
     )
