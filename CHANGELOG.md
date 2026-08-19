@@ -10,6 +10,27 @@ omitted.
 
 ### Changed
 
+- Added the first offline glossary-catalog migration and SQLite repository for
+  class/year/unit-scoped source terms, additive translations, and verified
+  pronunciation or illustration BLOBs. The catalog validates media digests and
+  size limits before an atomic source replacement; Drive import and display
+  selection wiring remain separate follow-on work.
+  Canonical and translated records each support part of speech and sample
+  sentence fields in their respective languages.
+
+- Added CSV-first glossary normalization for common teacher-facing term and
+  definition headers, quoted text, and optional pronunciation/example metadata.
+  Invalid source files fail before they can alter the local catalog.
+
+- Added a constrained Drive glossary read boundary with only parent-folder
+  listing and bounded CSV download operations, using the separately provisioned
+  read-only grant. It is not yet wired into a live importer or display request.
+
+- Recorded the paused post-M17 future parity roadmap. The next planned slices
+  prioritize vocabulary parity, then on-disk lesson-reference slide
+  enhancement, with attendance-admin parity intentionally deferred while quick
+  live-display fixes may continue separately.
+
 - Made the active-Classroom refresh gate skip safely when the local display
   state has no active class target, such as Sunday/off-hours after a successful
   plan lookahead. Malformed active-class shapes still fail before provider

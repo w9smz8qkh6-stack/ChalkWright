@@ -12,3 +12,4 @@ export * from './plans.js';
 export * from './pure-values.js';
 export * from './overrides.js';
 export * from './vocabulary.js';
+export * from './glossary.js';

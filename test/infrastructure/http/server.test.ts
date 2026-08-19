@@ -136,7 +136,7 @@ describe('loopback HTTP routing', () => {
     assert.equal(patch.headers.allow, 'GET, HEAD, POST, PUT, DELETE');
   });
 
-  test('preserves the finite legacy mount and API route family without exposing unprefixed routes', async () => {
+  test('preserves the finite legacy mount and API route family while exposing only configured root display aliases', async () => {
     const controller = new FixtureController();
     const server = await startFixture(controller, {
       routePrefix: '/classroom-screen',
@@ -164,6 +164,8 @@ describe('loopback HTTP routing', () => {
     const routes: ReadonlyArray<
       readonly [string, ClassroomHttpControllerRequest['kind'] | 'resource']
     > = [
+      ['/', 'display'],
+      ['/b407', 'display'],
       ['/classroom-screen', 'display'],
       ['/classroom-screen/b407', 'display'],
       ['/classroom-screen/api/displays', 'displays'],
@@ -201,6 +203,7 @@ describe('loopback HTTP routing', () => {
       },
     );
     assert.equal((await fetch(`${server.origin}/health`)).status, 404);
+    assert.equal((await fetch(`${server.origin}/api/displays`)).status, 404);
     assert.equal(
       (
         await rawRequest(server, '/classroom-screen/assets/%2e%2e/private', {

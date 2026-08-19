@@ -191,11 +191,20 @@ async function handleRequest(options: {
   setSecurityHeaders(response);
   try {
     const method = parseMethod(request.method);
-    const parsed = applyRoutePrefix(
-      parseRequestTarget(request.url),
-      options.routePrefix,
+    const requested = parseRequestTarget(request.url);
+    // Root compatibility aliases are display-only. They remain available when
+    // the broader legacy route family is mounted under `/classroom-screen`, so
+    // a reverse proxy can serve the display at its root without exposing an
+    // unprefixed API or mutation surface.
+    const rootCompatibilityScreen = options.compatibilityPaths.get(
+      requested.path,
     );
-    const compatibilityScreen = options.compatibilityPaths.get(parsed.path);
+    const parsed =
+      rootCompatibilityScreen === undefined
+        ? applyRoutePrefix(requested, options.routePrefix)
+        : requested;
+    const compatibilityScreen =
+      rootCompatibilityScreen ?? options.compatibilityPaths.get(parsed.path);
     const route =
       compatibilityScreen === undefined
         ? ((options.legacyRouteCompatibility
