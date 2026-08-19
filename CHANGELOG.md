@@ -14,7 +14,9 @@ omitted.
   established the canonical local plan. Deploy now stages and health-checks the
   reviewed release without calling Calendar against absent plan state; the
   existing activation path retains the ordered plan, display, and Calendar
-  gates before timers are enabled.
+  gates before timers are enabled. Deployment now likewise gates only on
+  display liveness; activation retains the plan-dependent readiness gate after
+  the plan refresh.
 
 - Added a bounded permanent-production plan-state migration path. The
   constrained admin command imports only current validated legacy
