@@ -12,7 +12,7 @@ const sudoPolicy = readFileSync(
   'utf8',
 );
 
-test('production deploy waits for restarted display readiness before rollback', () => {
+test('production deploy waits for restarted display liveness before rollback', () => {
   const restart = deploy.indexOf('systemctl restart chalkwright.service');
   const waitLoop = deploy.indexOf('for _ in {1..20}; do');
   const sleep = deploy.indexOf('/usr/bin/sleep 0.25');
@@ -25,11 +25,15 @@ test('production deploy waits for restarted display readiness before rollback', 
     waitLoop > restart,
     'deploy must wait only after attempting the service restart',
   );
-  assert.ok(sleep > waitLoop, 'deploy readiness loop must be bounded');
+  assert.ok(sleep > waitLoop, 'deploy liveness loop must be bounded');
   assert.ok(
     finalHealthGate > sleep,
-    'deploy must rollback only after the bounded readiness wait',
+    'deploy must rollback only after the bounded liveness wait',
   );
+});
+
+test('production deploy defers plan-dependent readiness to activation', () => {
+  assert.doesNotMatch(deploy, /\$health_url\/ready/u);
 });
 
 test('production deploy defers Calendar preflight until activation establishes a canonical plan', () => {
