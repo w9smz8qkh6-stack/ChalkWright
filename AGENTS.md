@@ -38,7 +38,11 @@ scope.
   must be synthetic or safely redacted.
 - Keep environment-specific values out of source control. Document only safe,
   non-secret placeholders in `.env.example`.
-- Do not commit unless the user explicitly asks.
+- Commit completed, well-scoped work automatically at logical checkpoints with
+  meaningful messages. Before committing, verify the staged scope is limited to
+  the task, preserves any unrelated user changes, and contains no prohibited
+  material. Do not commit known-incomplete or failing work unless the user
+  explicitly requests an interim checkpoint.
 
 ## Self-documentation and comments
 
@@ -49,7 +53,7 @@ scope.
   refactors without behavioral impact.
 - Update relevant documentation in the same change as code or contracts. Use
   ADRs and migration records for durable consequential history, and meaningful
-  commits when commits are authorized.
+  commits as logical review units.
 - Prefer clear names, cohesive modules, explicit types, and readable control
   flow over commentary. Comments document intent, invariants, ownership,
   effects, failures, security/privacy, compatibility, and non-obvious reasons;
