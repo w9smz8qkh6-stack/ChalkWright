@@ -1,0 +1,39 @@
+# chalkwright-template-status=permanent-production-inert
+# No scheduling or enablement section: this high-authority repair is operator-invoked only.
+[Unit]
+Description=Chalkwright production PowerSchool authentication repair
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/chalkwright/current
+EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
+EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env
+Environment=NODE_ENV=production
+Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
+ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js
+TimeoutStartSec=6min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/chalkwright/production/providers/google-classroom -/etc/chalkwright/production/providers/google-calendar
+ReadWritePaths=/var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=user pid net
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=768M
+TasksMax=192

@@ -20,7 +20,7 @@ const source = Object.freeze({
   serviceAccount:
     '/etc/chalkwright/migration/powerschool-onepassword-service-account.env',
 });
-const target = Object.freeze({
+const canaryTarget = Object.freeze({
   providerDirectory: '/etc/chalkwright/canary/providers/powerschool',
   references:
     '/etc/chalkwright/canary/providers/powerschool/repair-references.json',
@@ -29,8 +29,17 @@ const target = Object.freeze({
   environment: '/etc/chalkwright/canary/jobs/powerschool-repair.env',
   profile: '/var/lib/chalkwright/canary-powerschool-compatibility-profile',
 });
+const productionTarget = Object.freeze({
+  providerDirectory: '/etc/chalkwright/production/providers/powerschool',
+  references:
+    '/etc/chalkwright/production/providers/powerschool/repair-references.json',
+  serviceAccount:
+    '/etc/chalkwright/production/providers/powerschool/onepassword-service-account.env',
+  environment: '/etc/chalkwright/production/jobs/powerschool-repair.env',
+  profile: '/var/lib/chalkwright/production-powerschool-profile',
+});
 
-export function renderRepairEnvironment() {
+export function renderRepairEnvironment(target = canaryTarget) {
   return [
     `CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY=${JSON.stringify(target.profile)}`,
     `CLASSROOM_HUB_POWERSCHOOL_ONEPASSWORD_SERVICE_ACCOUNT_ENV=${JSON.stringify(target.serviceAccount)}`,
@@ -90,11 +99,17 @@ function validReference(value, otp) {
 }
 
 function main() {
-  if (process.argv.slice(2).join(' ') !== '--apply')
+  const production = process.argv.slice(2).join(' ') === '--production-apply';
+  if (!production && process.argv.slice(2).join(' ') !== '--apply')
     throw new Error('m17-repair-provision-usage-invalid');
   if (process.geteuid?.() !== 0)
     throw new Error('m17-repair-provision-root-required');
-  const identity = exactDirectory('/var/lib/chalkwright/canary-production');
+  const target = production ? productionTarget : canaryTarget;
+  const identity = exactDirectory(
+    production
+      ? '/var/lib/chalkwright/production'
+      : '/var/lib/chalkwright/canary-production',
+  );
   if (identity.uid === 0 || identity.gid === 0)
     throw new Error('m17-repair-provision-identity-invalid');
   exactDirectory(
@@ -142,7 +157,7 @@ function main() {
     serviceAccountBytes?.fill(0);
   }
   process.stdout.write(
-    `${JSON.stringify({ status: 'm17-native-powerschool-repair-provisioned-inert', files: 3, directories: 2, valuesPrinted: 0, providerRequests: 0, unitsInstalled: 0, unitsStarted: 0, routeChanges: 0 })}\n`,
+    `${JSON.stringify({ status: production ? 'production-powerschool-repair-provisioned-inert' : 'm17-native-powerschool-repair-provisioned-inert', files: 3, directories: 2, valuesPrinted: 0, providerRequests: 0, unitsInstalled: 0, unitsStarted: 0, routeChanges: 0 })}\n`,
   );
 }
 
