@@ -68,6 +68,23 @@ Calendar synchronization, and adds only the six permanent timers to
 the separately controlled Tailscale cutover follows only after this local
 acceptance succeeds.
 
+If the permanent PowerSchool profile is not ready but the live shadow database
+already contains current read-only plan snapshots, an operator can run the
+bounded one-time import before activation:
+
+```sh
+sudo -n /usr/local/sbin/chalkwright-production-admin migrate-plans
+```
+
+That command reads only the current `plan_snapshots` rows from the legacy shadow
+SQLite database, validates their hashes and v1 plan contracts, requires the
+room/screen/timezone to match the permanent production config, and rewrites the
+accepted canonical/effective plans into the permanent SQLite repository. It
+does not copy Classroom cache, Calendar journals, provider credentials, browser
+profiles, logs, or raw PowerSchool state, and it does not start services,
+enable timers, change routes, contact providers, or write to PowerSchool or
+Google Classroom.
+
 The controlled cutover changes only the exact current Tailscale Serve handler
 that points at the shadow's loopback listener. It snapshots the complete Serve
 configuration under `/var/lib/chalkwright/deploy/routes`, replaces that one

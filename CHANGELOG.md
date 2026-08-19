@@ -10,6 +10,13 @@ omitted.
 
 ### Changed
 
+- Added a bounded permanent-production plan-state migration path. The
+  constrained admin command imports only current validated legacy
+  `plan_snapshots` into the permanent SQLite repository, preserving
+  PowerSchool and Google Classroom read-only boundaries and leaving services,
+  timers, routes, Calendar synchronization, credentials, logs, and provider
+  caches untouched.
+
 - Corrected the deployment record after live inventory: the historical shadow
   service remains the active display, while the permanent Chalkwright
   production lane is being re-grounded with protected configuration.

@@ -2,7 +2,10 @@ import { isAbsolute, relative, resolve } from 'node:path';
 
 import type { ClassId, RoomId, ScreenId } from '../domain/identities.js';
 import { isIanaTimeZone, isIsoDate } from '../domain/runtime-validation.js';
-import { readProtectedJson } from '../infrastructure/filesystem/protected-json.js';
+import {
+  readProtectedJson,
+  readProtectedJsonOwnedBy,
+} from '../infrastructure/filesystem/protected-json.js';
 import type { DismissalMediaReference } from '../presentation/assets.js';
 import {
   boundedId,
@@ -60,7 +63,32 @@ export function loadProductionServerConfig(
 ): ProductionServerConfig {
   if (!isExternalPath(referencePath, repositoryRoot))
     throw new Error('production-config-invalid');
-  const payload = readProtectedJson(referencePath, isProductionPayload);
+  return loadProductionServerPayload(
+    readProtectedJson(referencePath, isProductionPayload),
+    referencePath,
+    repositoryRoot,
+  );
+}
+
+export function loadProductionServerConfigOwnedBy(
+  referencePath: string,
+  ownerUid: number,
+  repositoryRoot = process.cwd(),
+): ProductionServerConfig {
+  if (!isExternalPath(referencePath, repositoryRoot))
+    throw new Error('production-config-invalid');
+  return loadProductionServerPayload(
+    readProtectedJsonOwnedBy(referencePath, ownerUid, isProductionPayload),
+    referencePath,
+    repositoryRoot,
+  );
+}
+
+function loadProductionServerPayload(
+  payload: ProductionServerPayload,
+  referencePath: string,
+  repositoryRoot: string,
+): ProductionServerConfig {
   const instanceId = boundedId('instanceId', payload.instanceId);
   if (!instanceId.endsWith('-production'))
     throw new Error('production-config-invalid');
