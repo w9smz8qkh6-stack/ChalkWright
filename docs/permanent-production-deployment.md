@@ -32,6 +32,13 @@ Calendar, change Calendar targets, or start provider refresh jobs directly.
 The already enabled refresh and Calendar timers continue using the atomically
 selected release.
 
+Before the deploy timer is active, an operator can trigger the same fixed
+controller manually through the constrained admin wrapper:
+
+```sh
+sudo -n /usr/local/sbin/chalkwright-production-admin deploy
+```
+
 ## One-time provision and cutover prerequisites
 
 The controller deliberately refuses to operate until an operator provides the

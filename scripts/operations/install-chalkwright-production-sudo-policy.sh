@@ -57,6 +57,7 @@ reject() { echo "{\"status\":\"rejected\",\"code\":\"$1\"}" >&2; exit 1; }
 case $1 in
   bootstrap) exec /usr/bin/node /usr/local/lib/chalkwright-production-admin/bootstrap.mjs --apply ;;
   provision) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/provision.sh ;;
+  deploy) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/deploy-production-from-main.sh ;;
   migrate-plans) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/migrate-production-plan-state.sh ;;
   activate) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/activate-production.sh ;;
   cutover) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/cutover-production-tailscale-route.sh ;;
@@ -68,7 +69,7 @@ WRAPPER
 
 sudoers_candidate=$admin_root/sudoers.candidate
 /usr/bin/tee "$sudoers_candidate" >/dev/null <<'SUDOERS'
-Cmnd_Alias CHALKWRIGHT_PRODUCTION_ADMIN = /usr/local/sbin/chalkwright-production-admin bootstrap, /usr/local/sbin/chalkwright-production-admin provision, /usr/local/sbin/chalkwright-production-admin migrate-plans, /usr/local/sbin/chalkwright-production-admin activate, /usr/local/sbin/chalkwright-production-admin cutover
+Cmnd_Alias CHALKWRIGHT_PRODUCTION_ADMIN = /usr/local/sbin/chalkwright-production-admin bootstrap, /usr/local/sbin/chalkwright-production-admin provision, /usr/local/sbin/chalkwright-production-admin deploy, /usr/local/sbin/chalkwright-production-admin migrate-plans, /usr/local/sbin/chalkwright-production-admin activate, /usr/local/sbin/chalkwright-production-admin cutover
 bren ALL=(root) NOPASSWD: CHALKWRIGHT_PRODUCTION_ADMIN
 SUDOERS
 /usr/sbin/visudo -cf "$sudoers_candidate" >/dev/null || reject chalkwright-sudo-policy-invalid
@@ -77,4 +78,4 @@ SUDOERS
 /usr/sbin/visudo -c >/dev/null || reject chalkwright-sudo-policy-global-invalid
 created=()
 trap - EXIT INT TERM
-echo '{"status":"installed","commands":5,"generalRootShell":false,"passwordlessAll":false}'
+echo '{"status":"installed","commands":6,"generalRootShell":false,"passwordlessAll":false}'

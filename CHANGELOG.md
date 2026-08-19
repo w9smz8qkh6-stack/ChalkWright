@@ -16,6 +16,9 @@ omitted.
   PowerSchool and Google Classroom read-only boundaries and leaving services,
   timers, routes, Calendar synchronization, credentials, logs, and provider
   caches untouched.
+  The same constrained admin wrapper now exposes the fixed deploy controller so
+  the first permanent release can be manually advanced before the deploy timer
+  is active.
 
 - Corrected the deployment record after live inventory: the historical shadow
   service remains the active display, while the permanent Chalkwright
