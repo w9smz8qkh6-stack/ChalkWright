@@ -174,7 +174,7 @@ M-17 completed the operational handoff. Chalkwright is the working preferred
 production application. The legacy application remains available as a fallback,
 but is obsolete for production use.
 
-M-17 will first run Chalkwright as an isolated parallel canary:
+M-17 used an isolated parallel canary with:
 
 - a separate Tailnet-only URL;
 - a separate owned Calendar from the legacy application;
@@ -182,7 +182,7 @@ M-17 will first run Chalkwright as an isolated parallel canary:
 - staggered read-only provider acquisition; and
 - report-only candidate alerts.
 
-The parallel-canary controls remain documented as the reversible deployment
+Those parallel-canary controls remain documented as the reversible deployment
 design. Future stabilization will determine when the retained legacy fallback
 can be removed. See the [migration plan](docs/migration-plan.md) and [M-17
 review package](docs/migration/m17-review-package.md).
