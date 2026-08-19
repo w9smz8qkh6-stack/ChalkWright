@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import type {
   PowerSchoolBootstrapConfig,
@@ -73,6 +74,14 @@ function profiles(): string[] {
   return readdirSync(tmpdir())
     .filter((name) => name.startsWith(jitRepairTemporaryProfilePrefix))
     .sort();
+}
+
+async function waitForProfiles(expected: readonly string[]): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (JSON.stringify(profiles()) === JSON.stringify(expected)) return;
+    await sleep(100);
+  }
+  assert.deepEqual(profiles(), expected);
 }
 
 const headlessLauncher: typeof launchPowerSchoolSessionContext = (options) =>
@@ -159,7 +168,7 @@ test('fixed username/password/TOTP repair retains only PowerSchool state and ena
       server.requests.filter((request) => request.origin === 'identity').length,
       identityRequests,
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -278,7 +287,7 @@ test('recognized Google challenge-selection password and authenticator choices c
         { method: 'POST', path: '/totp' },
       ],
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -578,7 +587,7 @@ test('abort, timeout, and concurrency refusal leave no disposable profile', asyn
     } finally {
       lock.release();
     }
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
