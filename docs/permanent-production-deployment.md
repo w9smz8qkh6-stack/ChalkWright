@@ -58,6 +58,13 @@ PowerSchool and Classroom freshness, Calendar convergence, verified backup,
 restore, and rollback. The shadow service and retained M-17 lane remain
 available during that acceptance window.
 
+The controlled cutover changes only the exact current Tailscale Serve handler
+that points at the shadow's loopback listener. It snapshots the complete Serve
+configuration under `/var/lib/chalkwright/deploy/routes`, replaces that one
+handler with the ready permanent display, verifies the configured handler, and
+restores the snapshot if verification fails. It does not stop the legacy shadow
+service; that remains a local rollback reference until post-cutover acceptance.
+
 ## Operator boundaries
 
 The deployment controller is a root-owned system service only because it must

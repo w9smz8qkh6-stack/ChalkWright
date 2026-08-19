@@ -34,6 +34,12 @@ omitted.
   and restores the prior release on failure. The controller and timer remain
   inert templates until the controlled first production release.
 
+- Added a controlled Tailscale Serve route cutover tool for the historical
+  shadow display handler. It records an owner-only complete configuration
+  snapshot, changes only the unambiguous shadow loopback handler, verifies the
+  new target, and restores the prior mapping automatically if verification
+  fails. It remains uninvoked.
+
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified
   pronunciation or illustration BLOBs. The catalog validates media digests and
