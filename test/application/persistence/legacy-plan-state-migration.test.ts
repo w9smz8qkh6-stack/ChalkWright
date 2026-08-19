@@ -202,10 +202,10 @@ test('rejects corrupt legacy rows without writing target state', async () => {
   );
 });
 
-test('rejects effective plans for a different production screen', async () => {
+test('retargets effective plans from a legacy screen to the production screen', async () => {
   await withDatabases(async ({ sourcePath, targetPath, source }) => {
-    const wrongScreen = {
-      ...effective({ screenId: 'legacy-screen' as ScreenId }),
+    const legacyScreen = {
+      ...effective({ screenId: 'screen-c509-shadow' as ScreenId }),
     };
     source.connection
       .prepare(
@@ -218,15 +218,15 @@ test('rejects effective plans for a different production screen', async () => {
       .run(
         'legacy-effective',
         'effective',
-        wrongScreen.effectivePlanId,
-        wrongScreen.canonicalPlanId,
-        wrongScreen.date,
-        wrongScreen.roomId,
-        wrongScreen.screenId,
-        wrongScreen.contractVersion,
-        wrongScreen.verification,
-        stableSerialize(wrongScreen),
-        semanticHash(wrongScreen),
+        legacyScreen.effectivePlanId,
+        legacyScreen.canonicalPlanId,
+        legacyScreen.date,
+        legacyScreen.roomId,
+        legacyScreen.screenId,
+        legacyScreen.contractVersion,
+        legacyScreen.verification,
+        stableSerialize(legacyScreen),
+        semanticHash(legacyScreen),
         'legacy-revision-1',
         '2035-06-30',
         instant,
@@ -239,7 +239,27 @@ test('rejects effective plans for a different production screen', async () => {
       targetDatabasePath: targetPath,
       now: () => instant,
     });
-    assert.equal(result.status, 'rejected');
-    assert.equal(result.rejectedCount, 1);
+    assert.equal(result.status, 'imported');
+    assert.equal(result.acceptedCount, 1);
+
+    const target = new SqliteDatabase(targetPath, {
+      migration: { appliedAt: instant },
+    });
+    try {
+      const repository = new SqliteApplicationStateRepository(target, {
+        clock: { now: () => instant },
+        nextRevision: () => 'unused',
+        academicYearEndForDate: () => '2035-06-30',
+      });
+      const stored = await repository.findEffective({
+        date: legacyScreen.date,
+        roomId,
+        screenId,
+      });
+      assert.equal(stored?.screenId, screenId);
+      assert.equal(stored?.effectivePlanId, legacyScreen.effectivePlanId);
+    } finally {
+      target.close();
+    }
   });
 });

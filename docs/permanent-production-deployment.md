@@ -85,13 +85,18 @@ sudo -n /usr/local/sbin/chalkwright-production-admin migrate-plans
 
 That command reads only the current `plan_snapshots` rows from the legacy shadow
 SQLite database, validates their hashes and v1 plan contracts, requires the
-room/screen/timezone to match the permanent production config, and rewrites the
-accepted canonical/effective plans into the permanent SQLite repository. It
-accepts only the known Bren-owned legacy local-state roots, including the
-current shadow-service state root. It does not copy Classroom cache, Calendar
-journals, provider credentials, browser profiles, logs, or raw PowerSchool
-state, and it does not start services, enable timers, change routes, contact
-providers, or write to PowerSchool or Google Classroom.
+room/timezone to match the permanent production config, and rewrites the
+accepted canonical/effective plans into the permanent SQLite repository.
+Effective plans must be internally consistent with their legacy source screen,
+then are retargeted to the permanent production screen before storage. The
+wrapper accepts only the known Bren-owned legacy local-state roots, including
+the current shadow-service state root. If `/opt/chalkwright/current` does not
+yet contain the migration entrypoint, the wrapper uses the staged release whose
+recorded commit matches the deploy checkout's protected `origin/main`. It does
+not copy Classroom cache, Calendar journals, provider credentials, browser
+profiles, logs, or raw PowerSchool state, and it does not start services,
+enable timers, change routes, contact providers, or write to PowerSchool or
+Google Classroom.
 
 The controlled cutover changes only the exact current Tailscale Serve handler
 that points at the shadow's loopback listener. It snapshots the complete Serve
