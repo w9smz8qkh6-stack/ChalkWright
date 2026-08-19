@@ -14,6 +14,10 @@ omitted.
   service remains the active display, while the permanent Chalkwright
   production lane is being re-grounded with protected configuration.
 
+- Accepted a permanent delivery lane: protected GitHub `main` is the canonical
+  release source, with immediate atomic deployment, rollback, and bounded
+  Calendar synchronization in the final production topology.
+
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified
   pronunciation or illustration BLOBs. The catalog validates media digests and

@@ -39,6 +39,7 @@ record is not authorization to implement its leading option.
 | [ADR-0022](0022-parallel-production-canary.md)                   | Accepted   | Isolated parallel production canary before final handoff     |
 | [ADR-0023](0023-chalkwright-public-identity.md)                  | Accepted   | Chalkwright public identity and compatibility migration      |
 | [ADR-0024](0024-application-owned-powerschool-authentication.md) | Accepted   | Application-owned PowerSchool authentication lifecycle       |
+| [ADR-0025](0025-permanent-production-delivery.md)                | Accepted   | One permanent production delivery lane                       |
 
 ## Record policy
 
