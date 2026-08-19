@@ -1,7 +1,9 @@
 import { loadProductionCalendarConfig } from '../config/production-calendar.js';
-import type { M17CanaryCalendarConfig } from '../config/m17-canary.js';
 import { isDirectEntrypoint } from './direct-invocation.js';
-import { runM17CanaryCalendarSync } from './m17-canary-calendar-sync.js';
+import {
+  runM17CanaryCalendarSync,
+  type CalendarSyncRuntimeConfig,
+} from './m17-canary-calendar-sync.js';
 
 export async function runProductionCalendarSync(options: {
   readonly arguments: readonly string[];
@@ -28,10 +30,8 @@ export async function runProductionCalendarSync(options: {
       ...environment,
       CHALKWRIGHT_M17_CANARY_CONFIG_REFERENCE: reference,
     },
-    loadConfig: () =>
-      loadProductionCalendarConfig(
-        reference,
-      ) as unknown as M17CanaryCalendarConfig,
+    loadConfig: (): CalendarSyncRuntimeConfig =>
+      loadProductionCalendarConfig(reference),
     requireCanaryInstance: false,
   });
 }

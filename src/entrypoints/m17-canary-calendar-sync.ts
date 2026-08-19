@@ -13,12 +13,27 @@ import { SqliteDatabase } from '../infrastructure/sqlite/database.js';
 import { SqliteApplicationStateRepository } from '../infrastructure/sqlite/repository.js';
 import { isDirectEntrypoint } from './direct-invocation.js';
 
+/** The protected Calendar boundary required by either supported sync lane. */
+export interface CalendarSyncRuntimeConfig {
+  readonly calendarId: string;
+  readonly scopeId: string;
+  readonly timeZone: 'Asia/Ho_Chi_Minh';
+  readonly productionConfigReference: string;
+  readonly credentialReferencePath: string;
+  readonly databasePath: string;
+  readonly requestTimeoutMs: number;
+  readonly overallTimeoutMs: number;
+  readonly leaseDurationSeconds: number;
+  readonly maximumPages: number;
+  readonly maximumEvents: number;
+}
+
 export async function runM17CanaryCalendarSync(options: {
   readonly arguments: readonly string[];
   readonly environment?: NodeJS.ProcessEnv;
   readonly signal?: AbortSignal;
   readonly now?: () => string;
-  readonly loadConfig?: () => M17CanaryCalendarConfig;
+  readonly loadConfig?: () => CalendarSyncRuntimeConfig;
   readonly requireCanaryInstance?: boolean;
 }): Promise<{
   readonly exitCode: number;

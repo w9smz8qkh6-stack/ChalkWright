@@ -248,25 +248,39 @@ function verifyPermanentProductionArtifacts(directory, fail) {
   equalList(files, expected, 'permanent production templates', fail);
   for (const file of expected) {
     const content = readFileSync(join(production, file), 'utf8');
-    if (!content.startsWith('# chalkwright-template-status=permanent-production-inert\n'))
+    if (
+      !content.startsWith(
+        '# chalkwright-template-status=permanent-production-inert\n',
+      )
+    )
       fail(`${file} is missing its inert status marker`);
     if (/^\[Install\]/mu.test(content))
       fail(`${file} must remain inert without an Install section`);
     verifyForbiddenContent(`production/${file}`, content, fail);
   }
-  const service = readFileSync(join(production, 'chalkwright.service.in'), 'utf8');
+  const service = readFileSync(
+    join(production, 'chalkwright.service.in'),
+    'utf8',
+  );
   for (const required of [
     'WorkingDirectory=/opt/chalkwright/current',
     'CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=/etc/chalkwright/production/server.json',
     'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-server.js',
     'IPAddressDeny=any',
     'IPAddressAllow=localhost',
-  ]) if (!service.includes(required)) fail(`chalkwright.service.in is missing ${required}`);
-  const calendar = readFileSync(join(production, 'chalkwright-calendar-sync.service.in'), 'utf8');
+  ])
+    if (!service.includes(required))
+      fail(`chalkwright.service.in is missing ${required}`);
+  const calendar = readFileSync(
+    join(production, 'chalkwright-calendar-sync.service.in'),
+    'utf8',
+  );
   for (const required of [
     'CHALKWRIGHT_PRODUCTION_CALENDAR_CONFIG_REFERENCE=/etc/chalkwright/production/calendar.json',
     'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-calendar-sync.js --execute',
-  ]) if (!calendar.includes(required)) fail(`chalkwright-calendar-sync.service.in is missing ${required}`);
+  ])
+    if (!calendar.includes(required))
+      fail(`chalkwright-calendar-sync.service.in is missing ${required}`);
 }
 
 function verifyShadowArtifacts(directory, fail) {

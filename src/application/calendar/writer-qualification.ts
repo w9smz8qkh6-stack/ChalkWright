@@ -42,10 +42,7 @@ export interface CalendarWriterExecutionManifest {
 }
 
 export type CalendarWriterExecutionEnvironment =
-  | 'non-production'
-  | 'production-trial'
-  | 'parallel-canary'
-  | 'production';
+  'non-production' | 'production-trial' | 'parallel-canary' | 'production';
 
 export interface CalendarWriterQualificationOptions {
   readonly environment: CalendarWriterExecutionEnvironment;
