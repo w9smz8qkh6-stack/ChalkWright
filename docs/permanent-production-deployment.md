@@ -15,6 +15,8 @@ When `main` contains a new commit, the controller:
 1. checks out that exact remote commit in a disposable build directory;
 2. installs locked dependencies, builds an immutable gzip archive, and binds
    the archive to a SHA-256 release directory under `/opt/chalkwright/releases`;
+   if a prior retry already staged the identical same-commit archive/release,
+   the controller verifies the digest and release metadata before reuse;
 3. runs the new release's Calendar **preflight** as `classroom-hub`; this is
    list-only and must prove the already configured owned boundary;
 4. atomically replaces `/opt/chalkwright/current` with the new release;
@@ -33,7 +35,9 @@ The already enabled refresh and Calendar timers continue using the atomically
 selected release.
 
 Before the deploy timer is active, an operator can trigger the same fixed
-controller manually through the constrained admin wrapper:
+controller manually through the constrained admin wrapper. The wrapper calls a
+digest-bound root-staged copy of the deploy controller so retry behavior can be
+updated before the first permanent release is selected:
 
 ```sh
 sudo -n /usr/local/sbin/chalkwright-production-admin deploy

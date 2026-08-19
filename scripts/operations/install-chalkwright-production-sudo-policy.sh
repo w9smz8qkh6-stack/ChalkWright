@@ -11,22 +11,25 @@ admin_root=/usr/local/lib/chalkwright-production-admin
 sudoers=/etc/sudoers.d/chalkwright-production-admin
 bootstrap=/home/bren/src/chalkwright-m17-canary/scripts/operations/bootstrap-permanent-production.mjs
 provision=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-production-inert.sh
+deploy=/home/bren/src/chalkwright-m17-canary/scripts/operations/deploy-production-from-main.sh
 migration=/home/bren/src/chalkwright-m17-canary/scripts/operations/migrate-production-plan-state.sh
 bootstrap_helper=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-m16-production.mjs
 bootstrap_digest=d6f26009f6bdf02924930da112b6288d032aaffbce2daf749469f71252d3bb10
 provision_digest=73a51a833f3469f756b6c4edccfae2272fc0a38cd88209cf87023709847aae76
+deploy_digest=72e7ae8c897b5bb48a88415265b32cbd9557b3121c911f32d9fd0c535b1ad858
 migration_digest=22bcf8b71558f013662b7fff5028603dfc0715b96824ee2d2a1c7af62bc63c8b
 bootstrap_helper_digest=72d7ad3023fa1fb9292499073ae42b02b2c30f2fe06630cff85762d790b6edbb
 
 [[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing
-for path in "$bootstrap" "$provision" "$migration" "$bootstrap_helper"; do
+for path in "$bootstrap" "$provision" "$deploy" "$migration" "$bootstrap_helper"; do
   [[ -f $path && ! -L $path ]] || reject chalkwright-sudo-policy-source-missing
 done
 actual_bootstrap=$(/usr/bin/sha256sum "$bootstrap" | /usr/bin/cut -d ' ' -f 1)
 actual_provision=$(/usr/bin/sha256sum "$provision" | /usr/bin/cut -d ' ' -f 1)
+actual_deploy=$(/usr/bin/sha256sum "$deploy" | /usr/bin/cut -d ' ' -f 1)
 actual_migration=$(/usr/bin/sha256sum "$migration" | /usr/bin/cut -d ' ' -f 1)
 actual_bootstrap_helper=$(/usr/bin/sha256sum "$bootstrap_helper" | /usr/bin/cut -d ' ' -f 1)
-[[ $actual_bootstrap == "$bootstrap_digest" && $actual_provision == "$provision_digest" && $actual_migration == "$migration_digest" && $actual_bootstrap_helper == "$bootstrap_helper_digest" ]] || reject chalkwright-sudo-policy-source-drift
+[[ $actual_bootstrap == "$bootstrap_digest" && $actual_provision == "$provision_digest" && $actual_deploy == "$deploy_digest" && $actual_migration == "$migration_digest" && $actual_bootstrap_helper == "$bootstrap_helper_digest" ]] || reject chalkwright-sudo-policy-source-drift
 if [[ $1 == --install ]]; then
   [[ ! -e $admin && ! -L $admin && ! -e $admin_root && ! -L $admin_root && ! -e $sudoers && ! -L $sudoers ]] || reject chalkwright-sudo-policy-target-exists
 else
@@ -45,6 +48,7 @@ created+=("$admin_root")
 /usr/bin/install -o root -g root -m 0700 "$bootstrap" "$admin_root/bootstrap.mjs"
 /usr/bin/install -o root -g root -m 0700 "$bootstrap_helper" "$admin_root/provision-m16-production.mjs"
 /usr/bin/install -o root -g root -m 0700 "$provision" "$admin_root/provision.sh"
+/usr/bin/install -o root -g root -m 0700 "$deploy" "$admin_root/deploy-production-from-main.sh"
 /usr/bin/install -o root -g root -m 0700 "$migration" "$admin_root/migrate-production-plan-state.sh"
 
 wrapper_candidate=$admin_root/wrapper.candidate
@@ -57,7 +61,7 @@ reject() { echo "{\"status\":\"rejected\",\"code\":\"$1\"}" >&2; exit 1; }
 case $1 in
   bootstrap) exec /usr/bin/node /usr/local/lib/chalkwright-production-admin/bootstrap.mjs --apply ;;
   provision) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/provision.sh ;;
-  deploy) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/deploy-production-from-main.sh ;;
+  deploy) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/deploy-production-from-main.sh ;;
   migrate-plans) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/migrate-production-plan-state.sh ;;
   activate) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/activate-production.sh ;;
   cutover) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/cutover-production-tailscale-route.sh ;;
