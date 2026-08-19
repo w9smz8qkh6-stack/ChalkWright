@@ -21,10 +21,12 @@ export type SyntheticRoutineMode =
   | 'service-worker'
   | 'stall'
   | 'status-forbidden'
+  | 'status-oidc-bell-marker-missing'
   | 'status-oidc-redirect'
   | 'status-saml-redirect'
   | 'status-unauthorized'
-  | 'teacher-redirect';
+  | 'teacher-redirect'
+  | 'websocket';
 
 export type SyntheticRepairFlow =
   | 'bad-password'
@@ -60,9 +62,17 @@ export async function startSyntheticPowerSchoolSessionServer(
     readonly bootstrapPopup?: boolean;
     readonly bootstrapResourceIframe?: boolean;
     readonly repairFlow?: SyntheticRepairFlow;
+    readonly bindSessionToUserAgent?: boolean;
+    readonly requireBrowserNavigationForBell?: boolean;
+    readonly browserBellSubresource?: boolean;
+    readonly browserBellResponseBytes?: number;
+    readonly omitBellContentLength?: boolean;
   } = {},
 ): Promise<RunningSyntheticPowerSchoolSessionServer> {
   const requests: SyntheticSessionRequest[] = [];
+  const sessionIdentity: { userAgent: string | undefined } = {
+    userAgent: undefined,
+  };
   const foreignServer = createServer((request, response) => {
     record(requests, 'foreign', request);
     respond(response, 200, page('Foreign', '<main>Foreign</main>'));
@@ -96,6 +106,15 @@ export async function startSyntheticPowerSchoolSessionServer(
       identityOrigin,
       routineMode: options.routineMode ?? 'normal',
       bootstrapStalls: options.bootstrapStalls === true,
+      bindSessionToUserAgent: options.bindSessionToUserAgent === true,
+      requireBrowserNavigationForBell:
+        options.requireBrowserNavigationForBell === true,
+      browserBellSubresource: options.browserBellSubresource === true,
+      ...(options.browserBellResponseBytes === undefined
+        ? {}
+        : { browserBellResponseBytes: options.browserBellResponseBytes }),
+      omitBellContentLength: options.omitBellContentLength === true,
+      sessionIdentity,
     });
   });
   await listen(powerSchoolServer, '127.0.0.1');
@@ -122,6 +141,12 @@ function routePowerSchool(
     readonly identityOrigin: string;
     readonly routineMode: SyntheticRoutineMode;
     readonly bootstrapStalls: boolean;
+    readonly bindSessionToUserAgent: boolean;
+    readonly requireBrowserNavigationForBell: boolean;
+    readonly browserBellSubresource: boolean;
+    readonly browserBellResponseBytes?: number;
+    readonly omitBellContentLength: boolean;
+    readonly sessionIdentity: { userAgent: string | undefined };
   },
 ): void {
   const url = new URL(request.url ?? '/', options.powerSchoolOrigin);
@@ -131,7 +156,7 @@ function routePowerSchool(
     return;
   }
   if (url.pathname === '/status' || url.pathname === '/teachers/home.html') {
-    if (!hasSession(request)) {
+    if (!hasBoundSession(request, options)) {
       redirect(response, '/login');
       return;
     }
@@ -151,7 +176,10 @@ function routePowerSchool(
       redirect(response, '/saml/start');
       return;
     }
-    if (options.routineMode === 'status-oidc-redirect') {
+    if (
+      options.routineMode === 'status-oidc-redirect' ||
+      options.routineMode === 'status-oidc-bell-marker-missing'
+    ) {
       redirect(response, '/oidc/openid_connect_login?private=discarded');
       return;
     }
@@ -184,16 +212,27 @@ function routePowerSchool(
       redirect(response, '/login');
       return;
     }
-    if (!hasSession(request)) {
+    if (!hasBoundSession(request, options)) {
       if (options.bootstrapStalls) return;
       redirect(response, '/login');
       return;
     }
-    respond(
-      response,
-      200,
-      bellPage(url.searchParams.get('target_date') ?? '', options.routineMode),
+    if (
+      options.requireBrowserNavigationForBell &&
+      request.headers['sec-fetch-mode'] !== 'navigate'
+    ) {
+      redirect(response, '/login');
+      return;
+    }
+    const body = bellPage(
+      url.searchParams.get('target_date') ?? '',
+      options.routineMode,
+      options.browserBellSubresource,
+      options.browserBellResponseBytes,
     );
+    if (options.omitBellContentLength)
+      respondWithoutLength(response, 200, body);
+    else respond(response, 200, body);
     return;
   }
   if (url.pathname === '/login') {
@@ -204,6 +243,9 @@ function routePowerSchool(
     return;
   }
   if (url.pathname === '/auth/callback') {
+    if (options.bindSessionToUserAgent) {
+      options.sessionIdentity.userAgent = request.headers['user-agent'];
+    }
     response.setHeader(
       'set-cookie',
       'synthetic_powerschool_session=valid; HttpOnly; SameSite=Lax; Path=/',
@@ -219,6 +261,21 @@ function routePowerSchool(
     return;
   }
   respond(response, 404, page('Not found', '<main>Not found</main>'));
+}
+
+function hasBoundSession(
+  request: IncomingMessage,
+  options: {
+    readonly bindSessionToUserAgent: boolean;
+    readonly sessionIdentity: { userAgent: string | undefined };
+  },
+): boolean {
+  return (
+    hasSession(request) &&
+    (!options.bindSessionToUserAgent ||
+      (options.sessionIdentity.userAgent !== undefined &&
+        request.headers['user-agent'] === options.sessionIdentity.userAgent))
+  );
 }
 
 function routeIdentity(
@@ -474,6 +531,10 @@ function statusPage(mode: SyntheticRoutineMode): string {
       behavior =
         '<form method="post" action="/status"></form><script>document.forms[0].submit()</script>';
       break;
+    case 'websocket':
+      behavior =
+        '<script>new WebSocket(`ws://${location.host}/bell?target_date=04/13/2035`)</script>';
+      break;
     case 'popup':
       behavior = `<script>window.open(${JSON.stringify(bellPath)})</script>`;
       break;
@@ -503,14 +564,19 @@ function statusPage(mode: SyntheticRoutineMode): string {
   );
 }
 
-function bellPage(date: string, mode: SyntheticRoutineMode): string {
+function bellPage(
+  date: string,
+  mode: SyntheticRoutineMode,
+  includeSubresource = false,
+  responseBytes?: number,
+): string {
   const periods =
     mode === 'no-classes'
       ? '<table><tr><th dayindex="6">Friday<br>04/13/2035<br>Synthetic Academy Bell Schedule</th></tr></table><div class="aet_day" dayindex="6"></div>'
       : '<table><tr><td>Period 1</td><td>08:00 AM - 08:45 AM</td></tr><tr><td>Period 2</td><td>08:50 AM - 09:35 AM</td></tr></table>';
   return page(
     'Synthetic Academy bell schedule Friday April 13, 2035',
-    `<main id="bell-ready"><h1>Synthetic Academy — Friday, April 13, 2035 Bell Schedule</h1>${periods}<span data-date="${escapeHtml(date)}"></span></main>`,
+    `<main${mode === 'status-oidc-bell-marker-missing' ? '' : ' id="bell-ready"'}><h1>Synthetic Academy — Friday, April 13, 2035 Bell Schedule</h1>${periods}<span data-date="${escapeHtml(date)}"></span>${includeSubresource ? '<img src="/browser-native-subresource" alt="">' : ''}${responseBytes === undefined ? '' : `<p>${'x'.repeat(responseBytes)}</p>`}</main>`,
   );
 }
 
@@ -584,6 +650,18 @@ function respond(response: ServerResponse, status: number, body: string): void {
   response.writeHead(status, {
     'content-type': 'text/html; charset=utf-8',
     'content-length': Buffer.byteLength(body),
+    'cache-control': 'no-store',
+  });
+  response.end(body);
+}
+
+function respondWithoutLength(
+  response: ServerResponse,
+  status: number,
+  body: string,
+): void {
+  response.writeHead(status, {
+    'content-type': 'text/html; charset=utf-8',
     'cache-control': 'no-store',
   });
   response.end(body);

@@ -3,6 +3,7 @@ import type { TypedJobResult } from '../../domain/job-results.js';
 import type { RoomId, ScreenId } from '../../domain/identities.js';
 import { projectEffectivePlan } from '../../domain/plan-derivation.js';
 import type { CoursePlanMapping } from '../../domain/plan-derivation.js';
+import { addDateDays } from '../../domain/pure-values.js';
 import type { PlanSnapshotWriter } from '../../ports/persistence-write.js';
 import type { ScheduleObservationSource } from '../../ports/read-sources.js';
 import { acquireCanonicalPlan } from '../read-only/acquire-canonical-plan.js';
@@ -26,6 +27,7 @@ export function createPlanRefreshJobHandler(options: {
   readonly sourceForRun: (signal: AbortSignal) => ScheduleObservationSource;
   readonly plans: PlanSnapshotWriter;
   readonly evidencePrefix: 'shadow' | 'production';
+  readonly futureClassDayLookaheadDays?: number;
 }): OperationsJobHandler {
   return async (request, signal) => {
     const prefix = options.evidencePrefix;
@@ -33,8 +35,12 @@ export function createPlanRefreshJobHandler(options: {
       return failed(request, `${prefix}-job-invalid`, false);
     if (signal.aborted)
       return failed(request, `${prefix}-source-aborted`, true);
+    const lookahead = options.futureClassDayLookaheadDays ?? 0;
+    if (!Number.isInteger(lookahead) || lookahead < 0 || lookahead > 7)
+      return failed(request, `${prefix}-future-lookahead-invalid`, false);
     const date = localDate(request.requestedAt, options.config.timeZone);
-    const acquired = await acquireCanonicalPlan(options.sourceForRun(signal), {
+    const source = options.sourceForRun(signal);
+    const acquired = await acquireCanonicalPlan(source, {
       date,
       roomId: options.config.roomId,
       mappings: options.config.courseMappings,
@@ -47,41 +53,118 @@ export function createPlanRefreshJobHandler(options: {
     });
     if (signal.aborted)
       return failed(request, `${prefix}-source-aborted`, true);
-    if (acquired.status === 'not-found')
+    const currentPlanUnavailable = acquired.status === 'not-found';
+    if (currentPlanUnavailable && lookahead === 0)
       return failed(request, `${prefix}-plan-not-found`, false);
-    if (acquired.status !== 'planned') {
+    if (!currentPlanUnavailable && acquired.status !== 'planned') {
       if (acquired.status === 'repair-required')
         return repairRequired(request, prefix, acquired.error.code);
       return failed(
         request,
-        `${prefix}-source-unavailable`,
+        `${prefix}-source-unavailable-${boundedSourceCode(
+          acquired.status === 'failed' ? acquired.error.code : undefined,
+        )}`,
         acquired.error.retryable,
       );
     }
-    const effective = projectEffectivePlan(acquired.plan, {
-      contractVersion,
-      screenId: options.config.screenId,
-      roomId: options.config.roomId,
-      routeKey: options.config.screenId,
-    });
-    if (effective === undefined)
-      return failed(request, `${prefix}-plan-scope-invalid`, false);
-    const canonical = await options.plans.storeCanonical(acquired.plan);
-    if (signal.aborted)
-      return failed(request, `${prefix}-source-aborted`, true);
-    if (canonical.status === 'rejected')
-      return failed(request, `${prefix}-plan-store-failed`, true);
-    const projected = await options.plans.storeEffective(effective);
-    if (projected.status === 'rejected')
-      return failed(request, `${prefix}-plan-store-failed`, true);
+    let currentMeetingCount: number | undefined;
+    if (acquired.status === 'planned') {
+      const effective = projectEffectivePlan(acquired.plan, {
+        contractVersion,
+        screenId: options.config.screenId,
+        roomId: options.config.roomId,
+        routeKey: options.config.screenId,
+      });
+      if (effective === undefined)
+        return failed(request, `${prefix}-plan-scope-invalid`, false);
+      const canonical = await options.plans.storeCanonical(acquired.plan);
+      if (signal.aborted)
+        return failed(request, `${prefix}-source-aborted`, true);
+      if (canonical.status === 'rejected')
+        return failed(request, `${prefix}-plan-store-failed`, true);
+      const projected = await options.plans.storeEffective(effective);
+      if (projected.status === 'rejected')
+        return failed(request, `${prefix}-plan-store-failed`, true);
+      currentMeetingCount = effective.meetings.length;
+    }
+    let firstFutureClassDay: IsoDate | undefined;
+    let futureClassDayCount = 0;
+    for (let offset = 1; offset <= lookahead; offset += 1) {
+      if (signal.aborted)
+        return failed(request, `${prefix}-source-aborted`, true);
+      const futureDate = addDateDays(date, offset);
+      if (futureDate === undefined)
+        return failed(request, `${prefix}-future-date-invalid`, false);
+      const future = await acquireCanonicalPlan(source, {
+        date: futureDate,
+        roomId: options.config.roomId,
+        mappings: options.config.courseMappings,
+        timing: {
+          timeZone: options.config.timeZone,
+          checkInOpenMinutesBefore: options.config.checkInOpenMinutesBefore,
+          dismissalWarningMinutesBefore:
+            options.config.dismissalWarningMinutesBefore,
+        },
+      });
+      if (future.status === 'repair-required')
+        return repairRequired(request, prefix, future.error.code);
+      if (future.status === 'not-found') continue;
+      if (future.status !== 'planned')
+        return failed(
+          request,
+          `${prefix}-future-plan-unavailable-${boundedSourceCode(
+            future.status === 'failed' ? future.error.code : undefined,
+          )}`,
+          future.status === 'failed' ? future.error.retryable : false,
+        );
+      const futureEffective = projectEffectivePlan(future.plan, {
+        contractVersion,
+        screenId: options.config.screenId,
+        roomId: options.config.roomId,
+        routeKey: options.config.screenId,
+      });
+      if (futureEffective === undefined)
+        return failed(request, `${prefix}-future-plan-scope-invalid`, false);
+      const futureCanonical = await options.plans.storeCanonical(future.plan);
+      if (futureCanonical.status === 'rejected')
+        return failed(request, `${prefix}-future-plan-store-failed`, true);
+      const futureProjected =
+        await options.plans.storeEffective(futureEffective);
+      if (futureProjected.status === 'rejected')
+        return failed(request, `${prefix}-future-plan-store-failed`, true);
+      if (futureEffective.meetings.length > 0) {
+        firstFutureClassDay ??= futureDate;
+        futureClassDayCount += 1;
+      }
+    }
     return {
       ...base(request),
       diagnostics: [
         {
-          code: `${prefix}-plan-refreshed`,
-          severity: 'info',
-          message: `${effective.meetings.length} meeting(s) stored in the isolated ${prefix} database.`,
+          code: currentPlanUnavailable
+            ? `${prefix}-current-plan-unavailable-skipped`
+            : `${prefix}-plan-refreshed`,
+          severity: currentPlanUnavailable ? 'warning' : 'info',
+          message: currentPlanUnavailable
+            ? `No usable exact plan was stored for ${date}; the bounded future lookahead continued.`
+            : `${currentMeetingCount ?? 0} meeting(s) stored in the isolated ${prefix} database.`,
         },
+        ...(lookahead === 0
+          ? []
+          : [
+              {
+                code:
+                  firstFutureClassDay === undefined
+                    ? `${prefix}-future-class-day-unavailable`
+                    : `${prefix}-future-class-day-refreshed`,
+                severity:
+                  firstFutureClassDay === undefined ? 'warning' : 'info',
+                message:
+                  firstFutureClassDay === undefined
+                    ? `No verified future class day was stored within the ${lookahead}-day lookahead.`
+                    : `${futureClassDayCount} verified future class day(s) were stored; the next is ${firstFutureClassDay}.`,
+              } as const,
+            ]),
       ],
       category: 'succeeded',
       attemptedExternalMutations: 0,
@@ -132,6 +215,12 @@ function failed(
       diagnostics: [],
     },
   };
+}
+
+function boundedSourceCode(code: string | undefined): string {
+  return code !== undefined && /^[a-z0-9][a-z0-9-]{0,96}$/u.test(code)
+    ? code
+    : 'source-failed';
 }
 
 const sourceRepairCodes = new Set([

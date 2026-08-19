@@ -7,7 +7,9 @@ import { loadShadowConfig } from '../config/shadow.js';
 async function main(): Promise<void> {
   try {
     const config = loadShadowConfig();
-    const running = await startShadowApplication(config);
+    const running = await startShadowApplication(config, process.cwd(), {
+      legacyRouteCompatibility: true,
+    });
     process.stdout.write(
       `Classroom Hub shadow instance ${running.instanceId} is listening on loopback.\n`,
     );

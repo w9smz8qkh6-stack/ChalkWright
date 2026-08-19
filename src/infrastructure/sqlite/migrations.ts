@@ -270,6 +270,171 @@ export const schemaMigrations: readonly SchemaMigration[] = [
         ON calendar_execution_journal(scope_id, started_at DESC);
     `,
   },
+  {
+    version: 6,
+    name: 'bounded-calendar-intent-identities',
+    sql: `
+      CREATE TABLE calendar_execution_steps_v6 (
+        execution_fingerprint TEXT NOT NULL
+          REFERENCES calendar_execution_journal(execution_fingerprint)
+          ON DELETE CASCADE,
+        intent_id TEXT NOT NULL,
+        intent_kind TEXT NOT NULL
+          CHECK (intent_kind IN ('no-op', 'create', 'replace', 'delete')),
+        status TEXT NOT NULL
+          CHECK (status IN ('pending', 'attempted', 'succeeded', 'failed')),
+        outcome TEXT
+          CHECK (outcome IS NULL OR outcome IN (
+            'no-op', 'mutated', 'already-converged', 'refused'
+          )),
+        provider_reference_hash TEXT,
+        error_code TEXT,
+        PRIMARY KEY (execution_fingerprint, intent_id),
+        CHECK (length(intent_id) BETWEEN 1 AND 512),
+        CHECK (
+          provider_reference_hash IS NULL OR
+          length(provider_reference_hash) = 71
+        ),
+        CHECK (error_code IS NULL OR length(error_code) BETWEEN 1 AND 128)
+      ) STRICT;
+
+      INSERT INTO calendar_execution_steps_v6(
+        execution_fingerprint, intent_id, intent_kind, status, outcome,
+        provider_reference_hash, error_code
+      )
+      SELECT execution_fingerprint, intent_id, intent_kind, status, outcome,
+             provider_reference_hash, error_code
+      FROM calendar_execution_steps;
+
+      DROP TABLE calendar_execution_steps;
+      ALTER TABLE calendar_execution_steps_v6 RENAME TO calendar_execution_steps;
+    `,
+  },
+  {
+    version: 7,
+    name: 'offline-glossary-catalog',
+    sql: `
+      CREATE TABLE glossary_sources (
+        source_glossary_id TEXT PRIMARY KEY,
+        class_id TEXT NOT NULL,
+        class_name TEXT,
+        academic_year TEXT NOT NULL,
+        unit_key TEXT,
+        lesson_topic TEXT,
+        source_reference TEXT NOT NULL,
+        source_format TEXT NOT NULL CHECK (source_format IN ('csv', 'manual')),
+        content_hash TEXT NOT NULL,
+        imported_at TEXT NOT NULL,
+        CHECK (length(source_glossary_id) BETWEEN 1 AND 256),
+        CHECK (length(class_id) BETWEEN 1 AND 128),
+        CHECK (class_name IS NULL OR length(class_name) BETWEEN 1 AND 256),
+        CHECK (length(academic_year) BETWEEN 4 AND 32),
+        CHECK (unit_key IS NULL OR length(unit_key) BETWEEN 1 AND 128),
+        CHECK (lesson_topic IS NULL OR length(lesson_topic) BETWEEN 1 AND 512),
+        CHECK (length(source_reference) BETWEEN 1 AND 2048),
+        CHECK (length(content_hash) = 71)
+      ) STRICT;
+
+      CREATE TABLE glossary_entries (
+        entry_id TEXT PRIMARY KEY,
+        source_glossary_id TEXT NOT NULL REFERENCES glossary_sources(source_glossary_id)
+          ON DELETE CASCADE,
+        source_row_key TEXT NOT NULL,
+        source_language TEXT NOT NULL,
+        term TEXT NOT NULL,
+        definition TEXT NOT NULL,
+        part_of_speech TEXT,
+        example TEXT,
+        pronunciation TEXT,
+        created_at TEXT NOT NULL,
+        CHECK (length(entry_id) BETWEEN 1 AND 256),
+        CHECK (length(source_row_key) BETWEEN 1 AND 256),
+        CHECK (length(source_language) BETWEEN 2 AND 35),
+        CHECK (length(term) BETWEEN 1 AND 512),
+        CHECK (length(definition) BETWEEN 1 AND 8192),
+        CHECK (part_of_speech IS NULL OR length(part_of_speech) BETWEEN 1 AND 128),
+        CHECK (example IS NULL OR length(example) BETWEEN 1 AND 8192),
+        CHECK (pronunciation IS NULL OR length(pronunciation) BETWEEN 1 AND 512),
+        UNIQUE (source_glossary_id, source_row_key)
+      ) STRICT;
+
+      CREATE TABLE glossary_translations (
+        translation_id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL REFERENCES glossary_entries(entry_id) ON DELETE CASCADE,
+        language_code TEXT NOT NULL,
+        translated_term TEXT,
+        translated_definition TEXT,
+        translated_part_of_speech TEXT,
+        translated_example TEXT,
+        origin TEXT NOT NULL CHECK (origin IN ('teacher', 'machine')),
+        review_status TEXT NOT NULL CHECK (review_status IN ('unreviewed', 'reviewed', 'rejected')),
+        generator_reference TEXT,
+        created_at TEXT NOT NULL,
+        CHECK (length(translation_id) BETWEEN 1 AND 256),
+        CHECK (length(language_code) BETWEEN 2 AND 35),
+        CHECK (translated_term IS NOT NULL OR translated_definition IS NOT NULL OR translated_part_of_speech IS NOT NULL OR translated_example IS NOT NULL),
+        CHECK (translated_term IS NULL OR length(translated_term) BETWEEN 1 AND 512),
+        CHECK (translated_definition IS NULL OR length(translated_definition) BETWEEN 1 AND 8192),
+        CHECK (translated_part_of_speech IS NULL OR length(translated_part_of_speech) BETWEEN 1 AND 128),
+        CHECK (translated_example IS NULL OR length(translated_example) BETWEEN 1 AND 8192),
+        CHECK (generator_reference IS NULL OR length(generator_reference) BETWEEN 1 AND 512),
+        CHECK ((origin = 'teacher' AND generator_reference IS NULL) OR origin = 'machine')
+      ) STRICT;
+
+      CREATE TABLE glossary_media (
+        media_id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL REFERENCES glossary_entries(entry_id) ON DELETE CASCADE,
+        translation_id TEXT REFERENCES glossary_translations(translation_id) ON DELETE CASCADE,
+        language_code TEXT NOT NULL,
+        media_role TEXT NOT NULL CHECK (media_role IN (
+          'term-pronunciation', 'definition-pronunciation',
+          'translated-term-pronunciation', 'translated-definition-pronunciation',
+          'illustration', 'supplementary'
+        )),
+        mime_type TEXT NOT NULL,
+        byte_length INTEGER NOT NULL,
+        content_sha256 TEXT NOT NULL,
+        content BLOB NOT NULL,
+        origin TEXT NOT NULL CHECK (origin IN ('teacher', 'machine')),
+        review_status TEXT NOT NULL CHECK (review_status IN ('unreviewed', 'reviewed', 'rejected')),
+        attribution TEXT,
+        license_reference TEXT,
+        created_at TEXT NOT NULL,
+        CHECK (length(media_id) BETWEEN 1 AND 256),
+        CHECK (length(language_code) BETWEEN 2 AND 35),
+        CHECK (length(mime_type) BETWEEN 3 AND 128),
+        CHECK (byte_length BETWEEN 1 AND 5242880),
+        CHECK (length(content_sha256) = 71),
+        CHECK (length(content) = byte_length),
+        CHECK (attribution IS NULL OR length(attribution) BETWEEN 1 AND 2048),
+        CHECK (license_reference IS NULL OR length(license_reference) BETWEEN 1 AND 2048),
+        CHECK (
+          (media_role IN ('translated-term-pronunciation', 'translated-definition-pronunciation') AND translation_id IS NOT NULL) OR
+          (media_role NOT IN ('translated-term-pronunciation', 'translated-definition-pronunciation') AND translation_id IS NULL)
+        )
+      ) STRICT;
+
+      CREATE TABLE glossary_import_runs (
+        import_id TEXT PRIMARY KEY,
+        source_glossary_id TEXT NOT NULL,
+        content_hash TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('imported', 'unchanged', 'rejected')),
+        accepted_count INTEGER NOT NULL CHECK (accepted_count >= 0),
+        rejected_count INTEGER NOT NULL CHECK (rejected_count >= 0),
+        imported_at TEXT NOT NULL,
+        FOREIGN KEY (source_glossary_id) REFERENCES glossary_sources(source_glossary_id)
+      ) STRICT;
+
+      CREATE INDEX glossary_sources_class_scope
+        ON glossary_sources(class_id, academic_year, unit_key);
+      CREATE INDEX glossary_entries_source
+        ON glossary_entries(source_glossary_id, term);
+      CREATE INDEX glossary_translations_entry
+        ON glossary_translations(entry_id, language_code);
+      CREATE INDEX glossary_media_entry
+        ON glossary_media(entry_id, translation_id, media_role);
+    `,
+  },
 ] as const;
 
 const migrationTableSql = `

@@ -85,6 +85,41 @@ test('rejects personal and protected paths without returning their values', () =
   assert.equal(JSON.stringify(summary).includes(personalPath), false);
 });
 
+test('rejects a personal home root without a trailing slash', () => {
+  const root = fixture();
+  const personalRoot = ['/home', '/bren'].join('');
+  writeFileSync(join(root, 'README.md'), `path=${personalRoot}\n`, {
+    mode: 0o600,
+  });
+  assert.deepEqual(auditPublicationTree(root), [
+    {
+      code: 'publication-personal-home-path',
+      path: 'README.md',
+      count: 1,
+    },
+  ]);
+});
+
+test('rejects private Tailnet URLs while accepting the documentation placeholder', () => {
+  const root = fixture();
+  writeFileSync(
+    join(root, 'README.md'),
+    [
+      'safe=https://chalkwright.example-tailnet.ts.net:14443/classroom-screen',
+      `private=https://classroom-device.${'tail12345.ts.net'}:14443/classroom-screen`,
+      '',
+    ].join('\n'),
+    { mode: 0o600 },
+  );
+  assert.deepEqual(auditPublicationTree(root), [
+    {
+      code: 'publication-private-tailnet-url',
+      path: 'README.md',
+      count: 1,
+    },
+  ]);
+});
+
 test('requires exact media provenance for the bundled horse video', () => {
   const root = fixture();
   mkdirSync(join(root, 'public'));

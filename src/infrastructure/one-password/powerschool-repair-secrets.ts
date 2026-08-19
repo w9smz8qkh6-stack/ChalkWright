@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
 
 import {
   lockedOnePasswordExecutable,
@@ -38,6 +39,10 @@ export async function readPowerSchoolRepairSecrets(options: {
     options.environment ?? process.env,
     options.serviceAccountToken,
   );
+  const configurationDirectory =
+    options.serviceAccountToken === undefined
+      ? undefined
+      : mkdtempSync('/tmp/chalkwright-onepassword-config-');
   const acquired: Buffer[] = [];
   try {
     for (const reference of [
@@ -49,7 +54,14 @@ export async function readPowerSchoolRepairSecrets(options: {
         throw new Error('powerschool-repair-secret-unavailable');
       const value = await execute(
         lockedOnePasswordExecutable,
-        ['read', reference, '--no-newline'],
+        [
+          ...(configurationDirectory === undefined
+            ? []
+            : ['--config', configurationDirectory, '--cache=false']),
+          'read',
+          reference,
+          '--no-newline',
+        ],
         {
           environment,
           timeoutMs: secretReadTimeoutMs,
@@ -70,6 +82,15 @@ export async function readPowerSchoolRepairSecrets(options: {
   } catch {
     for (const value of acquired) value.fill(0);
     throw new Error('powerschool-repair-secret-unavailable');
+  } finally {
+    if (configurationDirectory !== undefined) {
+      try {
+        rmSync(configurationDirectory, { recursive: true, force: false });
+      } catch {
+        for (const value of acquired) value.fill(0);
+        throw new Error('powerschool-repair-secret-unavailable');
+      }
+    }
   }
 }
 

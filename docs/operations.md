@@ -88,7 +88,8 @@ production activation remain later design and deployment work.
 ## Authorized M-11 shadow units
 
 The repository also contains four activation-ready system-unit files scoped
-only to M-11. Each service explicitly runs as the unprivileged `bren` account:
+only to M-11. Each service explicitly runs as the configured unprivileged
+application account:
 
 - `classroom-hub-shadow.service` serves the persistent SQLite reader on the
   configured non-production loopback port;
@@ -110,7 +111,7 @@ The host user manager cannot apply capability-reducing `PrivateDevices`,
 `ProtectClock`, `ProtectKernelLogs`, or `ProtectKernelModules`: isolated
 `/usr/bin/true` probes fail at systemd's `CAPABILITIES` spawn step. The user
 explicitly authorized system-manager units instead, retaining those controls
-while running the application as `bren`.
+while running the application as that unprivileged account.
 
 The persistent server and backup units require the owner-only least-authority
 `/etc/classroom-hub/shadow/server.env`; only the
@@ -131,8 +132,10 @@ Each JSON entry in `CLASSROOM_HUB_SHADOW_COURSE_MAPPINGS` requires
 `classId`, `sectionCode`, and `providerCourseKey`. It may also include the
 bounded `attendanceClassCode` used by the legacy pre-check-in display. That
 code is independent of the PowerSchool/Classroom section code used for course
-mapping. Aggregate attendance links and counts come only from validated local
-SQLite continuity rows; absent data hides only the dependent element.
+mapping. An optional HTTPS-only `attendanceCheckInUrl` supplies the independent
+check-in/QR destination without proxying a submission through Chalkwright.
+Aggregate attendance links and counts come only from validated local SQLite
+continuity rows; absent data hides only the dependent element.
 
 The server and backup prohibit every namespace type. The refresh unit permits
 only `user`, `pid`, and `net` namespaces because the enabled Chrome Linux
@@ -428,3 +431,196 @@ use generic Calendar commands to repair the scope.
 M-06 serializes fake alert evaluation within one process. A future real
 transport must add a cross-process lease/CAS before concurrent delivery is
 authorized; no external delivery exists in this milestone.
+
+## M-17 isolated parallel-canary runbook
+
+This runbook never replaces the legacy OpenClaw display. The candidate uses
+loopback port `4319`, `/opt/chalkwright-canary`,
+`/etc/chalkwright/canary`, `/var/lib/chalkwright/canary-production`, a separate
+filtered PowerSchool state directory, and the existing secondary owned
+Calendar named `Auto Lesson 2`. Candidate alerts are report-only.
+
+### Native PowerSchool authentication repair
+
+ADR-0024 replaces the legacy OpenClaw state bridge as Chalkwright's intended
+steady-state authentication repair. The native repair is deliberately absent
+from the routine plan unit and has no timer. Its inert systemd service reads the
+ordinary canary plan policy plus a separate root-owned environment containing
+only three fixed paths: the Chalkwright repair-reference file, the dedicated
+1Password service-account file, and the dedicated retained compatibility
+profile.
+
+Before first use, place a dedicated exact repair-reference JSON and dedicated
+service-account environment file at the two fixed owner-only migration handoff
+paths enforced by `provision-m17-powerschool-repair.mjs`. After exact offline
+review of the provisioner, provision the owner-only canary copies and profile.
+No provider request or unit start is part of provisioning.
+
+For an explicitly authorized live repair, start only
+`chalkwright-canary-powerschool-repair.service`. Accept only its sanitized
+`authenticated` result. Then start the credential-free
+`chalkwright-canary-plan-preflight.service`; the repair is not qualified unless
+that exact read succeeds without OpenClaw access. The plan service uses the
+same dedicated Chalkwright-owned retained profile through a separate
+credential-free entrypoint. It cannot read the protected repair directory or
+resolve credentials, but it may perform silent browser-native OIDC through the
+exact configured origins. Unknown Google challenges,
+CAPTCHA, passkey/security-key prompts, recovery, browser rejection, timeout, or
+policy violations stop the sequence. Do not start Calendar reconciliation or
+restore the candidate Tailnet route merely because authentication succeeded.
+
+The 2026-08-14 live gate completed native repair without OpenClaw. Its following
+credential-free job stored the current plan and acquired a future plan before
+the separate `production-future-plan-store-failed` persistence defect. A later
+repeat showed that headless repair and the routine session-HTTP reader used
+different request identities; repair reached the exact bell marker, but the
+fresh routine bell GET was redirected to authentication. The offline correction
+normalized the installed-Chrome request identity in both lanes, but a fresh
+live attempt proved that was insufficient. The current offline correction adds
+one exact application-owned browser-native bell retry only after that precise
+Node authentication redirect; every redirect, identity request, and
+subresource is blocked before the wire. Do not treat that correction as
+qualified until a fresh native repair is immediately followed by a successful
+credential-free exact-plan preflight.
+The first installed browser-native attempt remained repair-required. The next
+offline correction preserves only an exact PowerSchool cookie partition that
+the prior Playwright `storageState()` projection could omit; it never imports
+Google or legacy state and never removes a partition key to broaden a cookie.
+Repeat the same repair-then-preflight gate only after that superseding inert
+release is independently reviewed and installed. Complete partition-state
+preservation was also insufficient in the live tenant, so the next exact gate
+uses the accepted retained-profile reader rather than another state-copy
+variant. This is an application-owned profile, not a legacy bridge or profile.
+`refresh-m17-powerschool-state-from-legacy.mjs` is no longer part of the active
+recovery procedure. Its executable bridge and repository-safety exception have
+now been removed; the migration record retains the historical evidence.
+
+Run `npm run check` and `git diff --check` before proposing any live command.
+The inactive upgrade must retain its exact predecessor on every pre-switch
+failure, restore all ordinary installed units after a partial replacement, and
+commit the verified new release/unit pair before best-effort removal of its
+temporary rollback material. Do not bypass a failed upgrade or copy unit files
+manually.
+Then obtain separate authorization for each group below:
+
+1. Protected provisioning: run
+   `sudo node scripts/operations/provision-m17-canary.mjs --apply`. It reads
+   only the existing qualified M-16 production references and the qualified
+   M-14 Calendar configuration staged by the operator as the owner-only,
+   single-link protected handoff
+   `/etc/chalkwright/migration/google-calendar-writer-config.json`. It derives
+   the exact secondary target and legacy deny hash, creates eight new protected
+   canary files (including a provider-free maintenance environment), and
+   performs zero provider/service/route work. The handoff contains no source
+   user-home path and must be provisioned outside the repository without
+   printing its values. Canary provisioning is create-once and must not be
+   retried after success.
+2. Release: run `scripts/operations/build-m17-canary-release.sh`, record its
+   archive digest, obtain approval for that exact digest, then run
+   `sudo scripts/operations/install-m17-canary-inert.sh
+/tmp/chalkwright-m17-canary-runtime.tar.gz <digest>`. Installation starts
+   nothing and changes no route.
+3. Filtered-state copy: execute the fixed root launcher with the approved
+   installed release digest. It reads only the root-owned canary plan
+   environment, permanently drops to `classroom-hub`, and imports the
+   validated copy routine from that exact installed release. Run
+   `sudo node scripts/operations/copy-m17-powerschool-state.mjs <digest>`.
+   Accept only `copied-filtered-state` with zero profiles, Google origins, and
+   provider requests. This is not a sign-in or repair.
+4. State initialization: before any provider preflight, execute the fixed
+   release-bound initializer once with
+   `sudo node scripts/operations/initialize-m17-canary-state.mjs <digest>`.
+   It validates the installed release, permanently drops to the service owner,
+   creates only the isolated canary SQLite database, applies the checked-in
+   schema, and verifies integrity. Accept only `initialized-inert` with zero
+   provider requests, services started, and route changes. It refuses an
+   existing database.
+   If the copied session later fails closed, use only the Chalkwright-owned
+   native repair service. No OpenClaw state-import fallback remains in the
+   operational surface.
+5. Preactivation evidence: first run the plan and Classroom services as
+   separately authorized read-only preflights. Perform an exact read-only
+   semantic Calendar audit of `Auto Lesson 2`. Prepare one owner-only exact
+   `comparison-input.json` containing only normalized reference/candidate
+   dates, times, summaries, ownership coverage, readiness, display state, and
+   plan verification—never provider IDs—and run
+   `chalkwright-canary-comparison.service`. Any difference blocks activation.
+6. Immutable live binding: inventory, but do not change, the proposed Tailnet
+   target and legacy route. Put only the exact target, legacy-route SHA-256,
+   and approved observation start/end in owner-only
+   `activation-bindings.json`; then run the packaged
+   `bind-m17-activation-manifest.mjs --apply`. It consumes the bindings and
+   comparison evidence and creates one immutable owner-only manifest binding
+   the installed release, exact Calendar/deny hashes, packaged stop command,
+   comparison evidence, and observation policy without printing values.
+   If a bound manifest is rejected before activation, never delete or overwrite
+   it ad hoc. For the specifically recorded rejected fingerprint
+   `sha256:2fda6668afbd28b2b3ee843e5ed42438cab30dacfdb496eb4c37e8ab74e925b2`,
+   run the reviewed root-only
+   `supersede-m17-activation-manifest.mjs --apply`. It first proves every
+   candidate unit is inactive and the candidate Tailnet port/loopback target is
+   absent, validates the exact protected file and fingerprint, then atomically
+   renames it to the fixed owner-only rejected-manifest audit path and fsyncs
+   the directory. It never deletes the manifest or changes a service, route, or
+   provider. If archival fails, it restores the same inode to the live path.
+   This helper is a serialized operator action: do not run activation, another
+   manifest operation, or any candidate-route command concurrently. Its unit
+   and route checks are bounded point-in-time preconditions, not a shared lock
+   with those separately authorized commands.
+   Rerun the provider-free preactivation comparison to recreate its consumed
+   export, choose a fresh exact seven-day window immediately before separately
+   authorized activation, and run the unchanged create-once binder. Retain the
+   rejected manifest for audit. If activation does not follow at the approved
+   start, reject and supersede again; inactive time never counts as coverage.
+
+### M-17 failed-activation correction
+
+The first activation manifest
+`sha256:e84fdcc9a9ba7155d5b6382a3f191eae4f3f94f490228af418db52280e332a65`
+is retained failure evidence: its attempt completed zero Calendar mutations and
+left the candidate service, timers, and route inactive. Recover in this exact
+serialized order, with no concurrent candidate lifecycle or route operation:
+
+1. Run `supersede-m17-activation-manifest.mjs --apply`. Its fixed allowlist
+   archives the exact failed manifest by fingerprint and refuses any other
+   protected content, active candidate unit, or existing candidate route.
+2. Build and independently review the corrected archive. Run the
+   exact-predecessor `upgrade-m17-canary-inert.sh` only while every candidate
+   unit is inactive. It snapshots the supplied archive into a root-owned file,
+   verifies that snapshot's approved digest, compares installed unit bytes, and
+   atomically advances `current` from the recorded predecessor. Failure before
+   the switch removes only the incomplete release; an ambiguous post-switch
+   failure restores the exact predecessor or retains both releases.
+3. Rerun the provider-inaccessible preactivation comparison to create new
+   immutable evidence, write fresh bindings whose seven-day start is imminent,
+   and run the unchanged binder. The new manifest must bind the corrected
+   release digest and must not reuse either rejected fingerprint.
+4. Verify the new manifest and retry activation immediately. If activation does
+   not begin within the bound start tolerance, stop and repeat supersession,
+   comparison, and binding. Do not count inactive time as observation coverage.
+5. Activation: only after all prior gates are clean, authorize
+   `sudo /opt/chalkwright-canary/current/scripts/operations/activate-m17-canary.sh
+<digest>`. The command first verifies the protected manifest and observation
+   window. The exact command then requires a successful local SQLite integrity
+   check and verified
+   backup before readiness, performs the first bounded candidate Calendar
+   reconciliation, starts the loopback reader, and starts only the five
+   candidate timers. Nightly integrity and backup run at 18:35 and 18:40
+   Asia/Ho_Chi_Minh with no catch-up.
+   During the approved interval, update the normalized comparison input and
+   run `chalkwright-canary-comparison-observation.service` for each retained
+   checkpoint. This provider-inaccessible service writes a new fingerprinted
+   SQLite record and never recreates the immutable preactivation export.
+6. Routing and TV: inventory and verify the installed Tailscale/Fully Kiosk
+   versions against official documentation, bind one new candidate-only URL to
+   `127.0.0.1:4319`, and verify the legacy route fingerprint is unchanged.
+   Change Fully Kiosk only during an explicitly authorized reversible window.
+
+At any candidate defect, run
+`sudo /opt/chalkwright-canary/current/scripts/operations/stop-m17-canary.sh`.
+It first stops all candidate
+timers, then quiesces every candidate provider/Calendar/maintenance oneshot and
+the candidate display. Remove the exact candidate Tailnet mapping using the
+separately approved route command. Do not clean Calendar events, delete state,
+or alter legacy services/routes without a new explicit authorization. The
+legacy display remains the immediate fallback throughout M-17.

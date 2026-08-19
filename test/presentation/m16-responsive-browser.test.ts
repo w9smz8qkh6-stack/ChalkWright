@@ -6,7 +6,7 @@ import { chromium } from 'playwright-core';
 import { startFixtureBackedMvp } from '../../src/app/mvp-server.js';
 import { b407StateInstants } from '../../src/infrastructure/fixture/b407.js';
 
-const supportedChromeBuild = /^150\.0\.7871\.\d+$/u;
+const minimumSupportedChromeMajor = 150;
 const viewports = [
   { name: 'hikvision-native-output', width: 3_840, height: 2_160 },
   { name: 'legacy-large', width: 1_920, height: 1_080 },
@@ -29,7 +29,7 @@ test('renders every accepted display state across the bounded kiosk viewport env
     headless: true,
   });
   try {
-    assert.match(browser.version(), supportedChromeBuild);
+    assertSupportedChromeVersion(browser.version());
     for (const viewport of viewports) {
       const context = await browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
@@ -62,6 +62,75 @@ test('renders every accepted display state across the bounded kiosk viewport env
         );
         assert.equal(response?.status(), 200, `${viewport.name}:${state}`);
         await page.locator(`body.state-${state}`).waitFor();
+        const displayedClock = await page.locator('[data-clock]').textContent();
+        assert.match(displayedClock ?? '', /^\d{1,2}:\d{2} [AP]M$/u);
+        if (state === 'in_class_content') {
+          assert.doesNotMatch(
+            await page.locator('body').innerText(),
+            /Dismissal begins/u,
+          );
+          const objective = await page
+            .locator('[data-carousel-card][data-card-id="objective-b407-a"]')
+            .evaluate((card) => {
+              const icons = [
+                ...card.querySelectorAll<HTMLElement>(
+                  '[data-objective-detail-icon]',
+                ),
+              ];
+              const list = card.querySelector<HTMLElement>(
+                '.objective-detail-list',
+              );
+              const badge = card.querySelector<HTMLElement>('.date-badge');
+              if (!list || !badge)
+                throw new Error('objective-detail-layout-missing');
+              const badgeRectangle = badge.getBoundingClientRect();
+              return {
+                icons: icons.map((icon) => icon.textContent),
+                iconsDecorative: icons.every(
+                  (icon) => icon.getAttribute('aria-hidden') === 'true',
+                ),
+                month:
+                  badge.querySelector('.date-badge-month')?.textContent ?? '',
+                day: badge.querySelector('.date-badge-day')?.textContent ?? '',
+                badgeDecorative: badge.getAttribute('aria-hidden') === 'true',
+                badgeWidth: badgeRectangle.width,
+                badgeHeight: badgeRectangle.height,
+                listPaddingLeft: getComputedStyle(list).paddingLeft,
+                listStyleType: getComputedStyle(list).listStyleType,
+              };
+            });
+          assert.deepEqual(
+            objective.icons,
+            ['👉', '✅'],
+            `${viewport.name}:objective-icons`,
+          );
+          assert.equal(objective.iconsDecorative, true, viewport.name);
+          assert.equal(objective.month, 'APRIL', viewport.name);
+          assert.equal(objective.day, '17', viewport.name);
+          assert.equal(objective.badgeDecorative, true, viewport.name);
+          assert.ok(objective.badgeWidth > 0, viewport.name);
+          assert.ok(objective.badgeHeight > 0, viewport.name);
+          assert.equal(objective.listPaddingLeft, '0px', viewport.name);
+          assert.equal(objective.listStyleType, 'none', viewport.name);
+        }
+        const bell = await page
+          .locator('[data-header-bell]')
+          .evaluate((element) => ({
+            hidden: (element as HTMLElement).hidden,
+            value:
+              element.querySelector('[data-header-bell-number]')?.textContent ??
+              '',
+            label: element.getAttribute('aria-label'),
+          }));
+        if (state === 'in_class_content') {
+          assert.deepEqual(bell, {
+            hidden: false,
+            value: '60',
+            label: '60 minutes until bell',
+          });
+        } else {
+          assert.equal(bell.hidden, true, `${viewport.name}:${state}:bell`);
+        }
         const layout = await page.evaluate(() => {
           const rectangle = document.body.getBoundingClientRect();
           return {
@@ -157,3 +226,112 @@ test('renders every accepted display state across the bounded kiosk viewport env
     await application.close();
   }
 });
+
+test('during-class bell remains visible without horizontal overflow at tablet and mobile widths', async () => {
+  const application = await startFixtureBackedMvp(
+    {
+      nodeEnv: 'test',
+      logLevel: 'warn',
+      host: '127.0.0.1',
+      port: 0,
+    },
+    process.cwd(),
+    { legacyRouteCompatibility: true },
+  );
+  const browser = await chromium.launch({
+    executablePath: '/usr/bin/google-chrome',
+    headless: true,
+  });
+  try {
+    assertSupportedChromeVersion(browser.version());
+    for (const viewport of [
+      { name: 'tablet', width: 768, height: 1_024 },
+      { name: 'mobile', width: 390, height: 844 },
+    ] as const) {
+      const context = await browser.newContext({
+        viewport,
+        reducedMotion: 'reduce',
+      });
+      const page = await context.newPage();
+      const response = await page.goto(
+        `${application.origin}/classroom-screen/preview/b407?view=display&now=${encodeURIComponent(b407StateInstants.in_class_content)}`,
+        { waitUntil: 'domcontentloaded' },
+      );
+      assert.equal(response?.status(), 200, viewport.name);
+      const result = await page.locator('.header-status').evaluate((status) => {
+        const bell = status.querySelector<HTMLElement>('[data-header-bell]');
+        const bellIcon = status.querySelector<HTMLElement>('.header-bell-icon');
+        const bellNumber = status.querySelector<HTMLElement>(
+          '[data-header-bell-number]',
+        );
+        const date = status.querySelector<HTMLElement>('[data-display-date]');
+        const clock = status.querySelector<HTMLElement>('[data-clock]');
+        if (!bell || !bellIcon || !bellNumber || !date || !clock)
+          throw new Error('header-status-invalid');
+        const rectangle = bell.getBoundingClientRect();
+        const iconRectangle = bellIcon.getBoundingClientRect();
+        const numberRectangle = bellNumber.getBoundingClientRect();
+        const dateRectangle = date.getBoundingClientRect();
+        const clockRectangle = clock.getBoundingClientRect();
+        const numberStyle = getComputedStyle(bellNumber);
+        return {
+          hidden: bell.hidden,
+          value:
+            bell.querySelector('[data-header-bell-number]')?.textContent ?? '',
+          left: rectangle.left,
+          right: rectangle.right,
+          scrollWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+          reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+          dateRight: dateRectangle.right,
+          clockLeft: clockRectangle.left,
+          clockCenter: clockRectangle.top + clockRectangle.height / 2,
+          bellCenter: rectangle.top + rectangle.height / 2,
+          iconNumberGap: numberRectangle.left - iconRectangle.right,
+          clusterCenter:
+            iconRectangle.left +
+            (numberRectangle.right - iconRectangle.left) / 2,
+          badgeCenter: rectangle.left + rectangle.width / 2,
+          numberJustification: numberStyle.justifyContent,
+          numberTextAlignment: numberStyle.textAlign,
+        };
+      });
+      assert.equal(result.hidden, false, viewport.name);
+      assert.equal(result.value, '60', viewport.name);
+      assert.ok(result.left >= 0, viewport.name);
+      assert.ok(result.right <= result.innerWidth, viewport.name);
+      assert.ok(result.scrollWidth <= result.innerWidth, viewport.name);
+      assert.equal(result.reducedMotion, true, viewport.name);
+      assert.ok(
+        result.dateRight <= result.clockLeft,
+        `${viewport.name}:date-order`,
+      );
+      assert.ok(
+        Math.abs(result.clockCenter - result.bellCenter) <= 1,
+        `${viewport.name}:bell-clock-alignment`,
+      );
+      assert.ok(
+        result.iconNumberGap >= 0 && result.iconNumberGap <= 4.1,
+        `${viewport.name}:bell-number-gap`,
+      );
+      assert.ok(
+        Math.abs(result.clusterCenter - result.badgeCenter) <= 1,
+        `${viewport.name}:bell-content-centering`,
+      );
+      assert.equal(result.numberJustification, 'center', viewport.name);
+      assert.equal(result.numberTextAlignment, 'center', viewport.name);
+      await context.close();
+    }
+  } finally {
+    await browser.close();
+    await application.close();
+  }
+});
+
+function assertSupportedChromeVersion(version: string): void {
+  const major = Number.parseInt(version.split('.')[0] ?? '', 10);
+  assert.ok(
+    Number.isInteger(major) && major >= minimumSupportedChromeMajor,
+    `unsupported Chromium version ${version}`,
+  );
+}

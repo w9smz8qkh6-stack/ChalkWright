@@ -25,6 +25,7 @@ export class SqliteAttendanceProjectionSource {
   constructor(
     private readonly database: SqliteDatabase,
     private readonly classCodeForClass: Readonly<Record<string, string>>,
+    private readonly checkInUrlForClass: Readonly<Record<string, string>> = {},
   ) {}
 
   async read(meetingId: OpaqueId, classId: ClassId | undefined, date: IsoDate) {
@@ -75,9 +76,24 @@ export class SqliteAttendanceProjectionSource {
 
     const classCode =
       classId === undefined ? undefined : this.classCodeForClass[classId];
-    if (match === undefined && classCode === undefined) return undefined;
+    const configuredCheckInUrl =
+      classId === undefined ? undefined : this.checkInUrlForClass[classId];
+    if (
+      match === undefined &&
+      classCode === undefined &&
+      configuredCheckInUrl === undefined
+    )
+      return undefined;
     return {
       ...(match === undefined ? {} : match),
+      ...(configuredCheckInUrl === undefined
+        ? {}
+        : {
+            links: {
+              ...(match?.links ?? {}),
+              directPrefilled: configuredCheckInUrl,
+            },
+          }),
       ...(classCode === undefined ? {} : { classCode }),
     };
   }

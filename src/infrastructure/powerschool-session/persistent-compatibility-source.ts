@@ -44,7 +44,7 @@ export class PersistentCompatibilityPowerSchoolBellScheduleSource implements Sch
           category: 'authentication-repair-required',
           code: result.code,
           message:
-            'The persistent PowerSchool compatibility profile requires its isolated repair action.',
+            'The retained Chalkwright PowerSchool profile requires its isolated repair action.',
           retryable: false,
           diagnostics: [],
         },
@@ -81,9 +81,13 @@ function browserFailure(
         : 'unavailable';
   return {
     category,
-    code: result.code,
+    code:
+      result.code === 'request-policy-violation' &&
+      result.policyReason !== undefined
+        ? `request-policy-violation-${result.policyReason}`
+        : result.code,
     message:
-      'PowerSchool collection failed at the sanitized persistent compatibility boundary.',
+      'PowerSchool collection failed at the sanitized retained-profile boundary.',
     retryable: result.retryable,
     diagnostics: [],
   };

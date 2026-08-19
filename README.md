@@ -1,19 +1,26 @@
 # Chalkwright
 
-Chalkwright is a host-native Node.js and TypeScript application for turning a
-school schedule into a dependable classroom day plan, enriching it with
-read-only learning context, presenting it on a classroom display, and
-reconciling only explicitly owned Google Calendar events.
+Chalkwright is a self-hosted classroom display and day-planning application. It
+turns a trusted school schedule into a dependable classroom day plan, keeps the
+screen and an application-owned Google Calendar aligned to that plan, and
+automatically presents the right information for each stage of the school day.
+
+For each class, Chalkwright can pull upcoming assignment information from
+Google Classroom, present a scannable attendance check-in QR code, and augment
+the screen with learning objectives, textbook references, vocabulary, and
+other lesson materials. The result is a classroom screen that changes with the
+schedule instead of acting as a static digital noticeboard.
 
 The project is being extracted from a working classroom automation system into
 a self-contained application with typed capability boundaries, SQLite state,
 synthetic fixtures, deterministic display behavior, fail-closed provider
 adapters, and a tested migration and rollback path.
 
-> **Project status:** pre-release public preview. The offline
-> fixture-backed application and migration components are extensively tested,
-> but general installation, production deployment, and the M-17 parallel
-> canary are not yet released. See the
+> **Project status:** pre-release public preview. The offline fixture-backed
+> application and migration components are extensively tested. The current live
+> display still uses the historical shadow service while the permanent
+> Chalkwright production lane is re-grounded. General installation and public
+> production deployment are not yet released. See the
 > [publication gate](docs/publication-readiness.md) for the exact evidence and
 > limitations of this source snapshot.
 
@@ -24,7 +31,30 @@ a fixed instant and contains no provider or student data. Its reproducible
 capture metadata is recorded in
 [`docs/assets/classroom-hub-preview.json`](docs/assets/classroom-hub-preview.json).
 
-## What it demonstrates
+## What Chalkwright does
+
+- Follows the verified class schedule throughout the day and keeps explicitly
+  owned Google Calendar class blocks synchronized without touching unrelated
+  events.
+- Moves the display through morning preview, check-in, in-class, transition,
+  dismissal, gap, and end-of-day views at the appropriate times.
+- Reads upcoming Google Classroom coursework and turns relevant assignments
+  into concise, class-specific display content.
+- Presents a meeting-scoped attendance check-in link and QR code for students
+  to scan on their own devices; Chalkwright does not submit attendance to a
+  school system.
+- Enriches the class carousel with learning objectives, textbook and lesson
+  references, vocabulary, reminders, and teacher-configured supporting
+  material.
+- Offers a rotating word-of-the-day feature, drawing from class-specific and
+  subject vocabulary while avoiding immediate repetition.
+- Supports configurable class mappings, content cards, vocabulary, attendance
+  links, timing policies, media, announcements, overrides, and display-scoped
+  controls.
+- Previews the next actual class day after the current schedule ends, safely
+  skipping weekends and verified no-class days.
+
+## Engineering foundation
 
 - A provider-neutral domain model for schedules, meetings, rooms, screens,
   display states, content, overrides, holds, and Calendar intents.
@@ -39,7 +69,8 @@ capture metadata is recorded in
 - Loopback-only HTTP serving, Tailnet-oriented deployment design, hardened
   systemd templates, and rehearsed cutover/rollback ordering.
 - A parity-first migration process backed by ADRs, executable contracts,
-  synthetic fixtures, browser evidence, and 675 automated tests.
+  synthetic fixtures, browser evidence, and a comprehensive automated test
+  suite.
 
 ## Safety model
 
@@ -133,10 +164,17 @@ local policy selects an allowed operation.
 
 ## Current roadmap position
 
-Milestones M-01 through M-16 are recorded as promoted. M-17 has an accepted
-architecture but is not implemented or authorized for live execution.
+Milestones M-01 through M-16 are recorded as promoted. M-17's isolated
+parallel canary is implemented and live-qualified on a separate owned Calendar,
+private route, service topology, and state root. Physical-display qualification
+has accepted the course label, stable polling, and future-class-day preview.
+The latest header-parity refinements remain reviewed but undeployed.
 
-M-17 will first run Chalkwright as an isolated parallel canary:
+The historical shadow service is currently serving the display. The permanent
+Chalkwright production lane, including its Calendar synchronization boundary,
+is being rebuilt from the current repository and protected configuration.
+
+M-17 used an isolated parallel canary with:
 
 - a separate Tailnet-only URL;
 - a separate owned Calendar from the legacy application;
@@ -144,10 +182,10 @@ M-17 will first run Chalkwright as an isolated parallel canary:
 - staggered read-only provider acquisition; and
 - report-only candidate alerts.
 
-The legacy application remains authoritative until a later, separately
-approved final handoff. M-18 then covers stabilization and explicit removal of
-legacy dependencies. See the [migration plan](docs/migration-plan.md) and
-[M-17 review package](docs/migration/m17-review-package.md).
+Those parallel-canary controls remain documented as the reversible deployment
+design. Future stabilization will determine when the retained legacy fallback
+can be removed. See the [migration plan](docs/migration-plan.md) and [M-17
+review package](docs/migration/m17-review-package.md).
 
 ## Configuration direction
 

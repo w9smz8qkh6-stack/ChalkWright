@@ -22,6 +22,7 @@
     readonly state?: unknown;
     readonly meetingId?: unknown;
     readonly courseLabel?: unknown;
+    readonly bellEndsAt?: unknown;
     readonly dateLabel?: unknown;
     readonly documentTitle?: unknown;
     readonly degraded?: unknown;
@@ -76,6 +77,7 @@
   let pollTimer: number | undefined;
   let currentMeetingId = String(bootstrap.meetingId || '');
   let carouselState: CarouselState | undefined;
+  let lastPresentationHtml: string | undefined;
   let operatorAuthorization = '';
   let serverClockAnchor = Date.parse(root?.dataset.evaluatedAt || '');
   let browserClockAnchor = Date.now();
@@ -117,10 +119,9 @@
           timeZone,
           hour: 'numeric',
           minute: '2-digit',
-          second: '2-digit',
         }).format(now);
       } catch {
-        element.textContent = now.toISOString().slice(11, 19);
+        element.textContent = now.toISOString().slice(11, 16);
       }
     }
     for (const element of document.querySelectorAll<HTMLElement>(
@@ -139,6 +140,38 @@
       }
     }
     updateCountdowns(now.getTime());
+    updateHeaderBellCountdown(now.getTime());
+  }
+
+  function updateHeaderBellCountdown(now: number): void {
+    const bell = document.querySelector<HTMLElement>('[data-header-bell]');
+    const number = bell?.querySelector<HTMLElement>(
+      '[data-header-bell-number]',
+    );
+    if (!bell || !number) return;
+    const target = Date.parse(bell.dataset.bellTarget || '');
+    const show =
+      root?.dataset.state === 'in_class_content' && Number.isFinite(target);
+    bell.hidden = !show;
+    if (!show) {
+      bell.classList.remove('shimmer');
+      bell.setAttribute('aria-label', 'Minutes until bell');
+      number.textContent = '';
+      return;
+    }
+    const minutes = Math.max(0, Math.ceil((target - now) / 60_000));
+    const nextValue = String(minutes);
+    bell.setAttribute(
+      'aria-label',
+      `${nextValue} ${minutes === 1 ? 'minute' : 'minutes'} until bell`,
+    );
+    if (number.textContent === nextValue) return;
+    number.textContent = nextValue;
+    bell.classList.remove('shimmer');
+    window.requestAnimationFrame(() => {
+      if (bell.isConnected && number.textContent === nextValue)
+        bell.classList.add('shimmer');
+    });
   }
 
   function updateCountdowns(now: number): void {
@@ -195,20 +228,51 @@
     function show(index: number, userInitiated = false): void {
       if (!carouselState || cards.length === 0) return;
       stopCarouselTimer();
+      const previous = cards[carouselState.index];
       carouselState.index = (index + cards.length) % cards.length;
       const state = carouselState;
       cards.forEach((card, cardIndex) => {
-        card.hidden = cardIndex !== state.index;
+        if (cardIndex === state.index) {
+          card.hidden = false;
+          card.classList.remove('carousel-leaving');
+        } else if (card !== previous || previous === cards[state.index]) {
+          card.hidden = true;
+          card.classList.remove('carousel-leaving');
+        }
         card.classList.remove('revealed');
       });
+      if (
+        previous !== undefined &&
+        previous !== cards[state.index] &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ) {
+        previous.hidden = false;
+        previous.classList.add('carousel-leaving');
+        window.setTimeout(() => {
+          previous.classList.remove('carousel-leaving');
+          if (carouselState?.cards[carouselState.index] !== previous)
+            previous.hidden = true;
+        }, 420);
+      }
       dots.forEach((dot, dotIndex) => {
         dot.setAttribute('aria-selected', String(dotIndex === state.index));
       });
       const active = cards[state.index];
+      if (active !== undefined) {
+        window.requestAnimationFrame(() => fitCard(active));
+      }
       if (userInitiated && active) {
         announce(`Showing card ${state.index + 1} of ${cards.length}`);
       }
       schedule(active);
+    }
+
+    function fitCard(card: HTMLElement): void {
+      card.classList.remove('content-tight', 'content-compact');
+      if (card.scrollHeight <= card.clientHeight) return;
+      card.classList.add('content-tight');
+      if (card.scrollHeight <= card.clientHeight) return;
+      card.classList.add('content-compact');
     }
 
     function schedule(card: HTMLElement | undefined): void {
@@ -349,7 +413,11 @@
           paused: carouselState.paused,
         }
       : undefined;
-    main.innerHTML = html;
+    const sceneChanged = html !== lastPresentationHtml;
+    if (sceneChanged) {
+      main.innerHTML = html;
+      lastPresentationHtml = html;
+    }
     const evaluatedAt = Date.parse(String(payload.evaluatedAt || ''));
     if (Number.isFinite(evaluatedAt) && !root?.dataset.pinnedAt) {
       serverClockAnchor = evaluatedAt;
@@ -371,6 +439,16 @@
     const label = document.querySelector('[data-course-label]');
     if (label && typeof payload.courseLabel === 'string')
       label.textContent = payload.courseLabel;
+    const bell = document.querySelector<HTMLElement>('[data-header-bell]');
+    if (bell) {
+      delete bell.dataset.bellTarget;
+      if (
+        typeof payload.bellEndsAt === 'string' &&
+        payload.bellEndsAt.length <= 64 &&
+        Number.isFinite(Date.parse(payload.bellEndsAt))
+      )
+        bell.dataset.bellTarget = payload.bellEndsAt;
+    }
     const dateLabel = document.querySelector('[data-display-date]');
     if (
       dateLabel &&
@@ -384,8 +462,10 @@
     )
       document.title = payload.documentTitle;
     setConnectionDegraded(payload.degraded === true);
-    initializeCarousel(previousState);
-    initializeSceneMedia();
+    if (sceneChanged) {
+      initializeCarousel(previousState);
+      initializeSceneMedia();
+    }
     updateClock();
     return true;
   }

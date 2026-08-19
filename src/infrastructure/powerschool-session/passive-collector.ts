@@ -1,4 +1,9 @@
-import type { BrowserContext, Page } from 'playwright-core';
+import type {
+  BrowserContext,
+  CDPSession,
+  Page,
+  Response as PlaywrightResponse,
+} from 'playwright-core';
 
 import type { BellScheduleCapture } from '../../application/normalization/bell-schedule.js';
 import {
@@ -8,6 +13,8 @@ import {
 import {
   installPageSafetyGuards,
   launchPowerSchoolSessionContext,
+  normalizedChromeUserAgent,
+  pageMatchesVerifiedMarker,
 } from './browser-runtime.js';
 import {
   boundedSessionGet,
@@ -16,6 +23,7 @@ import {
   type SessionRejectionReason,
 } from './bounded-session-http.js';
 import {
+  applyFilteredPowerSchoolState,
   acquirePowerSchoolSessionLock,
   createTemporaryBrowserProfile,
   filterPowerSchoolStorageState,
@@ -71,6 +79,7 @@ export async function collectPassivePowerSchoolBell(options: {
   readonly signal?: AbortSignal;
   readonly browserEnvironment?: NodeJS.ProcessEnv;
   readonly now?: () => string;
+  readonly beforeStopBrowserLoading?: () => Promise<void>;
 }): Promise<PassivePowerSchoolResult> {
   let lock;
   try {
@@ -134,7 +143,7 @@ export async function collectPassivePowerSchoolBell(options: {
     await context.route('**/*', async (route) => {
       await route.abort('blockedbyclient');
     });
-    await context.setStorageState(authenticationState);
+    await applyFilteredPowerSchoolState(context, authenticationState);
     const requestIdentity = await browserRequestIdentity(
       page,
       options.config.powerSchoolOrigin,
@@ -165,28 +174,33 @@ export async function collectPassivePowerSchoolBell(options: {
       if (statusFailure === undefined) throw new Error('unmapped-read-failure');
       return statusFailure;
     }
-    if (statusRead.status === 'repair-required') {
+    if (
+      statusRead.status === 'repair-required' &&
+      statusRead.reason !== 'redirect-authentication'
+    ) {
       return {
         status: 'repair-required',
         code: sessionRejectionCode('status', statusRead.reason),
       };
     }
-    remainingBytes -= statusRead.bytes;
-    const statusReady = await renderAndVerify({
-      page,
-      html: statusRead.html,
-      baseUrl: statusUrl,
-      selector: options.config.statusReadySelector,
-      ...(options.config.expectedSchoolText === undefined
-        ? {}
-        : { expectedSchoolText: options.config.expectedSchoolText }),
-      timeoutMs: options.config.navigationTimeoutMs,
-    });
-    if (operationSignal.aborted) return abortedResult(timeoutSignal);
-    const statusSafety = safetyResult(safety.violation);
-    if (statusSafety !== undefined) return statusSafety;
-    if (!statusReady) {
-      return { status: 'repair-required', code: 'status-marker-missing' };
+    if (statusRead.status === 'captured') {
+      remainingBytes -= statusRead.bytes;
+      const statusReady = await renderAndVerify({
+        page,
+        html: statusRead.html,
+        baseUrl: statusUrl,
+        selector: options.config.statusReadySelector,
+        ...(options.config.expectedSchoolText === undefined
+          ? {}
+          : { expectedSchoolText: options.config.expectedSchoolText }),
+        timeoutMs: options.config.navigationTimeoutMs,
+      });
+      if (operationSignal.aborted) return abortedResult(timeoutSignal);
+      const statusSafety = safetyResult(safety.violation);
+      if (statusSafety !== undefined) return statusSafety;
+      if (!statusReady) {
+        return { status: 'repair-required', code: 'status-marker-missing' };
+      }
     }
 
     const bellRead = await boundedSessionGet({
@@ -203,6 +217,50 @@ export async function collectPassivePowerSchoolBell(options: {
       return bellFailure;
     }
     if (bellRead.status === 'repair-required') {
+      if (bellRead.reason === 'redirect-authentication') {
+        const browserRead = await browserNativeBellRead({
+          context,
+          page,
+          exactUrl: bellUrl,
+          maximumBytes: remainingBytes,
+          timeoutMs: options.config.navigationTimeoutMs,
+          signal: operationSignal,
+          timeoutSignal,
+          requestIdentity,
+          safety,
+          selector: options.config.bellReadySelector,
+          ...(options.beforeStopBrowserLoading === undefined
+            ? {}
+            : { beforeStopBrowserLoading: options.beforeStopBrowserLoading }),
+          ...(options.config.expectedSchoolText === undefined
+            ? {}
+            : { expectedSchoolText: options.config.expectedSchoolText }),
+        });
+        if (browserRead.status === 'captured') {
+          const refreshed = filterPowerSchoolStorageState(
+            await context.storageState({ indexedDB: true }),
+            options.config.powerSchoolOrigin,
+            await context.cookies(),
+          );
+          writeFilteredPowerSchoolState(
+            options.config.sessionDirectory,
+            options.config.powerSchoolOrigin,
+            refreshed,
+          );
+          return {
+            status: 'captured',
+            capture: {
+              title: browserRead.title,
+              html: browserRead.html,
+              text: browserRead.text,
+              capturedAt: (options.now ?? (() => new Date().toISOString()))(),
+              sourceReference: 'powerschool-bell-schedule',
+              method: 'browser-read',
+            },
+          };
+        }
+        if (browserRead.status === 'failed') return browserRead.result;
+      }
       return {
         status: 'repair-required',
         code: sessionRejectionCode('bell', bellRead.reason),
@@ -231,6 +289,7 @@ export async function collectPassivePowerSchoolBell(options: {
     const refreshed = filterPowerSchoolStorageState(
       await context.storageState({ indexedDB: true }),
       options.config.powerSchoolOrigin,
+      await context.cookies(),
     );
     writeFilteredPowerSchoolState(
       options.config.sessionDirectory,
@@ -264,6 +323,367 @@ export async function collectPassivePowerSchoolBell(options: {
   }
 }
 
+type BrowserNativeBellReadResult =
+  | {
+      readonly status: 'captured';
+      readonly html: string;
+      readonly text: string;
+      readonly title: string;
+    }
+  | { readonly status: 'not-authenticated' }
+  | {
+      readonly status: 'failed';
+      readonly result: Extract<PassivePowerSchoolResult, { status: 'failed' }>;
+    };
+
+interface PausedBrowserRequest {
+  readonly requestId: string;
+  readonly resourceType: string;
+  readonly responseErrorReason?: string;
+  readonly responseStatusCode?: number;
+  readonly responseHeaders?: readonly {
+    readonly name: string;
+    readonly value: string;
+  }[];
+  readonly request: {
+    readonly method: string;
+    readonly url: string;
+  };
+}
+
+/**
+ * One exact browser-native retry for a bell request rejected by session HTTP.
+ * It reuses only the filtered PowerSchool state; every other browser request,
+ * including an authentication redirect, is aborted before the wire.
+ */
+async function browserNativeBellRead(options: {
+  readonly context: BrowserContext;
+  readonly page: Page;
+  readonly exactUrl: string;
+  readonly maximumBytes: number;
+  readonly timeoutMs: number;
+  readonly signal: AbortSignal;
+  readonly timeoutSignal: AbortSignal;
+  readonly requestIdentity: BoundedSessionRequestIdentity;
+  readonly safety: ReturnType<typeof installPageSafetyGuards>;
+  readonly selector: string;
+  readonly expectedSchoolText?: string;
+  readonly beforeStopBrowserLoading?: () => Promise<void>;
+}): Promise<BrowserNativeBellReadResult> {
+  await options.context.unrouteAll({ behavior: 'wait' });
+  await options.context.setExtraHTTPHeaders({
+    'user-agent': options.requestIdentity.userAgent,
+  });
+  let exactNavigationRequests = 0;
+  let interceptionFailed = false;
+  let responseRejected = false;
+  let responseFailureCode:
+    | 'browser-unavailable'
+    | 'request-policy-violation'
+    | 'response-budget-exceeded'
+    | undefined;
+  let capturedResponseBytes: Buffer | undefined;
+  const cdp: CDPSession = await options.context.newCDPSession(options.page);
+  const pendingInterceptions = new Set<Promise<void>>();
+  const settleInterceptions = async (): Promise<void> => {
+    while (pendingInterceptions.size > 0) {
+      await Promise.allSettled([...pendingInterceptions]);
+    }
+  };
+  const handlePausedRequest = (event: PausedBrowserRequest): void => {
+    const task = (async () => {
+      try {
+        if (
+          event.responseStatusCode !== undefined ||
+          event.responseErrorReason !== undefined
+        ) {
+          if (
+            event.request.url !== options.exactUrl ||
+            event.resourceType !== 'Document' ||
+            event.responseErrorReason !== undefined
+          ) {
+            responseFailureCode = 'request-policy-violation';
+            await cdp.send('Fetch.failRequest', {
+              requestId: event.requestId,
+              errorReason: 'BlockedByClient',
+            });
+            return;
+          }
+          if (
+            event.responseStatusCode === undefined ||
+            event.responseStatusCode < 200 ||
+            event.responseStatusCode >= 300
+          ) {
+            responseRejected = true;
+            await cdp.send('Fetch.failRequest', {
+              requestId: event.requestId,
+              errorReason: 'BlockedByClient',
+            });
+            return;
+          }
+          const headers = event.responseHeaders ?? [];
+          const contentType = headerValue(headers, 'content-type');
+          if (
+            !/^text\/html(?:;|$)|^application\/xhtml\+xml(?:;|$)/iu.test(
+              contentType,
+            )
+          ) {
+            responseFailureCode = 'request-policy-violation';
+            await fulfillRejectedBrowserResponse(cdp, event.requestId, 415);
+            return;
+          }
+          const declaredLength = headerValue(headers, 'content-length');
+          if (declaredLength.length > 0) {
+            const declared = Number(declaredLength);
+            if (
+              !Number.isSafeInteger(declared) ||
+              declared < 0 ||
+              declared > options.maximumBytes
+            ) {
+              responseFailureCode = 'response-budget-exceeded';
+              await fulfillRejectedBrowserResponse(cdp, event.requestId, 413);
+              return;
+            }
+          }
+          const body = await readPausedResponseBody({
+            cdp,
+            requestId: event.requestId,
+            maximumBytes: options.maximumBytes,
+            signal: options.signal,
+          });
+          if (body === undefined) {
+            responseFailureCode = options.signal.aborted
+              ? 'browser-unavailable'
+              : 'response-budget-exceeded';
+            await fulfillRejectedBrowserResponse(cdp, event.requestId, 413);
+            return;
+          }
+          capturedResponseBytes = body;
+          await cdp.send('Fetch.fulfillRequest', {
+            requestId: event.requestId,
+            responseCode: event.responseStatusCode,
+            responseHeaders: fulfilledBrowserHeaders(headers, body.byteLength),
+            body: body.toString('base64'),
+          });
+          return;
+        }
+        if (
+          exactNavigationRequests === 0 &&
+          event.request.method === 'GET' &&
+          event.resourceType === 'Document' &&
+          event.request.url === options.exactUrl
+        ) {
+          exactNavigationRequests += 1;
+          await cdp.send('Fetch.continueRequest', {
+            requestId: event.requestId,
+          });
+          return;
+        }
+        await cdp.send('Fetch.failRequest', {
+          requestId: event.requestId,
+          errorReason: 'BlockedByClient',
+        });
+      } catch {
+        interceptionFailed = true;
+      }
+    })();
+    pendingInterceptions.add(task);
+    void task.finally(() => pendingInterceptions.delete(task));
+  };
+  cdp.on('Fetch.requestPaused', handlePausedRequest);
+  await cdp.send('Fetch.enable', {
+    patterns: [
+      { urlPattern: '*', requestStage: 'Request' },
+      { urlPattern: options.exactUrl, requestStage: 'Response' },
+    ],
+  });
+  try {
+    let response: PlaywrightResponse | null;
+    try {
+      response = await options.page.goto(options.exactUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: options.timeoutMs,
+        signal: options.signal,
+      });
+    } catch {
+      await settleInterceptions();
+      if (options.signal.aborted) {
+        return {
+          status: 'failed',
+          result: abortedResult(options.timeoutSignal),
+        };
+      }
+      if (responseFailureCode !== undefined) {
+        return browserReadFailure(responseFailureCode);
+      }
+      if (responseRejected) return { status: 'not-authenticated' };
+      return browserReadFailure('request-policy-violation');
+    }
+    if (options.signal.aborted) {
+      return { status: 'failed', result: abortedResult(options.timeoutSignal) };
+    }
+    await options.beforeStopBrowserLoading?.().catch(() => {
+      interceptionFailed = true;
+    });
+    if (!interceptionFailed) {
+      await cdp.send('Page.stopLoading').catch(() => {
+        interceptionFailed = true;
+      });
+    }
+    await settleInterceptions();
+    if (options.signal.aborted) {
+      return { status: 'failed', result: abortedResult(options.timeoutSignal) };
+    }
+    if (responseFailureCode !== undefined) {
+      return browserReadFailure(responseFailureCode);
+    }
+    if (
+      interceptionFailed ||
+      options.safety.violation !== undefined ||
+      exactNavigationRequests !== 1
+    ) {
+      return {
+        status: 'failed',
+        result: {
+          status: 'failed',
+          code: 'request-policy-violation',
+          retryable: false,
+        },
+      };
+    }
+    if (
+      response === null ||
+      response.url() !== options.exactUrl ||
+      response.status() < 200 ||
+      response.status() >= 300
+    ) {
+      return { status: 'not-authenticated' };
+    }
+    if (capturedResponseBytes === undefined) {
+      return browserReadFailure('request-policy-violation');
+    }
+    let html: string;
+    try {
+      html = new TextDecoder('utf-8', { fatal: true }).decode(
+        capturedResponseBytes,
+      );
+    } catch {
+      return {
+        status: 'failed',
+        result: {
+          status: 'failed',
+          code: 'request-policy-violation',
+          retryable: false,
+        },
+      };
+    }
+    const verified = await pageMatchesVerifiedMarker({
+      page: options.page,
+      exactUrl: options.exactUrl,
+      selector: options.selector,
+      ...(options.expectedSchoolText === undefined
+        ? {}
+        : { expectedSchoolText: options.expectedSchoolText }),
+    });
+    if (!verified) return { status: 'not-authenticated' };
+    const [title, text] = await Promise.all([
+      options.page.title(),
+      options.page.locator('body').innerText(),
+    ]);
+    return { status: 'captured', html, text, title };
+  } finally {
+    await cdp.send('Fetch.disable').catch(() => undefined);
+    await settleInterceptions();
+    cdp.off('Fetch.requestPaused', handlePausedRequest);
+    await cdp.detach().catch(() => undefined);
+  }
+}
+
+function browserReadFailure(
+  code:
+    | 'browser-unavailable'
+    | 'request-policy-violation'
+    | 'response-budget-exceeded',
+): BrowserNativeBellReadResult {
+  return {
+    status: 'failed',
+    result: {
+      status: 'failed',
+      code,
+      retryable: code === 'browser-unavailable',
+    },
+  };
+}
+
+function headerValue(
+  headers: readonly { readonly name: string; readonly value: string }[],
+  name: string,
+): string {
+  return (
+    headers.find((header) => header.name.toLowerCase() === name)?.value ?? ''
+  );
+}
+
+async function readPausedResponseBody(options: {
+  readonly cdp: CDPSession;
+  readonly requestId: string;
+  readonly maximumBytes: number;
+  readonly signal: AbortSignal;
+}): Promise<Buffer | undefined> {
+  const { stream } = await options.cdp.send('Fetch.takeResponseBodyAsStream', {
+    requestId: options.requestId,
+  });
+  const chunks: Buffer[] = [];
+  let length = 0;
+  try {
+    while (!options.signal.aborted) {
+      const part = await options.cdp.send('IO.read', {
+        handle: stream,
+        size: 64 * 1024,
+      });
+      const chunk = Buffer.from(
+        part.data,
+        part.base64Encoded === true ? 'base64' : 'utf8',
+      );
+      length += chunk.byteLength;
+      if (length > options.maximumBytes) return undefined;
+      chunks.push(chunk);
+      if (part.eof) return Buffer.concat(chunks, length);
+    }
+    return undefined;
+  } finally {
+    await options.cdp
+      .send('IO.close', { handle: stream })
+      .catch(() => undefined);
+  }
+}
+
+function fulfilledBrowserHeaders(
+  headers: readonly { readonly name: string; readonly value: string }[],
+  bodyLength: number,
+): { name: string; value: string }[] {
+  const retained = headers.filter(
+    (header) =>
+      !/^(?:content-encoding|content-length|transfer-encoding)$/iu.test(
+        header.name,
+      ),
+  );
+  return [...retained, { name: 'content-length', value: String(bodyLength) }];
+}
+
+async function fulfillRejectedBrowserResponse(
+  cdp: CDPSession,
+  requestId: string,
+  responseCode: 413 | 415,
+): Promise<void> {
+  await cdp.send('Fetch.fulfillRequest', {
+    requestId,
+    responseCode,
+    responseHeaders: [{ name: 'content-length', value: '0' }],
+    body: '',
+  });
+}
+
 function sessionRejectionCode(
   stage: 'bell' | 'status',
   reason: SessionRejectionReason,
@@ -291,7 +711,7 @@ async function browserRequestIdentity(
 ): Promise<BoundedSessionRequestIdentity> {
   const browserUserAgent = await page.evaluate(() => navigator.userAgent);
   return {
-    userAgent: browserUserAgent.replace('HeadlessChrome/', 'Chrome/'),
+    userAgent: normalizedChromeUserAgent(browserUserAgent),
     referer: new URL(powerSchoolOrigin).href,
   };
 }
@@ -373,7 +793,9 @@ function safetyResult(
   };
 }
 
-function abortedResult(timeoutSignal: AbortSignal): PassivePowerSchoolResult {
+function abortedResult(
+  timeoutSignal: AbortSignal,
+): Extract<PassivePowerSchoolResult, { readonly status: 'failed' }> {
   return {
     status: 'failed',
     code: timeoutSignal.aborted ? 'timeout' : 'aborted',

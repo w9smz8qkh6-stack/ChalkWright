@@ -1,6 +1,11 @@
 import type { IsoDate, IsoInstant, OpaqueId } from '../contracts/v1/common.js';
 import type { DayPlanMeeting } from '../contracts/v1/day-plan.js';
-import type { ClassId, RoomId, ScreenId } from '../domain/identities.js';
+import {
+  courseKeyFromSectionCode,
+  type ClassId,
+  type RoomId,
+  type ScreenId,
+} from '../domain/identities.js';
 import type {
   DisplayCard,
   ScopedDisplayOverride,
@@ -72,18 +77,29 @@ function evaluatedAt(
   return defaultInstant;
 }
 
-function courseLabel(meeting: DayPlanMeeting): string {
+export function presentationCourseLabel(meeting: DayPlanMeeting): string {
   const labels: Readonly<Record<string, string>> = {
     'course-a': 'Web Design',
     'course-b': 'Robotics',
   };
-  return labels[meeting.courseKey] ?? meeting.courseKey;
+  const fixtureLabel = labels[meeting.courseKey];
+  if (fixtureLabel !== undefined) return fixtureLabel;
+  const parenthesized = /^(.*?)\s+\(([^()]+)\)$/u.exec(meeting.blockLabel);
+  if (
+    parenthesized !== null &&
+    parenthesized[1]!.trim().length > 0 &&
+    courseKeyFromSectionCode(parenthesized[2]) === meeting.courseKey
+  )
+    return parenthesized[1]!.trim();
+  return courseKeyFromSectionCode(meeting.blockLabel) === meeting.courseKey
+    ? meeting.courseKey
+    : meeting.blockLabel;
 }
 
 function presentationMeeting(meeting: DayPlanMeeting): PresentationMeeting {
   return {
     meetingId: meeting.meetingId,
-    courseLabel: courseLabel(meeting),
+    courseLabel: presentationCourseLabel(meeting),
     blockLabel: meeting.blockLabel,
     checkInOpensAt: meeting.checkInOpensAt,
     officialStartsAt: meeting.officialStartsAt,
@@ -93,7 +109,7 @@ function presentationMeeting(meeting: DayPlanMeeting): PresentationMeeting {
   };
 }
 
-function presentationCard(card: DisplayCard): PresentationCard {
+export function presentationCard(card: DisplayCard): PresentationCard {
   const type =
     card.type === 'announcement' ||
     card.type === 'bellringer' ||
@@ -108,15 +124,28 @@ function presentationCard(card: DisplayCard): PresentationCard {
     card.accent === 'ink'
       ? card.accent
       : 'ink';
+  const lines = card.lines ?? (card.body === undefined ? [] : [card.body]);
+  const structuredObjectiveLines =
+    card.type === 'objective' &&
+    card.featured !== undefined &&
+    card.details !== undefined &&
+    lines.length === card.details.length + 1 &&
+    lines[0] === card.featured &&
+    card.details.every((detail, index) => lines[index + 1] === detail);
   return {
     cardId: card.cardId,
     type,
     title: card.title,
-    lines: card.lines ?? (card.body === undefined ? [] : [card.body]),
+    lines: structuredObjectiveLines ? [] : lines,
+    ...(card.featured === undefined ? {} : { featured: card.featured }),
+    ...(card.details === undefined ? {} : { details: card.details }),
     accent,
     ...(card.durationSeconds === undefined
       ? {}
       : { durationSeconds: card.durationSeconds }),
+    ...(card.vocabulary === undefined
+      ? {}
+      : { vocabulary: structuredClone(card.vocabulary) }),
   };
 }
 
@@ -358,6 +387,10 @@ export class B407MvpHttpController implements ClassroomHttpController {
             model.currentMeeting?.courseLabel ??
             model.nextMeeting?.courseLabel ??
             '',
+          bellEndsAt:
+            model.state === 'in_class_content'
+              ? (model.currentMeeting?.officialEndsAt ?? '')
+              : '',
           dateLabel: displayDateLabel(model.date, model.timeZone),
           documentTitle: displayDocumentTitle(model),
           degraded: target.degraded === true,

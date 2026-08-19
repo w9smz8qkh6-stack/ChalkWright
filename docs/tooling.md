@@ -21,7 +21,7 @@ the installed command surface.
 | Git | 2.53.0 | [Git 2.53.0 reference](https://git-scm.com/docs/git/2.53.0) | `git help <command>` |
 | systemd | 259 | [systemd 259 manuals](https://www.freedesktop.org/software/systemd/man/259/) | `man systemd.service`, `man systemd.timer` |
 | Google Chrome | 150.0.7871.114 | [Chrome Headless mode](https://developer.chrome.com/docs/chromium/headless), [Chrome releases](https://chromereleases.googleblog.com/) | `google-chrome --version` |
-| Codex CLI | 0.147.0 | [Codex CLI](https://learn.chatgpt.com/docs/codex/cli), [configuration](https://learn.chatgpt.com/docs/config-file/config-reference), [changelog](https://learn.chatgpt.com/docs/changelog) | `codex --help` |
+| Codex CLI | 0.148.0 | [Codex CLI](https://learn.chatgpt.com/docs/codex/cli), [configuration](https://learn.chatgpt.com/docs/config-file/config-reference), [changelog](https://learn.chatgpt.com/docs/changelog) | `codex --help` |
 
 Codex documentation is maintained as current product documentation rather than
 as a separate manual for every CLI patch. Use the recorded Codex CLI version
@@ -36,6 +36,7 @@ official documentation and changelog for supported current behavior.
 | Prettier | ^3.6.2 | 3.9.6 | [Prettier documentation](https://prettier.io/docs/en/) |
 | Node.js types | ^24.0.0 | 24.13.3 | [Node.js 24 API](https://nodejs.org/docs/latest-v24.x/api/), [registry record](https://registry.npmjs.org/@types%2Fnode/24.13.3) |
 | Playwright Core | 1.62.0 | 1.62.0 | [Playwright 1.62.0 release notes](https://playwright.dev/docs/release-notes#version-162), [library API](https://playwright.dev/docs/library), [persistent context](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context), [CDP attach](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp) |
+| Public Suffix parser | 7.4.9 | 7.4.9 (core 7.4.10) | [tldts documentation](https://www.npmjs.com/package/tldts), [source](https://github.com/remusao/tldts) |
 | Google Classroom client | 14.0.0 | 14.0.0 | [official Classroom API reference](https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWork/list), [registry record](https://registry.npmjs.org/@googleapis%2Fclassroom/14.0.0) |
 | Google Calendar client | 16.0.0 | 16.0.0 | [official Calendar API reference](https://developers.google.com/workspace/calendar/api/v3/reference/events/list), [registry record](https://registry.npmjs.org/@googleapis%2Fcalendar/16.0.0) |
 
@@ -66,6 +67,9 @@ official documentation and changelog for supported current behavior.
   the M-07A synthetic dynamic-page/profile spike. The M-07A adapter accesses the
   separately installed browser through exact `playwright-core`; the package
   does not download a browser.
+- **Public Suffix parsing:** the PowerSchool retained-state boundary derives
+  Chromium-compatible registrable domains through exact `tldts`
+  7.4.9 with locked `tldts-core` 7.4.10.
 
 ## Source of truth
 

@@ -1,0 +1,12 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright canary Classroom timer
+
+[Timer]
+OnActiveSec=2min
+OnUnitInactiveSec=2min
+AccuracySec=5s
+Persistent=false
+Unit=chalkwright-canary-classroom-refresh.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

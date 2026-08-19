@@ -1,0 +1,42 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright parallel-canary display
+Documentation=file:///opt/chalkwright-canary/current/docs/migration/m17-review-package.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/chalkwright-canary/current
+Environment=NODE_ENV=production
+Environment=CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=/etc/chalkwright/canary/server.json
+ExecStart=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-canary-server.js
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/chalkwright/canary/providers -/var/lib/chalkwright/canary-powerschool-compatibility-profile
+ReadWritePaths=/var/lib/chalkwright/canary-production
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=384M
+TasksMax=64
+
+# The .in suffix and absent [Install] section keep this unit inert.

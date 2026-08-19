@@ -27,6 +27,18 @@ export interface PresentationCard {
   readonly details?: readonly string[];
   readonly accent?: 'ink' | 'warm' | 'calm' | 'bright';
   readonly durationSeconds?: number;
+  readonly vocabulary?: {
+    readonly term: string;
+    readonly definition: string;
+    readonly pronunciation?: string;
+    readonly partOfSpeech?: string;
+    readonly example?: string;
+    readonly vietnamese?: {
+      readonly term?: string;
+      readonly definition?: string;
+      readonly example?: string;
+    };
+  };
 }
 
 export interface PresentationAttendance {

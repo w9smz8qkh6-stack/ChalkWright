@@ -13,9 +13,12 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { chromium, type BrowserContext } from 'playwright-core';
 
 import {
   acquirePowerSchoolSessionLock,
+  applyFilteredPowerSchoolState,
+  filterPowerSchoolStorageState,
   loadFilteredPowerSchoolState,
   powerSchoolStatePath,
   writeFilteredPowerSchoolState,
@@ -60,6 +63,204 @@ test('atomically stores only a strict owner-only filtered state file', () => {
   }
 });
 
+test('retains only an exact PowerSchool cookie partition without broadening it', () => {
+  const [baseCookie] = state().cookies;
+  assert.ok(baseCookie);
+  const partitioned = {
+    ...baseCookie,
+    partitionKey: origin,
+    _crHasCrossSiteAncestor: false,
+  };
+  const foreignPartition = {
+    ...baseCookie,
+    name: 'foreign_partition',
+    partitionKey: 'https://accounts.google.com',
+  };
+  const incompletePartition = {
+    ...baseCookie,
+    name: 'incomplete_partition',
+    partitionKey: origin,
+  };
+  assert.throws(
+    () =>
+      filterPowerSchoolStorageState({ cookies: [], origins: [] }, origin, [
+        partitioned,
+        foreignPartition,
+      ]),
+    /state-unsafe/u,
+  );
+  assert.throws(
+    () =>
+      filterPowerSchoolStorageState({ cookies: [], origins: [] }, origin, [
+        partitioned,
+        incompletePartition,
+      ]),
+    /state-unsafe/u,
+  );
+  const filtered = filterPowerSchoolStorageState(
+    {
+      cookies: [],
+      origins: [],
+    },
+    origin,
+    [partitioned],
+  );
+  assert.deepEqual(filtered, { cookies: [partitioned], origins: [] });
+
+  const parent = mkdtempSync(join(tmpdir(), 'm07c-partitioned-state-'));
+  const directory = join(parent, 'session');
+  try {
+    writeFilteredPowerSchoolState(directory, origin, filtered);
+    assert.deepEqual(loadFilteredPowerSchoolState(directory, origin), filtered);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('retains PSL-derived Chrome schemeful sites without accepting public suffixes', () => {
+  const powerSchoolOrigin = 'https://powerschool.mytas.edu.vn';
+  const [baseCookie] = state().cookies;
+  assert.ok(baseCookie);
+  const parentPartition = {
+    ...baseCookie,
+    domain: 'powerschool.mytas.edu.vn',
+    partitionKey: 'https://mytas.edu.vn',
+    _crHasCrossSiteAncestor: false,
+  };
+  assert.deepEqual(
+    filterPowerSchoolStorageState(
+      { cookies: [], origins: [] },
+      powerSchoolOrigin,
+      [parentPartition],
+    ).cookies,
+    [parentPartition],
+  );
+  assert.throws(
+    () =>
+      filterPowerSchoolStorageState(
+        { cookies: [], origins: [] },
+        powerSchoolOrigin,
+        [{ ...parentPartition, partitionKey: 'https://edu.vn' }],
+      ),
+    /state-unsafe/u,
+  );
+  assert.equal(
+    filterPowerSchoolStorageState(
+      { cookies: [], origins: [] },
+      'https://tenant.region.example.co.uk',
+      [
+        {
+          ...parentPartition,
+          domain: 'tenant.region.example.co.uk',
+          partitionKey: 'https://example.co.uk',
+        },
+      ],
+    ).cookies[0]?.partitionKey,
+    'https://example.co.uk',
+  );
+});
+
+test('restores local state before applying exact filtered cookies', async () => {
+  const [baseCookie] = state().cookies;
+  assert.ok(baseCookie);
+  const partitioned = {
+    ...baseCookie,
+    partitionKey: origin,
+    _crHasCrossSiteAncestor: true,
+  };
+  const calls: unknown[] = [];
+  const context = {
+    setStorageState: async (value: unknown) => {
+      calls.push({ method: 'setStorageState', value });
+    },
+    addCookies: async (value: unknown) => {
+      calls.push({ method: 'addCookies', value });
+    },
+  } as unknown as BrowserContext;
+
+  await applyFilteredPowerSchoolState(context, {
+    cookies: [partitioned],
+    origins: [{ origin, localStorage: [{ name: 'safe', value: 'state' }] }],
+  });
+
+  assert.deepEqual(calls, [
+    {
+      method: 'setStorageState',
+      value: {
+        cookies: [],
+        origins: [{ origin, localStorage: [{ name: 'safe', value: 'state' }] }],
+      },
+    },
+    { method: 'addCookies', value: [partitioned] },
+  ]);
+});
+
+test('round-trips both Chromium partition ancestor states in installed Chrome', async () => {
+  const browser = await chromium.launch({
+    executablePath: '/usr/bin/google-chrome',
+    headless: true,
+  });
+  try {
+    const capture = await browser.newContext();
+    const chromiumCookies = [
+      {
+        ...state().cookies[0],
+        name: 'partitioned_same_site',
+        sameSite: 'None',
+        partitionKey: origin,
+        _crHasCrossSiteAncestor: false,
+      },
+      {
+        ...state().cookies[0],
+        name: 'partitioned_cross_site',
+        sameSite: 'None',
+        partitionKey: origin,
+        _crHasCrossSiteAncestor: true,
+      },
+    ];
+    await capture.addCookies(
+      chromiumCookies as unknown as Parameters<BrowserContext['addCookies']>[0],
+    );
+    const filtered = filterPowerSchoolStorageState(
+      await capture.storageState(),
+      origin,
+      await capture.cookies(),
+    );
+    await capture.close();
+
+    const restored = await browser.newContext();
+    await applyFilteredPowerSchoolState(restored, filtered);
+    const cookies = await restored.cookies();
+    await restored.close();
+
+    assert.deepEqual(
+      cookies.map((cookie) => ({
+        name: cookie.name,
+        partitionKey: cookie.partitionKey,
+        _crHasCrossSiteAncestor: (
+          cookie as typeof cookie & {
+            _crHasCrossSiteAncestor?: boolean;
+          }
+        )._crHasCrossSiteAncestor,
+      })),
+      [
+        {
+          name: 'partitioned_same_site',
+          partitionKey: origin,
+          _crHasCrossSiteAncestor: false,
+        },
+        {
+          name: 'partitioned_cross_site',
+          partitionKey: origin,
+          _crHasCrossSiteAncestor: true,
+        },
+      ],
+    );
+  } finally {
+    await browser.close();
+  }
+});
+
 test('rejects foreign origins, unknown fields, hard links, symlinks, and unsafe permissions', () => {
   const parent = mkdtempSync(join(tmpdir(), 'm07c-hostile-state-'));
   try {
@@ -71,6 +272,42 @@ test('rejects foreign origins, unknown fields, hard links, symlinks, and unsafe 
       JSON.stringify({
         cookies: state().cookies,
         origins: [{ origin: 'https://accounts.google.com', localStorage: [] }],
+      }),
+      { mode: 0o600 },
+    );
+    assert.throws(
+      () => loadFilteredPowerSchoolState(foreignDirectory, origin),
+      /state-unsafe/u,
+    );
+
+    writeFileSync(
+      path,
+      JSON.stringify({
+        cookies: [
+          {
+            ...state().cookies[0],
+            partitionKey: origin,
+          },
+        ],
+        origins: [],
+      }),
+      { mode: 0o600 },
+    );
+    assert.throws(
+      () => loadFilteredPowerSchoolState(foreignDirectory, origin),
+      /state-unsafe/u,
+    );
+
+    writeFileSync(
+      path,
+      JSON.stringify({
+        cookies: [
+          {
+            ...state().cookies[0],
+            partitionKey: 'https://accounts.google.com',
+          },
+        ],
+        origins: [],
       }),
       { mode: 0o600 },
     );

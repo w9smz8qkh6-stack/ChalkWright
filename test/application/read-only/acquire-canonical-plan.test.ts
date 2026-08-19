@@ -156,3 +156,61 @@ test('acquisition rejects invalid, mismatched, stale, and unverified observation
     assert.equal(result.status, 'not-found');
   }
 });
+
+test('acquisition preserves an ordered period when only the dismissal display window is short', async () => {
+  const shortPeriod: ScheduleObservation = {
+    ...observation,
+    periods: [
+      {
+        ...observation.periods[0]!,
+        endsAt: '2035-04-13T08:05:00Z',
+      },
+    ],
+  };
+  const source: ScheduleObservationSource = {
+    readSchedule: async () => ({
+      status: 'observed',
+      observation: shortPeriod,
+    }),
+  };
+  const result = await acquireCanonicalPlan(source, {
+    date: '2035-04-13',
+    roomId,
+    mappings: [
+      {
+        classId: 'class-1' as ClassId,
+        sectionCode: 'Course 1',
+        roomId,
+        periodId: 'period-1',
+      },
+    ],
+    timing: {
+      timeZone: 'America/Chicago',
+      checkInOpenMinutesBefore: 10,
+      dismissalWarningMinutesBefore: 5,
+    },
+  });
+
+  assert.equal(result.status, 'planned');
+  if (result.status === 'planned') {
+    assert.equal(result.plan.meetings.length, 1);
+    assert.equal(
+      result.plan.meetings[0]?.officialStartsAt,
+      '2035-04-13T08:00:00Z',
+    );
+    assert.equal(
+      result.plan.meetings[0]?.officialEndsAt,
+      '2035-04-13T08:05:00Z',
+    );
+    assert.ok(
+      result.plan.diagnostics.some(
+        (diagnostic) => diagnostic.code === 'plan-has-no-valid-meetings',
+      ) === false,
+    );
+    assert.ok(
+      result.plan.diagnostics.some(
+        (diagnostic) => diagnostic.code === 'period-dismissal-window-adjusted',
+      ),
+    );
+  }
+});

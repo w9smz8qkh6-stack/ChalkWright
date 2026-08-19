@@ -1,0 +1,41 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright canary PowerSchool plan refresh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=classroom-hub
+Group=classroom-hub
+WorkingDirectory=/opt/chalkwright-canary/current
+EnvironmentFile=/etc/chalkwright/canary/jobs/plan-refresh.env
+Environment=NODE_ENV=production
+ExecCondition=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/m17-canary-activation-manifest.js --verify-current /etc/chalkwright/canary/activation-manifest.json
+Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
+Environment=CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY=/var/lib/chalkwright/canary-powerschool-compatibility-profile
+ExecStart=/usr/bin/node /opt/chalkwright-canary/current/dist/entrypoints/production-retained-plan-refresh.js
+TimeoutStartSec=3min
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+InaccessiblePaths=-/etc/chalkwright/canary/providers/powerschool -/etc/chalkwright/canary/providers/google-classroom -/etc/chalkwright/canary/providers/google-calendar
+ReadWritePaths=/var/lib/chalkwright/canary-production /var/lib/chalkwright/canary-powerschool-session /var/lib/chalkwright/canary-powerschool-compatibility-profile
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=user pid net
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=768M
+TasksMax=192
+
+# The .in suffix and absent [Install] section keep this unit inert.

@@ -15,6 +15,11 @@
 - [Migration execution plan](migration-plan.md) — dependency-ordered work,
   per-step verification and side-effect boundaries, and requirements
   traceability.
+- [Future parity roadmap](future-parity-roadmap.md) — paused post-M17 parity
+  plan prioritizing vocabulary, lesson-reference slide enhancement, and later
+  attendance-admin work.
+- [Offline glossary catalog](glossary-catalog.md) — normalized local vocabulary,
+  translations, BLOB media, import limits, and review/provenance rules.
 - [Architecture decision records](decisions/README.md) — accepted direction and
   unresolved implementation choices.
 - [Migration evidence](migration/README.md) — review packages, executable parity
@@ -81,9 +86,10 @@
   route or scheduler handoff.
 - [M-17 parallel-canary plan](migration/m17-review-package.md) — accepted
   two-gate architecture for an isolated candidate URL, secondary Calendar,
-  distinct runtime state, staggered jobs, and report-only alerts before a
-  separately approved final handoff. Implementation and live actions remain
-  unauthorized.
+  distinct runtime state, staggered jobs, report-only alerts, and the new
+  application-owned PowerSchool repair boundary before a separately approved
+  final handoff. The candidate is stopped and unpromoted; native repair remains
+  offline-only pending protected provisioning and live qualification.
 - [Offline PowerSchool collector](powerschool-bell-collector.md) — safe
   configuration, filtered and persistent protected-state handling, four-way
   passive/manual/JIT/compatibility capability split, containment limits, and

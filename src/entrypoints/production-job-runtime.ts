@@ -53,6 +53,7 @@ export async function runProductionJobRuntime(options: {
   readonly hardStop: () => never;
   readonly now?: () => string;
   readonly nextId?: () => string;
+  readonly hardStopGraceMs?: number;
   readonly handler: (
     context: ProductionJobRuntimeContext,
     environment: NodeJS.ProcessEnv,
@@ -96,6 +97,9 @@ export async function runProductionJobRuntime(options: {
         state,
         ...(options.signal === undefined ? {} : { signal: options.signal }),
         hardStop: options.hardStop,
+        ...(options.hardStopGraceMs === undefined
+          ? {}
+          : { hardStopGraceMs: options.hardStopGraceMs }),
       },
       {
         jobName: options.jobName,
@@ -110,7 +114,7 @@ export async function runProductionJobRuntime(options: {
     return {
       exitCode: exitCodeFor(result),
       status: result.category,
-      ...(result.category === 'repair-required'
+      ...(result.category === 'repair-required' || result.category === 'failed'
         ? { code: result.error.code }
         : {}),
       result,

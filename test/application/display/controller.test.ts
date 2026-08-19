@@ -26,7 +26,10 @@ import {
 
 const fixtureNow = '2035-04-13T07:00:00Z';
 
-function fixture(data = b407FixtureData) {
+function fixture(
+  data = b407FixtureData,
+  dateForInstant?: (instant: string) => string,
+) {
   const directory = mkdtempSync(join(tmpdir(), 'classroom-hub-display-'));
   const database = new SqliteDatabase(join(directory, 'state.sqlite'), {
     migration: { appliedAt: fixtureNow },
@@ -50,6 +53,7 @@ function fixture(data = b407FixtureData) {
     planStore: persistence,
     overrides,
     holds: persistence,
+    ...(dateForInstant === undefined ? {} : { dateForInstant }),
   });
   return {
     controller,
@@ -348,6 +352,19 @@ test('serves scoped last-known-good state during failure and recovers', async ()
     assert.equal(recovered.degraded, false);
     assert.equal((await item.controller.readiness(fixtureNow)).ready, true);
     assert.equal(item.controller.health(fixtureNow).status, 'ok');
+  } finally {
+    item.close();
+  }
+});
+
+test('readiness uses the configured local display date instead of the UTC date', async () => {
+  const item = fixture(b407FixtureData, () => b407Date);
+  try {
+    const ready = await item.controller.readiness('2035-04-12T17:05:00.000Z');
+
+    assert.equal(ready.ready, true);
+    assert.deepEqual(ready.missingScreens, []);
+    assert.deepEqual(ready.degradedScreens, []);
   } finally {
     item.close();
   }

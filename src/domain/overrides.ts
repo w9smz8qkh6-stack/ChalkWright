@@ -12,8 +12,22 @@ export interface DisplayCard {
   readonly title: string;
   readonly body?: string;
   readonly lines?: readonly string[];
+  readonly featured?: string;
+  readonly details?: readonly string[];
   readonly accent?: string;
   readonly durationSeconds?: number;
+  readonly vocabulary?: {
+    readonly term: string;
+    readonly definition: string;
+    readonly pronunciation?: string;
+    readonly partOfSpeech?: string;
+    readonly example?: string;
+    readonly vietnamese?: {
+      readonly term?: string;
+      readonly definition?: string;
+      readonly example?: string;
+    };
+  };
 }
 
 export interface ClassDisplayOverride {

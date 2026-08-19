@@ -10,6 +10,372 @@ omitted.
 
 ### Changed
 
+- Corrected the deployment record after live inventory: the historical shadow
+  service remains the active display, while the permanent Chalkwright
+  production lane is being re-grounded with protected configuration.
+
+- Accepted a permanent delivery lane: protected GitHub `main` is the canonical
+  release source, with immediate atomic deployment, rollback, and bounded
+  Calendar synchronization in the final production topology.
+
+- Added a permanent protected Calendar configuration contract. It binds one
+  exact owned target, rejects `primary` and denied-target collisions, and keeps
+  credentials, target identity, and runtime state outside the repository.
+
+- Added inert, verified permanent-production systemd templates for the
+  loopback display, PowerSchool and Classroom refreshes, and owned Calendar
+  synchronization. They remain uninstalled and contain no protected values.
+
+- Added the first offline glossary-catalog migration and SQLite repository for
+  class/year/unit-scoped source terms, additive translations, and verified
+  pronunciation or illustration BLOBs. The catalog validates media digests and
+  size limits before an atomic source replacement; Drive import and display
+  selection wiring remain separate follow-on work.
+  Canonical and translated records each support part of speech and sample
+  sentence fields in their respective languages.
+
+- Added CSV-first glossary normalization for common teacher-facing term and
+  definition headers, quoted text, and optional pronunciation/example metadata.
+  Invalid source files fail before they can alter the local catalog.
+
+- Added a constrained Drive glossary read boundary with only parent-folder
+  listing and bounded CSV download operations, using the separately provisioned
+  read-only grant. It is not yet wired into a live importer or display request.
+
+- Recorded the paused post-M17 future parity roadmap. The next planned slices
+  prioritize vocabulary parity, then on-disk lesson-reference slide
+  enhancement, with attendance-admin parity intentionally deferred while quick
+  live-display fixes may continue separately.
+
+- Made the active-Classroom refresh gate skip safely when the local display
+  state has no active class target, such as Sunday/off-hours after a successful
+  plan lookahead. Malformed active-class shapes still fail before provider
+  construction, so the read-only qualification no longer blocks solely because
+  there is no class currently in session.
+  The M-17 Calendar preflight similarly no-ops when today's plan is unavailable
+  but a verified future class day exists, while still failing if neither current
+  nor future verified plan material is present.
+  M-17 preactivation comparison can now bind an already verified future class
+  day within the same seven-day lookahead window, while the evidence timestamp
+  still records the actual comparison time and remains subject to the
+  activation freshness check.
+  The display readiness endpoint now uses the configured classroom-local date
+  instead of slicing the UTC timestamp, so activation after local midnight no
+  longer reports a false missing-screen readiness failure.
+  Ordered PowerSchool periods are now preserved even when the app's internal
+  dismissal-warning threshold would not fit inside a short class interval; the
+  official start/end remain exact and only the display threshold is adjusted
+  with a diagnostic.
+
+- Gave service-account-backed native PowerSchool repair a fresh private,
+  cache-disabled 1Password CLI configuration directory for its three fixed
+  `op read` calls. The directory is removed on success and failure, acquired
+  secret buffers are scrubbed if cleanup cannot be proven, and desktop-backed
+  repair retains its existing configuration behavior. This closes the live
+  `repair-secret-unavailable` failure that remained after the protected token,
+  vault, item, and references were independently verified.
+
+- Made a current-day PowerSchool `not-found` result compatible with the
+  existing bounded production lookahead. The unavailable current date remains
+  unstored and non-authoritative, while the read-only refresh continues across
+  all seven subsequent dates and stores every verified plan in that window.
+  Authentication, transport, scope, and persistence failures still stop
+  immediately. This lets a Sunday refresh populate the complete following
+  week rather than failing before Monday or stopping after its first class day.
+
+- Made the inert M-17 release builder enforce an owner-only umask and normalize
+  the finished archive to mode `0600`, so rebuilding after `/tmp` cleanup cannot
+  inherit a permissive interactive-shell umask.
+
+- Made retained-profile request-policy failures actionable without disclosing
+  browser or schedule data. The shared authenticated browser boundary now
+  records only the first fixed violation class (such as a blocked resource
+  origin, method, popup, WebSocket, response-size, or navigation-budget
+  violation), while preserving the existing fail-closed result. Production
+  errors carry that bounded class in the code and never include a URL, request
+  body, header, page content, or provider value. Installed-Chrome regressions
+  bind the reason emitted for each synthetic policy violation.
+  Production plan entrypoints now also surface the existing bounded failed-job
+  code, instead of only `failed`, so live qualification can diagnose the fixed
+  failure category without printing schedule observations or browser state.
+  Current-day and future-lookahead source failures include only the source's
+  bounded error code under the existing `production-source-unavailable-*` or
+  `production-future-plan-unavailable-*` prefixes, preserving the same
+  value-free diagnostic boundary.
+  Blocked origins are now reduced further to fixed non-value-bearing families
+  so a contained diagnostic can distinguish Google static/user-content,
+  the exact PowerSchool parent, PowerSchool child/sibling, non-HTTP, and unknown
+  resources without retaining or permitting the blocked origin.
+  A PowerSchool sibling is further reduced only to fixed common roles (`www`,
+  `static`, `cdn`, `assets`, `auth`, `sso`, or `login`) or `other`; this remains
+  diagnostic-only and grants no sibling access.
+  A separately authorized one-time inert diagnostic appended one validated
+  DNS sibling label to that sanitized code so the operator can approve or
+  reject one exact destination. It emits no domain, URL path, query, content,
+  credential, cookie, or browser state and still blocks the request.
+  That diagnostic identified the single `assets-sis` label. Following explicit
+  approval, the ordinary policy now derives only its exact HTTPS origin beneath
+  the configured PowerSchool registrable site using the pinned Public Suffix
+  List and permits only resource GET/HEAD requests. The temporary dynamic-label
+  diagnostic is removed; no wildcard, sibling family, or method expansion is
+  present.
+  A subsequent contained run identified the separate fixed sibling role
+  `assets`. Following separate explicit approval, that exact derived HTTPS
+  origin is now admitted under the same resource GET/HEAD-only policy. Every
+  other sibling remains blocked.
+  A following contained run reached a nested same-site sibling. Its diagnostic
+  is now narrowed to three fixed, non-value-bearing outcomes: child of the
+  already approved `assets-sis` origin, child of the approved `assets` origin,
+  child of a fixed common role (`www`, `static`, `cdn`, `auth`, `sso`, or
+  `login`), or another nested sibling. No hostname prefix is retained or
+  emitted, no new origin is allowed, and the request still aborts before
+  transmission.
+  A separately authorized terminal-only diagnostic identified another
+  PowerSchool same-site sibling, confirming the per-host approval loop. The
+  ordinary policy now permits HTTPS PowerSchool same-site resource origins as a
+  class. To match the proven legacy browser capture behavior without importing
+  OpenClaw, non-top-level same-site resource requests may use GET/HEAD plus
+  browser-internal OPTIONS/POST methods; exact PowerSchool top-level reads,
+  top-level sibling navigation, non-HTTPS origins, unrelated registrable sites,
+  form methods, downloads, popups, WebSockets, and non-resource authority remain
+  blocked. The temporary label-bearing diagnostic is removed.
+  The first live reason identified a blocked identity-page resource. The
+  retained and repair configurations now default to the same three fixed
+  Google static-resource origins already proven by the predecessor collector.
+  That fixed baseline is now enforced even when an older protected environment
+  contains an explicit list; such a list must retain PowerSchool and identity
+  and may add only individually validated exact origins.
+
+- Composed the accepted Chalkwright-owned retained-profile reader into the
+  production plan preflight and refresh jobs after repeated live evidence
+  showed that a repaired browser-bound session could not be reproduced in a
+  disposable profile by copying complete filtered cookies and site state.
+  The retained-session entrypoint has no credential, 1Password, repair,
+  form-fill, or legacy-application capability; it permits only bounded silent
+  identity renewal through the exact ADR-0021 browser boundary. Exact systemd
+  policy makes the protected repair directory inaccessible while granting only
+  the plan and repair units access to the dedicated Chalkwright profile.
+  The production parent now reserves 3.5 seconds after cancellation for the
+  child supervisor's complete graceful and forced process-group quiescence
+  proof. Installed-Chrome regressions additionally reject PowerSchool POST and
+  WebSocket activity alongside popup, download, response-size, and request-
+  budget violations.
+  The native M-17 repair entrypoint now recognizes invocation through the
+  installed `current` release symlink instead of silently exiting, and both
+  repair and retained-plan units declare the exact non-secret Google identity
+  origin required by their bounded silent-renewal policy.
+
+- Completed the next offline legacy-parity slice without adding a legacy
+  runtime dependency. Canonical acquisition now rejects short-period timing
+  plans before persistence, and future lookahead skips that unusable date
+  safely. The production display now composes copied, validated static lesson
+  cards and meeting-scoped vocabulary from Chalkwright-owned SQLite alongside
+  Classroom objectives. Bilingual English/Vietnamese vocabulary faces,
+  bellringer treatment, staged details, carousel transitions, and bounded
+  content fitting restore the legacy presentation hierarchy. Course mappings
+  may provide an independent HTTPS attendance check-in URL for QR display.
+  The executable OpenClaw state bridge and its repository-safety exception are
+  removed; native Chalkwright repair is the only supported recovery path.
+  The inactive upgrade now recognizes the exact installed native-auth
+  predecessor and normally treats its privileged repair unit as immutable. The
+  current startup correction permits exactly one SHA-256-bound transition from
+  the installed no-op unit to the reviewed symlink-safe unit while inactive;
+  that unit participates in the same backup, atomic switch, and rollback
+  transaction as the other sixteen candidate units.
+  Recovery is armed before the first ordinary-unit replacement, and the
+  verified release/unit pair is committed before temporary rollback material
+  is removed, so neither a mid-copy failure nor a cleanup interruption can
+  leave code and installed units from different releases. Recovery derives the
+  selected digest from the actual `current` symlink rather than an in-memory
+  flag, closing the interruption boundary immediately after the atomic switch.
+  If rollback itself cannot complete, cleanup retains the verified new release
+  and its matching installed units for explicit recovery instead of restoring
+  only half of the predecessor pair.
+
+- Aligned native PowerSchool repair with the credential-free routine reader's
+  installed-Chrome request identity. Both lanes now derive one bounded user
+  agent and normalize only the exact `HeadlessChrome/` product token before
+  authentication or session HTTP. Live qualification proved that identity
+  alignment alone did not close the handoff: PowerSchool still accepted the
+  browser-authenticated page and rejected the same filtered cookies through
+  Node's HTTP stack. The credential-free collector now makes one tightly
+  bounded browser-native retry only after that exact bell authentication
+  redirect. Chrome protocol interception permits one exact main-document GET
+  and aborts every redirect and subresource before the wire; JavaScript stays
+  disabled and no identity, credential, form, or legacy capability is present.
+  Synthetic coverage binds both request-identity reuse and the browser-native
+  fallback without identity traffic.
+  The first live run of that fallback still received the exact authentication
+  redirect in fresh Chrome after native repair. The retained-state boundary now
+  captures cookies through Playwright's complete cookie API and preserves a
+  CHIPS partition key only when it is the exact PowerSchool origin or Chrome's
+  immediate schemeful parent site, including Chromium's locked-version
+  `hasCrossSiteAncestor` component.
+  Schemeful-site derivation uses exact-pinned `tldts` 7.4.9 and its bundled
+  Public Suffix List rather than a DNS-label heuristic.
+  Routine restoration applies local state first and then the strictly filtered
+  cookies, so a partitioned cookie is never silently discarded or broadened
+  into an unpartitioned cookie. Foreign partition keys remain rejected, and
+  the bounded Node lane rejects a `Partitioned` response cookie rather than
+  recreating it without a complete browser partition key. That Node lane also
+  excludes retained partitioned cookies from its raw `Cookie` header; only the
+  contained browser-native read may apply them in a top-level site context.
+
+- Accepted an application-owned PowerSchool authentication lifecycle for
+  Chalkwright. An inert, operator-invoked native repair service now composes the
+  existing fixed-reference 1Password JIT worker with a dedicated retained
+  compatibility profile and filtered canary session state. Routine plan jobs
+  remain credential- and repair-free. They now reuse the dedicated retained
+  profile for browser-bound session renewal without accessing repair secrets.
+  The live native repair completed without
+  OpenClaw, and the following credential-free job acquired and stored the
+  current plan and read a future plan before the separate known future-plan
+  persistence failure. A later native repair exposed and now drives the
+  request-identity correction above; a fresh native repair plus credential-free
+  exact-plan qualification remains required. The executable OpenClaw bridge
+  has been removed completely.
+
+- Let the bounded production future-class-day lookahead skip a PowerSchool date
+  that has no usable exact schedule, without storing that absence as an
+  authoritative no-classes plan. The current date now follows the same safe
+  rule when the seven-day lookahead is enabled; explicit authentication or
+  transport failures remain fail closed.
+
+- Corrected the passive PowerSchool authentication contract for the tenant's
+  proven session behavior. When the auxiliary teacher-home status request
+  redirects to a recognized same-origin authentication endpoint, the collector
+  now continues to the exact dated bell request and accepts the session only if
+  that private bell page passes its exact marker and school-text checks. Other
+  status failures still stop immediately, an expired session still fails on the
+  bell request, redirects remain unfollowed, and no Google or credential path
+  is added to routine collection.
+
+- Reworked the public README introduction around Chalkwright's classroom value:
+  schedule-driven display states and owned Calendar blocks, read-only upcoming
+  Classroom coursework, QR attendance check-in, learning objectives, textbook
+  and lesson references, rotating word-of-the-day vocabulary, configurable
+  classroom options, and next-class-day previews.
+
+- Prepared the M-17 candidate snapshot for public portfolio review: host-specific
+  migration inputs now come from protected references, private Tailnet hostnames
+  are excluded from source while their operational boundary remains hash-bound,
+  the README reflects the live-qualified but unpromoted canary honestly, and
+  publication checks reject personal home roots and private Tailnet URLs.
+
+- Replaced the host-specific M-17 Calendar provisioning source with the generic
+  protected migration handoff
+  `/etc/chalkwright/migration/google-calendar-writer-config.json`, keeping
+  operator-specific home paths out of the publishable repository.
+
+- Restored the accepted legacy during-class header bell: while class content is
+  active, the upper-right status group now shows the original bell silhouette
+  beside a ceiling-rounded count of minutes until the official class end. The
+  value advances from the client clock without rebuilding the scene, briefly
+  shimmers only when the minute changes, exposes an exact accessible label,
+  respects reduced-motion preferences, and clears outside class-content state.
+  The adjacent current-time clock now also matches the legacy display by
+  showing hour and minute only while retaining second-level evaluation
+  internally. Its date precedes the clock on the same row, and the bell badge
+  is vertically centered against the clock instead of appearing as a
+  subscript. The badge now centers its icon-and-number cluster and centers the
+  digits within their slot, bringing the minute count closer to the bell. The
+  redundant lower-left “Dismissal begins” countdown is no longer rendered
+  during class content.
+
+- Restored the legacy visual hierarchy for Classroom objective cards. The
+  assignment title remains featured, ordinary directions carry the pointer
+  icon, the Classroom follow-up carries the checkmark, and recognized due
+  dates use the compact month/day calendar badge. Decorative icons are hidden
+  from assistive technology while their complete text remains available.
+
+- Activated the isolated M-17 parallel canary on corrected release
+  `sha256:9986bbad0d320eea5dfe0b5fe705441a1927815f185767a6d24c9781789a8362`
+  for the exact 2026-08-13 12:20 through 2026-08-20 12:20
+  Asia/Ho_Chi_Minh window. The activation passed plan, Classroom, integrity,
+  verified-backup, server health/readiness, and manifest gates; created exactly
+  three owned events in `Auto Lesson 2`; and started five isolated timers. A
+  second reconciliation observed all three events and completed zero mutations.
+  The separate Tailnet HTTPS route on port 14443 is healthy and ready, while the
+  legacy 9443 route, Calendar, units, state, alerts, and Fully Kiosk URL remain
+  unchanged. M-17 remains in observation and is not promoted.
+
+- Corrected the live presentation label projection discovered during the first
+  canary display check. A verified meeting such as `Robotics (IC008.1)` now
+  renders the human title `Robotics` only when its parenthesized section code
+  normalizes to the meeting's exact course key; mismatched suffixes remain
+  intact and code-only inputs retain their normalized fallback.
+
+- Prevented unchanged 30-second display polls from replacing the complete scene
+  DOM and replaying its media fade. Healthy polls now update clock and status
+  metadata in place unless the rendered presentation fragment actually changes.
+
+- Closed the deferred end-of-day preview gap exposed by the physical canary.
+  The existing read-only PowerSchool refresh now scans at most seven subsequent
+  dates, stores verified no-class days without presenting them as class days,
+  and stores every verified plan in that bounded future window. The
+  `day_complete` scene can therefore show the next loaded class day across
+  weekends and short holidays without fabricating a schedule.
+
+- Added an inactive-only, exact-predecessor M-17 release upgrade path and a
+  recoverable fixed disposition for the failed zero-mutation activation
+  manifest, so the bounded Calendar intent-identity correction can be installed
+  without reusing or overwriting approved evidence.
+
+- Corrected the M-17 Calendar writer's bounded deterministic intent identity
+  contract after the first activation attempt failed closed with
+  `calendar-write-input-invalid`. Real intent IDs compose plan, scope, and
+  meeting identities and may exceed the generic 128-character identifier
+  limit; writer approvals and durable journal steps now consistently allow at
+  most 512 safe characters, while provider event IDs remain fixed SHA-256-based
+  values. Forward-only migration 6 rebuilds only the journal-step table with
+  that bound and preserves existing rows. The failed attempt completed zero
+  mutations, stopped the candidate server, and left every candidate timer and
+  route inactive.
+
+- Completed the authorized M-17 read-only live-preflight sequence without a new
+  PowerSchool sign-in. The existing legacy persistent browser passively renewed
+  its session; the strict bridge retained eleven PowerSchool cookies plus one
+  exact-origin local-storage record; and the canary plan and active-Classroom
+  preflights succeeded. The secondary `Auto Lesson 2` audit observed zero
+  events, proposed three intents, and attempted no mutations. A bounded
+  provider-inaccessible loopback comparison then matched three legacy and
+  candidate meetings using the established course-name-plus-section-code UI
+  label, with zero semantic differences and retained evidence fingerprint
+  `sha256:77071f2349eaf2a95ba25bdf1ee7236caa1251210cfdb666de01a49a70ba69af`.
+  Candidate Calendar semantics in that comparison are the three planned
+  reconciliation intents, while the separate provider preflight observed zero
+  existing events. A first protected activation manifest was bound but rejected
+  before use because its seven-day window began before activation; it must be
+  recoverably superseded immediately before any separately authorized
+  activation, and none of its inactive elapsed time counts as canary coverage.
+  No activation, routing, timer, Calendar mutation, or Fully Kiosk change
+  followed.
+
+- Added a fixed, operator-only M-17 recovery bridge for the explicitly
+  authorized legacy PowerSchool compatibility path. It binds the installed
+  OpenClaw 2026.6.11 read-only cookie interface and its generic evaluation
+  interface with one scanner-bound read-only expression containing no mutation
+  or network operation. It keeps the envelopes in memory, atomically binds local
+  storage to the returned document origin, requires both that origin and the
+  response URL to match the configured PowerSchool origin, drops root before
+  application imports, and filters cookies plus bounded exact-origin local
+  storage through the strict
+  PowerSchool-only validator, and atomically refreshes only the isolated canary
+  session state without profile copying or password, 1Password, or Google
+  credential access.
+
+- Added a create-once, release-bound M-17 SQLite initializer after the first
+  live preflight exposed that inert provisioning created the isolated
+  directories but left the required canary database absent. The initializer
+  drops root authority before importing application code and has no provider,
+  service, route, or legacy-state capability.
+
+- Completed the first M-17 live-preflight stage with isolated protected
+  provisioning, exact digest-bound inert installation, and a validated
+  privilege-dropped filtered PowerSchool state copy. The copy retained eleven
+  PowerSchool cookies and no origin storage, browser profile, Google state, or
+  provider request; all units remain stopped and routing remains unchanged.
+
 - Adopted Chalkwright as the public product, package, UI, documentation, and
   future repository name while retaining existing `CLASSROOM_HUB_*`,
   `classroom-hub` runtime paths, compatibility URLs, and ownership markers for
@@ -37,6 +403,19 @@ omitted.
   performed.
 
 ### Added
+
+- Added the offline M-17 parallel-canary package: distinct Chalkwright
+  configuration/state/release roots, inert hardened services and staggered
+  timers, an exact `Auto Lesson 2` writer with primary/legacy deny binding,
+  durable lease/journal/idempotency reuse, a filtered-state-only PowerSchool
+  copier, protected provisioning, digest-bound release/install tooling, and a
+  candidate-only stop path that quiesces every timer and in-flight oneshot.
+  Activation now requires provider-inaccessible SQLite integrity and verified
+  backup jobs before readiness/Calendar reconciliation, with separate nightly
+  maintenance timers. Synthetic tests cover cross-target drift,
+  malformed Calendar evidence, convergence, unsafe config/state, and unit
+  activation drift. No protected reference, provider, service, route, or kiosk
+  action is part of this offline change.
 
 - Adopted the OSI-approved Apache License 2.0 for the future Chalkwright public
   source release, including the canonical license text and package SPDX
@@ -176,7 +555,9 @@ omitted.
   and the fixed alert test are complete, while routine live wiring remains
   absent. The private route is SHA-bound and its future port-4317 handoff is
   approved but unchanged. The user approved the final evidence and promoted
-  M-16; M-17 has not begun and remains unauthorized.
+  M-16. At that checkpoint M-17 had not begun; its later offline canary
+  implementation is recorded separately above and still grants no live
+  authority.
   A separately authorized read-only production-reference/route preflight then
   found every exact future production path and service identity absent and no
   production units installed. It bound one private, non-Funnel
@@ -434,7 +815,8 @@ omitted.
   Saturday and post-window catch-up are disabled; Calendar, provider writes,
   production TV routing, kiosk changes, and M-12 remain absent. The
   pre-observation gate passed with a fully hardened system service running as
-  `bren`, exact installed-unit hashes, health 200, expected pre-plan readiness
+  the unprivileged application account, exact installed-unit hashes, health 200,
+  expected pre-plan readiness
   503, a successful restart and two verified backup/catalog pairs, distinct
   4318/20790 listeners, and the timer waiting for its first Tuesday event. The
   superseded combined environment was removed after exact comparison with the

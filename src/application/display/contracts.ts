@@ -94,6 +94,7 @@ export interface DisplayContentSource {
     classId: ClassId,
     date: IsoDate,
     observedAt: IsoInstant,
+    meetingId?: OpaqueId,
   ): Promise<DisplayContentModel | undefined>;
 }
 

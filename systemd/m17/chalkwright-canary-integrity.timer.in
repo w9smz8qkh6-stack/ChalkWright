@@ -1,0 +1,11 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright canary SQLite integrity timer
+
+[Timer]
+OnCalendar=*-*-* 18:35:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+Persistent=false
+Unit=chalkwright-canary-integrity.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

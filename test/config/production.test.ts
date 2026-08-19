@@ -33,6 +33,7 @@ function payload(root: string) {
         sectionCode: 'Synthetic C509 CODE-A',
         providerCourseKey: '123456789',
         attendanceClassCode: 'C509-A',
+        attendanceCheckInUrl: 'https://attendance.example.invalid/check-in',
       },
     ],
     checkInOpenMinutesBefore: 5,
@@ -52,6 +53,10 @@ test('loads one exact owner-only production server reference without provider au
     assert.equal(config.port, 4317);
     assert.equal(config.screenId, 'screen-c509-production');
     assert.equal(config.courseMappings[0]?.roomId, 'room-c509');
+    assert.equal(
+      config.courseMappings[0]?.attendanceCheckInUrl,
+      'https://attendance.example.invalid/check-in',
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

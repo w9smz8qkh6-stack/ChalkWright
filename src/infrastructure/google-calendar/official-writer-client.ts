@@ -66,6 +66,18 @@ export function loadOfficialCalendarProductionTrialTransports(
   };
 }
 
+/** Constructs only Events.list from the exact owned-events writer grant. */
+export function loadOfficialCalendarWriterListTransport(
+  referencePath: string,
+): CalendarEventListTransport {
+  const reference = loadWriterReference(referencePath);
+  const oauth = new auth.OAuth2(reference.clientId, reference.clientSecret);
+  oauth.setCredentials({ refresh_token: reference.refreshToken });
+  return createCalendarEventListTransport(
+    calendar({ version: 'v3', auth: oauth }),
+  );
+}
+
 function loadWriterReference(
   path: string,
 ): CalendarWriterAuthorizedUserReference {

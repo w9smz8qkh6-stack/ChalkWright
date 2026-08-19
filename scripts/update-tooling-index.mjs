@@ -91,6 +91,8 @@ const versions = {
   googleClassroom: lockedPackageVersion('@googleapis/classroom'),
   googleCalendar: lockedPackageVersion('@googleapis/calendar'),
   playwrightCore: lockedPackageVersion('playwright-core'),
+  tldts: lockedPackageVersion('tldts'),
+  tldtsCore: lockedPackageVersion('tldts-core'),
   typesNode: lockedPackageVersion('@types/node'),
   sqlite: process.versions.sqlite ?? 'not detected',
   prettier: lockedPackageVersion('prettier'),
@@ -138,6 +140,7 @@ official documentation and changelog for supported current behavior.
 | Prettier | ${packageJson.devDependencies.prettier} | ${versions.prettier} | [Prettier documentation](https://prettier.io/docs/en/) |
 | Node.js types | ${packageJson.devDependencies['@types/node']} | ${versions.typesNode} | [Node.js ${major(versions.typesNode)} API](https://nodejs.org/docs/latest-v${major(versions.typesNode)}.x/api/), [registry record](https://registry.npmjs.org/@types%2Fnode/${versions.typesNode}) |
 | Playwright Core | ${packageJson.dependencies['playwright-core']} | ${versions.playwrightCore} | [Playwright ${versions.playwrightCore} release notes](https://playwright.dev/docs/release-notes#version-${versions.playwrightCore.split('.').slice(0, 2).join('')}), [library API](https://playwright.dev/docs/library), [persistent context](https://playwright.dev/docs/api/class-browsertype#browser-type-launch-persistent-context), [CDP attach](https://playwright.dev/docs/api/class-browsertype#browser-type-connect-over-cdp) |
+| Public Suffix parser | ${packageJson.dependencies.tldts} | ${versions.tldts} (core ${versions.tldtsCore}) | [tldts documentation](https://www.npmjs.com/package/tldts), [source](https://github.com/remusao/tldts) |
 | Google Classroom client | ${packageJson.dependencies['@googleapis/classroom']} | ${versions.googleClassroom} | [official Classroom API reference](https://developers.google.com/workspace/classroom/reference/rest/v1/courses.courseWork/list), [registry record](https://registry.npmjs.org/@googleapis%2Fclassroom/${versions.googleClassroom}) |
 | Google Calendar client | ${packageJson.dependencies['@googleapis/calendar']} | ${versions.googleCalendar} | [official Calendar API reference](https://developers.google.com/workspace/calendar/api/v3/reference/events/list), [registry record](https://registry.npmjs.org/@googleapis%2Fcalendar/${versions.googleCalendar}) |
 
@@ -168,6 +171,9 @@ official documentation and changelog for supported current behavior.
   the M-07A synthetic dynamic-page/profile spike. The M-07A adapter accesses the
   separately installed browser through exact \`playwright-core\`; the package
   does not download a browser.
+- **Public Suffix parsing:** the PowerSchool retained-state boundary derives
+  Chromium-compatible registrable domains through exact \`tldts\`
+  ${versions.tldts} with locked \`tldts-core\` ${versions.tldtsCore}.
 
 ## Source of truth
 

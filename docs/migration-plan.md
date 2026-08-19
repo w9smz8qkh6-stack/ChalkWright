@@ -891,9 +891,75 @@ final-handoff gate; candidate alerts remain report-only.
 
 ### M-17 — Run an isolated production canary, then hand off
 
-**Status:** Parallel-canary architecture accepted through ADR-0022; offline
-implementation, live activation, and final handoff have not begun and remain
-unauthorized. M-16 promotion and ADR-0022 acceptance grant no live authority.
+**Current status (2026-08-19):** The historical shadow service is the active
+display path. The prior M-17 release and units remain installed but lack their
+protected runtime configuration. The permanent Chalkwright production lane is
+therefore being re-grounded from the current repository; the detailed record
+below preserves the preceding canary and readiness evidence.
+
+**Historical implementation record:** Parallel-canary architecture accepted through ADR-0022 and the exact
+offline implementation passed its independent review in a clean isolated lane.
+Protected provisioning, exact digest-bound installation, isolated-state
+initialization, filtered PowerSchool-state recovery, provider preflights,
+provider-free semantic comparison, corrected activation, and the separate
+Tailnet route are complete. Release `sha256:9986bbad...a8362` passed plan,
+Classroom, integrity, backup, health, and readiness gates, created exactly three
+owned events in `Auto Lesson 2`, and started five isolated timers for the exact
+initial observation window. Immediate convergence observed all three events and
+completed zero further mutations. Subsequent reviewed recovery reached inactive
+release `sha256:8616eaf3...59b0`; its objective-card, authenticated-bell, and
+bounded future-day corrections passed, but the latest activation stopped when
+a later future plan could not be persisted. Cleanup left the candidate stopped,
+its Tailnet route absent, and no live activation manifest. ADR-0024 now accepts
+application-owned PowerSchool repair. Its protected provisioning completed
+without OpenClaw. A prior repair unit reported process success, but later
+diagnosis proved that its wrapper exited without running because its direct-
+invocation test did not recognize the installed `current` symlink; that report
+is not retained as repair evidence. A following credential-free
+job reached the separately known future-plan persistence failure only after
+successful current and future PowerSchool acquisition. A later repeat exposed
+a repair/routine user-agent mismatch: repair reached the exact bell page, but
+the fresh routine bell GET was redirected to authentication. Normalizing both
+lanes to the same installed-Chrome identity did not resolve the live tenant's
+rejection of Node session replay. The next offline correction therefore keeps
+Node's bounded exact reads as the primary path but, only for the exact bell
+authentication redirect, retries that one document GET through
+application-owned Chrome with all redirects, identity requests, and
+subresources blocked at the protocol boundary. Its first live run remained
+repair-required. The next installed correction preserved only exact
+PowerSchool-partitioned cookies from the complete browser cookie API instead of
+discarding their CHIPS partition key through the narrower `storageState()`
+projection. It preserves Chromium's complete locked-version exact-origin or
+immediate schemeful-parent partition key, confines its use to the browser lane,
+and refuses response cookies whose `Partitioned` attribute cannot be
+reconstructed without broadening. Registrable-domain derivation uses the
+exact-pinned Public Suffix List implementation rather than a DNS-label
+heuristic. The retained-profile correction then composed the accepted
+Chalkwright-owned retained-profile collector into the
+credential-free plan entrypoint. It grants no repair secret, form-fill, or
+legacy authority, but preserves browser-bound session material and bounded
+silent identity renewal. Its first inert live qualification failed before
+provider access because of the no-op repair wrapper and an omitted fixed Google
+identity-origin assignment. The current offline correction fixes both startup
+contracts. A subsequently authorized one-time protected migration moved the
+quiescent legacy PowerSchool profile into Chalkwright's dedicated retained-
+profile root with no continuing legacy runtime or path dependency. The
+following credential-free read failed closed at the browser request policy.
+The current offline correction retains that policy and exposes only a fixed,
+value-free violation class for the next diagnostic. A successful retained-
+session exact-plan read remains the live gate, while future-plan persistence
+remains separately unresolved.
+The subsequent offline parity correction validates the complete derived
+canonical contract before persistence, rejects a too-short dismissal window at
+acquisition, and lets bounded future lookup continue past that unusable date.
+It also wires copied local lesson/vocabulary content, independent attendance
+URLs, and richer legacy presentation behavior without an OpenClaw runtime
+dependency. Live confirmation of the former persistence failure remains open.
+The user accepted the
+physical Fully Kiosk course-title, stable-poll, and next-class-day preview
+corrections. Before the later handoff, the legacy route, Calendar, units,
+state, alerts, and authoritative role remained unchanged. The subsequent
+status update above supersedes that checkpoint.
 
 - **Objective:** Evaluate Classroom Hub beside the authoritative legacy app on
   a separate Tailnet URL and secondary Calendar before a separately approved

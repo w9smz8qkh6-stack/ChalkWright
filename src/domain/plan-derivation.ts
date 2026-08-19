@@ -77,33 +77,50 @@ function meetingFromPeriod(
     period.startsAt,
     -policy.checkInOpenMinutesBefore,
   );
-  const dismissalStartsAt = addMinutes(
+  const nominalDismissalStartsAt = addMinutes(
     period.endsAt,
     -policy.dismissalWarningMinutesBefore,
   );
+  const nominalDismissalStart = epoch(nominalDismissalStartsAt);
+  const dismissalStartsAt =
+    nominalDismissalStart !== undefined && nominalDismissalStart > start
+      ? nominalDismissalStartsAt
+      : adjustedDismissalStartsAt(start, end);
   if (
     checkInOpensAt === undefined ||
     dismissalStartsAt === undefined ||
-    (epoch(dismissalStartsAt) ?? end) < start
+    (epoch(dismissalStartsAt) ?? end) <= start
   ) {
     return undefined;
   }
   return {
-    meetingId: stableId(
-      'meeting',
-      observation.observedForDate,
-      mapping.roomId,
-      period.periodId,
-    ),
-    courseKey: period.courseKey,
-    blockLabel: period.blockLabel,
-    checkInOpensAt,
-    officialStartsAt: period.startsAt,
-    checkInClosesAt: period.startsAt,
-    contentStartsAt: period.startsAt,
-    dismissalStartsAt,
-    officialEndsAt: period.endsAt,
+    meeting: {
+      meetingId: stableId(
+        'meeting',
+        observation.observedForDate,
+        mapping.roomId,
+        period.periodId,
+      ),
+      courseKey: period.courseKey,
+      blockLabel: period.blockLabel,
+      checkInOpensAt,
+      officialStartsAt: period.startsAt,
+      checkInClosesAt: period.startsAt,
+      contentStartsAt: period.startsAt,
+      dismissalStartsAt,
+      officialEndsAt: period.endsAt,
+    },
+    dismissalWindowAdjusted:
+      nominalDismissalStart === undefined || nominalDismissalStart <= start,
   } as const;
+}
+
+function adjustedDismissalStartsAt(
+  start: number,
+  end: number,
+): string | undefined {
+  if (end - start < 2) return undefined;
+  return new Date(start + Math.floor((end - start) / 2)).toISOString();
 }
 
 /** Derive one room-scoped canonical plan without silently reassigning periods. */
@@ -169,8 +186,8 @@ export function deriveCanonicalPlan(
       return [];
     }
     const mapping = resolution.mapping;
-    const meeting = meetingFromPeriod(period, mapping, observation, policy);
-    if (meeting === undefined) {
+    const result = meetingFromPeriod(period, mapping, observation, policy);
+    if (result === undefined) {
       diagnostics.push(
         diagnostic(
           'period-interval-invalid',
@@ -180,7 +197,15 @@ export function deriveCanonicalPlan(
       );
       return [];
     }
-    return [meeting];
+    if (result.dismissalWindowAdjusted)
+      diagnostics.push(
+        diagnostic(
+          'period-dismissal-window-adjusted',
+          'warning',
+          'A PowerSchool period was preserved exactly while its display dismissal-warning threshold was adjusted to fit inside the official interval.',
+        ),
+      );
+    return [result.meeting];
   });
 
   meetings.sort(

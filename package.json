@@ -33,6 +33,12 @@
     "ops:m15-provision": "node dist/entrypoints/m15-provision.js",
     "ops:m16-rehearse": "npm run build --silent && node dist/entrypoints/m16-rehearsal.js",
     "ops:m16-provision-production": "node scripts/operations/provision-m16-production.mjs --apply",
+    "ops:m17-calendar-sync": "node dist/entrypoints/m17-canary-calendar-sync.js",
+    "ops:m17-comparison": "node dist/entrypoints/m17-canary-comparison.js",
+    "ops:m17-verify-activation": "node dist/entrypoints/m17-canary-activation-manifest.js",
+    "ops:m17-copy-powerschool-state": "node dist/entrypoints/m17-copy-powerschool-state.js",
+    "ops:m17-powerschool-repair": "node dist/entrypoints/m17-powerschool-repair.js",
+    "ops:production-calendar-sync": "node dist/entrypoints/production-calendar-sync.js",
     "ops:production-server": "node dist/entrypoints/production-server.js",
     "ops:powerschool-bells": "node dist/entrypoints/powerschool-bell-collector.js",
     "ops:powerschool-bells:compatibility": "node dist/entrypoints/powerschool-compatibility-bell-collector.js",
@@ -41,7 +47,7 @@
     "ops:shadow-job": "node dist/entrypoints/shadow-job.js",
     "ops:shadow-server": "node dist/entrypoints/shadow-server.js",
     "ops:rehearse": "npm run build --silent && node dist/entrypoints/rehearsal.js",
-    "ops:verify": "node scripts/operations/verify-systemd.mjs && node scripts/operations/verify-repository-safety.mjs",
+    "ops:verify": "node scripts/operations/verify-systemd.mjs && node scripts/operations/verify-m17-canary.mjs && node scripts/operations/verify-repository-safety.mjs",
     "publication:check": "node scripts/check-publication.mjs",
     "publication:history:check": "node scripts/check-publication-history.mjs",
     "smoke": "node scripts/smoke.mjs",
@@ -64,6 +70,8 @@
   "dependencies": {
     "@googleapis/calendar": "16.0.0",
     "@googleapis/classroom": "14.0.0",
-    "playwright-core": "1.62.0"
+    "@googleapis/drive": "21.0.0",
+    "playwright-core": "1.62.0",
+    "tldts": "7.4.9"
   }
 }

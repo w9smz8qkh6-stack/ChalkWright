@@ -39,11 +39,18 @@ const textExtensions = new Set([
 ]);
 
 const forbiddenPublicText = [
-  [['/home', '/bren/'].join(''), 'publication-personal-home-path'],
+  [['/home', '/bren'].join(''), 'publication-personal-home-path'],
   [['.openclaw-workonly', '/secrets'].join(''), 'publication-protected-path'],
   [
     ['.codex', '/visualizations/'].join(''),
     'publication-private-evidence-path',
+  ],
+];
+
+const forbiddenPublicPatterns = [
+  [
+    /https:\/\/(?!chalkwright\.example-tailnet\.ts\.net(?:[:/]|$))[a-z0-9.-]+\.ts\.net(?::\d+)?/giu,
+    'publication-private-tailnet-url',
   ],
 ];
 
@@ -225,6 +232,10 @@ export function auditPublicationTree(rootInput) {
     if (text === undefined) continue;
     for (const [needle, code] of forbiddenPublicText) {
       const count = text.split(needle).length - 1;
+      if (count > 0) issues.push(issue(code, path, count));
+    }
+    for (const [pattern, code] of forbiddenPublicPatterns) {
+      const count = text.match(pattern)?.length ?? 0;
       if (count > 0) issues.push(issue(code, path, count));
     }
   }

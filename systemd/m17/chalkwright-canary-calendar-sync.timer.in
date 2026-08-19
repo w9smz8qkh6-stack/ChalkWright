@@ -1,0 +1,11 @@
+# chalkwright-template-status=m17-offline-qualified-inert
+[Unit]
+Description=INERT M-17 Chalkwright Auto Lesson 2 timer
+
+[Timer]
+OnCalendar=Mon..Fri,Sun *-*-* 07:28:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+Persistent=false
+Unit=chalkwright-canary-calendar-sync.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

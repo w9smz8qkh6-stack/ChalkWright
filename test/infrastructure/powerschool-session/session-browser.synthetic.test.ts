@@ -33,6 +33,7 @@ import {
 } from '../../support/powerschool-session-server.js';
 
 const date = '2035-04-13';
+const minimumSupportedChromeMajor = 150;
 
 function bootstrapConfig(
   powerSchoolOrigin: string,
@@ -198,7 +199,7 @@ test('manual bootstrap filters Google state, deletes its profile, and enables cr
     assert.equal(routineRequests.length, 4);
     for (const request of routineRequests) {
       assert.equal(request.referer, `${server.powerSchoolOrigin}/`);
-      assert.match(request.userAgent ?? '', /\bChrome\/150\./u);
+      assertSupportedChromeUserAgent(request.userAgent ?? '');
       assert.doesNotMatch(request.userAgent ?? '', /HeadlessChrome/u);
     }
     assert.deepEqual(
@@ -216,6 +217,15 @@ test('manual bootstrap filters Google state, deletes its profile, and enables cr
     rmSync(parent, { recursive: true, force: true });
   }
 });
+
+function assertSupportedChromeUserAgent(userAgent: string): void {
+  const match = /\bChrome\/(\d+)\./u.exec(userAgent);
+  const major = Number.parseInt(match?.[1] ?? '', 10);
+  assert.ok(
+    Number.isInteger(major) && major >= minimumSupportedChromeMajor,
+    `unsupported Chrome user agent ${userAgent}`,
+  );
+}
 
 test('an authenticated exact-date bell page with no entries yields a verified no-class observation', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({
@@ -366,11 +376,21 @@ test('expired state returns repair-required without reaching identity or retaini
     });
     assert.deepEqual(result, {
       status: 'repair-required',
-      code: 'status-session-redirect-authentication',
+      code: 'bell-session-redirect-authentication',
     });
     assert.equal(
       server.requests.some((request) => request.origin === 'identity'),
       false,
+    );
+    assert.deepEqual(
+      server.requests
+        .filter((request) => request.origin === 'powerschool')
+        .map((request) => request.path),
+      [
+        '/status',
+        '/bell?target_date=04/13/2035',
+        '/bell?target_date=04/13/2035',
+      ],
     );
     assert.deepEqual(temporaryProfiles(), beforeProfiles);
   } finally {
@@ -427,6 +447,105 @@ test('bell-session rejection is distinguished after the authenticated status rea
     assert.deepEqual(result, {
       status: 'repair-required',
       code: 'bell-session-redirect-authentication',
+    });
+    assert.equal(
+      server.requests.some((request) => request.origin === 'identity'),
+      false,
+    );
+    assert.deepEqual(temporaryProfiles(), beforeProfiles);
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('browser-native bell fallback streams beneath the same finite body budget', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer({
+    requireBrowserNavigationForBell: true,
+    browserBellResponseBytes: 32 * 1024,
+    omitBellContentLength: true,
+  });
+  const parent = mkdtempSync(join(tmpdir(), 'm07c-browser-native-budget-'));
+  const sessionDirectory = join(parent, 'session');
+  const beforeProfiles = temporaryProfiles();
+  try {
+    seedState(sessionDirectory, server.powerSchoolOrigin, 'valid');
+    const result = await collectPassivePowerSchoolBell({
+      config: routineConfig(server.powerSchoolOrigin, sessionDirectory, {
+        maxResponseBytes: 1_024,
+      }),
+      requestedDate: date,
+    });
+    assert.deepEqual(result, {
+      status: 'failed',
+      code: 'response-budget-exceeded',
+      retryable: false,
+    });
+    assert.equal(
+      server.requests.some((request) => request.origin === 'identity'),
+      false,
+    );
+    assert.deepEqual(temporaryProfiles(), beforeProfiles);
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('browser-native control failure is not mislabeled as authentication repair', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer({
+    requireBrowserNavigationForBell: true,
+  });
+  const parent = mkdtempSync(join(tmpdir(), 'm07c-browser-native-control-'));
+  const sessionDirectory = join(parent, 'session');
+  const beforeProfiles = temporaryProfiles();
+  try {
+    seedState(sessionDirectory, server.powerSchoolOrigin, 'valid');
+    const result = await collectPassivePowerSchoolBell({
+      config: routineConfig(server.powerSchoolOrigin, sessionDirectory),
+      requestedDate: date,
+      beforeStopBrowserLoading: async () => {
+        throw new Error('synthetic-cdp-control-failure');
+      },
+    });
+    assert.deepEqual(result, {
+      status: 'failed',
+      code: 'request-policy-violation',
+      retryable: false,
+    });
+    assert.equal(
+      server.requests.some((request) => request.origin === 'identity'),
+      false,
+    );
+    assert.deepEqual(temporaryProfiles(), beforeProfiles);
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
+test('external abort remains distinct from timeout in the browser-native fallback', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer({
+    requireBrowserNavigationForBell: true,
+  });
+  const parent = mkdtempSync(join(tmpdir(), 'm07c-browser-native-abort-'));
+  const sessionDirectory = join(parent, 'session');
+  const beforeProfiles = temporaryProfiles();
+  const controller = new AbortController();
+  try {
+    seedState(sessionDirectory, server.powerSchoolOrigin, 'valid');
+    const result = await collectPassivePowerSchoolBell({
+      config: routineConfig(server.powerSchoolOrigin, sessionDirectory),
+      requestedDate: date,
+      signal: controller.signal,
+      beforeStopBrowserLoading: async () => {
+        controller.abort();
+      },
+    });
+    assert.deepEqual(result, {
+      status: 'failed',
+      code: 'aborted',
+      retryable: false,
     });
     assert.equal(
       server.requests.some((request) => request.origin === 'identity'),
@@ -561,8 +680,9 @@ for (const [mode, expected] of [
   ['foreign-origin', 'repair-required'],
   ['foreign-path', 'repair-required'],
   ['invalid-redirect', 'repair-required'],
-  ['status-oidc-redirect', 'repair-required'],
-  ['status-saml-redirect', 'repair-required'],
+  ['status-oidc-redirect', 'captured'],
+  ['status-oidc-bell-marker-missing', 'repair-required'],
+  ['status-saml-redirect', 'captured'],
   ['teacher-redirect', 'repair-required'],
   ['post', 'captured'],
   ['popup', 'captured'],
@@ -603,16 +723,18 @@ for (const [mode, expected] of [
           code: 'status-session-redirect-invalid',
         });
       }
-      if (mode === 'status-saml-redirect') {
-        assert.deepEqual(result, {
-          status: 'repair-required',
-          code: 'status-session-redirect-authentication',
-        });
+      if (mode === 'status-saml-redirect' || mode === 'status-oidc-redirect') {
+        assert.deepEqual(
+          server.requests
+            .filter((request) => request.origin === 'powerschool')
+            .map((request) => request.path),
+          ['/status', '/bell?target_date=04/13/2035'],
+        );
       }
-      if (mode === 'status-oidc-redirect') {
+      if (mode === 'status-oidc-bell-marker-missing') {
         assert.deepEqual(result, {
           status: 'repair-required',
-          code: 'status-session-redirect-authentication',
+          code: 'bell-marker-missing',
         });
       }
       if (mode === 'teacher-redirect') {

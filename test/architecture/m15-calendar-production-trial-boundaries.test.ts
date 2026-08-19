@@ -28,7 +28,7 @@ test('M-15 live authority is absent from services, jobs, and routine application
     }
 });
 
-test('only the separate M-15 entrypoint imports the official production transport pair', () => {
+test('only the separate M-15 and M-17 Calendar entrypoints import the official production transport pair', () => {
   const matches = files('src')
     .filter((path) => path.endsWith('.ts'))
     .filter((path) =>
@@ -36,10 +36,14 @@ test('only the separate M-15 entrypoint imports the official production transpor
         'loadOfficialCalendarProductionTrialTransports',
       ),
     );
-  assert.deepEqual(matches.sort(), [
-    'src/entrypoints/m15-calendar-production-trial.ts',
-    'src/infrastructure/google-calendar/official-writer-client.ts',
-  ]);
+  assert.deepEqual(
+    matches.sort(),
+    [
+      'src/entrypoints/m17-canary-calendar-sync.ts',
+      'src/entrypoints/m15-calendar-production-trial.ts',
+      'src/infrastructure/google-calendar/official-writer-client.ts',
+    ].sort(),
+  );
 });
 
 test('synthetic policy injection is unreachable from production entrypoints', () => {

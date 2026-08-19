@@ -103,7 +103,8 @@ export function verifyRepositorySafety(repositoryRoot = defaultRoot) {
         source,
       ) &&
       relativePath !== 'scripts/operations/verify-repository-safety.mjs' &&
-      !isExactOfflineTelegramAdapter(relativePath, source)
+      !isExactOfflineTelegramAdapter(relativePath, source) &&
+      !isExactM17ManifestSupersession(relativePath, source)
     ) {
       findings.push(`${relativePath}: forbidden operational dependency`);
     }
@@ -149,6 +150,48 @@ function isExactOfflineTelegramAdapter(relativePath, source) {
     required.every((value) => source.includes(value)) &&
     (source.match(/from ['"]node:https['"]/gu)?.length ?? 0) === 1 &&
     !/(?:from\s+|import\s*)['"](?:child_process|node:child_process|node:http|openclaw|@google|googleapis|powerschool)['"]/iu.test(
+      source,
+    )
+  );
+}
+
+function isExactM17ManifestSupersession(relativePath, source) {
+  if (
+    relativePath !== 'scripts/operations/supersede-m17-activation-manifest.mjs'
+  )
+    return false;
+  const required = [
+    "'sha256:2fda6668afbd28b2b3ee843e5ed42438cab30dacfdb496eb4c37e8ab74e925b2':",
+    "'sha256:e84fdcc9a9ba7155d5b6382a3f191eae4f3f94f490228af418db52280e332a65':",
+    "'sha256:3ef42b8d902a61b9add8afd6f15812f2076810050f9d275371d165922b2230bb':",
+    "'sha256:69ccff3c358f0edd3cbd7a09f9e4d3ec8ccfac20eb2fe12a56f052903da99f7f':",
+    "'sha256:41cc8a7ea7e73ba514862bdf72faaaa287ec19f28e6f603a4ae7dfbc475435d9':",
+    "'sha256:c3b9540d6e30ef6a4e8d5e73b6ccd69a80c59f251f1d4d74ad7e9cafbace53da':",
+    "const manifestPath = '/etc/chalkwright/canary/activation-manifest.json';",
+    "'sha256:6e6997a560c68f2f52894a4bb63a07615edc63b0e7e1b33dd80e19a04a8a7056'",
+    'digestText(manifest.tailnetTarget) !== expectedTailnetTargetHash',
+    "'/usr/bin/systemctl',",
+    "['show', '--property=ActiveState', '--value', unit]",
+    "env: { LANG: 'C', LC_ALL: 'C', SYSTEMD_COLORS: '0' }",
+    'timeout: 5_000,',
+    "'/usr/bin/tailscale',",
+    "['serve', 'status', '--json']",
+    "env: { HOME: '/nonexistent', LANG: 'C', LC_ALL: 'C' }",
+    'timeout: 10_000,',
+    "killSignal: 'SIGKILL',",
+    "serialized.includes('127.0.0.1:4319')",
+    'constants.O_RDONLY | constants.O_NOFOLLOW',
+    'renameSync(livePath, rejectedPath);',
+    'digest(archivedManifest) !== expectedFingerprint',
+    'fsyncDirectory(dirname(livePath));',
+    'restoreManifest(livePath, rejectedPath, source.stat);',
+  ];
+  return (
+    required.every((value) => source.includes(value)) &&
+    (source.match(/from ['"]node:child_process['"]/gu)?.length ?? 0) === 1 &&
+    (source.match(/spawnSync\s*\(/gu)?.length ?? 0) === 2 &&
+    !/\b(?:execFile|execSync|fork|spawn)\s*\(/u.test(source) &&
+    !/\b(?:rmSync|unlinkSync)\s*\(|systemctl',\s*\['(?:start|stop|enable|disable)|tailscale',\s*\['serve',\s*'(?:set|reset)'/u.test(
       source,
     )
   );

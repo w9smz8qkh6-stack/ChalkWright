@@ -11,12 +11,13 @@ graph and retain their own copyright and license notices.
 | `@googleapis/calendar`  |         16.0.0 | Apache-2.0       |
 | `@googleapis/classroom` |         14.0.0 | Apache-2.0       |
 | `playwright-core`       |         1.62.0 | Apache-2.0       |
+| `tldts`                 |          7.4.9 | MIT              |
 | `typescript`            |          5.9.3 | Apache-2.0       |
 | `prettier`              |          3.9.6 | MIT              |
 | `@types/node`           |        24.13.3 | MIT              |
 
 The complete locked graph currently declares 10 Apache-2.0, 4 BlueOak-1.0.0,
-1 BSD, 2 BSD-3-Clause, 9 ISC, and 68 MIT package entries, with no missing
+1 BSD, 2 BSD-3-Clause, 9 ISC, and 70 MIT package entries, with no missing
 license declarations. Re-run the inventory whenever the lockfile changes.
 
 ## Media

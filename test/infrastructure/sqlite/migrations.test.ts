@@ -42,7 +42,10 @@ describe('forward-only SQLite migrations', () => {
 
     assert.equal(userVersion(database.connection), schemaMigrations.length);
     assert.equal(statSync(path).mode & 0o777, 0o600);
-    assert.deepEqual(appliedVersions(database.connection), [1, 2, 3, 4, 5]);
+    assert.deepEqual(
+      appliedVersions(database.connection),
+      [1, 2, 3, 4, 5, 6, 7],
+    );
     assert.deepEqual(
       appliedMigrationRows(database.connection),
       schemaMigrations.map((migration) => ({
@@ -59,6 +62,11 @@ describe('forward-only SQLite migrations', () => {
       'calendar_writer_leases',
       'classroom_enrichment_cache',
       'continuity_records',
+      'glossary_entries',
+      'glossary_import_runs',
+      'glossary_media',
+      'glossary_sources',
+      'glossary_translations',
       'import_rejections',
       'import_runs',
       'plan_snapshots',
@@ -102,6 +110,35 @@ describe('forward-only SQLite migrations', () => {
         'calendar_writer_leases',
         'classroom_enrichment_cache',
         'continuity_records',
+        'import_rejections',
+        'import_runs',
+        'plan_snapshots',
+        'schema_migrations',
+      ],
+      [
+        'application_records',
+        'calendar_execution_journal',
+        'calendar_execution_steps',
+        'calendar_writer_leases',
+        'classroom_enrichment_cache',
+        'continuity_records',
+        'import_rejections',
+        'import_runs',
+        'plan_snapshots',
+        'schema_migrations',
+      ],
+      [
+        'application_records',
+        'calendar_execution_journal',
+        'calendar_execution_steps',
+        'calendar_writer_leases',
+        'classroom_enrichment_cache',
+        'continuity_records',
+        'glossary_entries',
+        'glossary_import_runs',
+        'glossary_media',
+        'glossary_sources',
+        'glossary_translations',
         'import_rejections',
         'import_runs',
         'plan_snapshots',
@@ -152,7 +189,10 @@ describe('forward-only SQLite migrations', () => {
 
     using current = openDatabase(path);
     assert.equal(userVersion(current.connection), schemaMigrations.length);
-    assert.deepEqual(appliedVersions(current.connection), [1, 2, 3, 4, 5]);
+    assert.deepEqual(
+      appliedVersions(current.connection),
+      [1, 2, 3, 4, 5, 6, 7],
+    );
     assert.equal(
       scalar(
         current.connection,
@@ -196,6 +236,53 @@ describe('forward-only SQLite migrations', () => {
     );
   });
 
+  test('version six preserves journals and admits only bounded composed intent identities', () => {
+    const path = temporaryDatabasePath();
+    {
+      using versionFive = openDatabase(path, 5);
+      versionFive.connection
+        .prepare(
+          `INSERT INTO calendar_execution_journal(
+             execution_fingerprint, manifest_fingerprint, scope_id, status,
+             started_at, finished_at
+           ) VALUES (?, ?, ?, 'running', ?, NULL)`,
+        )
+        .run(
+          `sha256:${'a'.repeat(64)}`,
+          `sha256:${'b'.repeat(64)}`,
+          'scope-canary',
+          appliedAt,
+        );
+      versionFive.connection
+        .prepare(
+          `INSERT INTO calendar_execution_steps(
+             execution_fingerprint, intent_id, intent_kind, status
+           ) VALUES (?, ?, 'create', 'pending')`,
+        )
+        .run(`sha256:${'a'.repeat(64)}`, 'legacy-short-intent');
+    }
+    using current = openDatabase(path);
+    assert.equal(
+      scalar(
+        current.connection,
+        "SELECT count(*) AS value FROM calendar_execution_steps WHERE intent_id = 'legacy-short-intent'",
+      ),
+      1,
+    );
+    const insert = current.connection.prepare(
+      `INSERT INTO calendar_execution_steps(
+         execution_fingerprint, intent_id, intent_kind, status
+       ) VALUES (?, ?, 'create', 'pending')`,
+    );
+    assert.doesNotThrow(() =>
+      insert.run(`sha256:${'a'.repeat(64)}`, `intent-${'c'.repeat(500)}`),
+    );
+    assert.throws(
+      () => insert.run(`sha256:${'a'.repeat(64)}`, `intent-${'d'.repeat(506)}`),
+      /CHECK constraint failed/u,
+    );
+  });
+
   test('rolls back the entire failed migration before recording its version', () => {
     const path = temporaryDatabasePath();
     const connection = new DatabaseSync(path);
@@ -219,7 +306,7 @@ describe('forward-only SQLite migrations', () => {
     assert.equal(tableNames(connection).includes('continuity_records'), false);
 
     applyMigrations(connection, { appliedAt });
-    assert.deepEqual(appliedVersions(connection), [1, 2, 3, 4, 5]);
+    assert.deepEqual(appliedVersions(connection), [1, 2, 3, 4, 5, 6, 7]);
     connection.close();
   });
 
@@ -269,8 +356,8 @@ describe('forward-only SQLite migrations', () => {
     );
 
     applyMigrations(connection, { appliedAt });
-    assert.equal(userVersion(connection), 5);
-    assert.deepEqual(appliedVersions(connection), [1, 2, 3, 4, 5]);
+    assert.equal(userVersion(connection), 7);
+    assert.deepEqual(appliedVersions(connection), [1, 2, 3, 4, 5, 6, 7]);
     assert.equal(
       scalar(
         connection,
