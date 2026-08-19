@@ -18,6 +18,10 @@ omitted.
   release source, with immediate atomic deployment, rollback, and bounded
   Calendar synchronization in the final production topology.
 
+- Added a permanent protected Calendar configuration contract. It binds one
+  exact owned target, rejects `primary` and denied-target collisions, and keeps
+  credentials, target identity, and runtime state outside the repository.
+
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified
   pronunciation or illustration BLOBs. The catalog validates media digests and
