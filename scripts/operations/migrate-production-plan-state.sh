@@ -8,13 +8,19 @@ reject() { echo "{\"status\":\"rejected\",\"code\":\"$1\"}" >&2; exit 1; }
 
 release=/opt/chalkwright/current
 release_root=/opt/chalkwright/releases
+deploy_source=/var/lib/chalkwright/deploy/source
 production_env=/etc/chalkwright/production/jobs/maintenance.env
 legacy_env=/home/bren/.config/classroom-hub/classroom-hub-shadow-server.env
 if [[ ! -L $release || ! -f "$release/dist/entrypoints/production-plan-state-migration.js" ]]; then
+  [[ -d $deploy_source && ! -L $deploy_source && -d $deploy_source/.git ]] || reject production-plan-state-migration-release-invalid
+  commit=$(/usr/bin/git -C "$deploy_source" rev-parse --verify origin/main) || reject production-plan-state-migration-release-invalid
+  [[ $commit =~ ^[a-f0-9]{40}$ ]] || reject production-plan-state-migration-release-invalid
   mapfile -t candidates < <(
     /usr/bin/find "$release_root" -mindepth 2 -maxdepth 2 -name .chalkwright-release.json -type f -printf '%h\n' |
       while read -r candidate; do
-        [[ -f "$candidate/dist/entrypoints/production-plan-state-migration.js" ]] && /usr/bin/printf '%s\n' "$candidate"
+        [[ -f "$candidate/dist/entrypoints/production-plan-state-migration.js" ]] || continue
+        /usr/bin/grep -Fqx "{\"version\":1,\"commit\":\"$commit\"}" "$candidate/.chalkwright-release.json" &&
+          /usr/bin/printf '%s\n' "$candidate"
       done
   )
   [[ ${#candidates[@]} -eq 1 ]] || reject production-plan-state-migration-release-invalid

@@ -182,11 +182,13 @@ function parseLegacyPlanRow(
       row.room_id !== value.roomId ||
       row.screen_id !== value.screenId ||
       value.roomId !== production.roomId ||
-      value.screenId !== production.screenId ||
       value.timeZone !== production.timeZone
     )
       return undefined;
-    return { kind: 'effective', plan: value };
+    return {
+      kind: 'effective',
+      plan: { ...value, screenId: production.screenId },
+    };
   } catch {
     return undefined;
   }

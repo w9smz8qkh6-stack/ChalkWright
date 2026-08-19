@@ -20,7 +20,9 @@ omitted.
   the first permanent release can be manually advanced before the deploy timer
   is active. The migration wrapper accepts the legacy shadow state's actual
   owner-only local-state root in addition to the older expected local-state
-  prefix.
+  prefix, selects the staged release matching the deploy checkout's protected
+  `main`, and retargets validated effective plans from the legacy shadow screen
+  to the permanent production screen.
 
 - Corrected the deployment record after live inventory: the historical shadow
   service remains the active display, while the permanent Chalkwright
