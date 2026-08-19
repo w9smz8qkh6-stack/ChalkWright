@@ -2,10 +2,11 @@
 
 ## Status
 
-The M-17 parallel canary completed the operational handoff. Chalkwright is now
-the working preferred production application. The legacy application remains
-available as a fallback, but is obsolete for production use. The detailed
-material below is retained as the canary and handoff evidence record.
+The M-17 parallel canary release and unit templates remain installed, but its
+protected runtime configuration is absent and it is not active. The historical
+shadow service is currently serving the display. The detailed material below is
+retained as the canary and handoff evidence record while a permanent production
+lane is re-grounded from the current repository.
 
 The current offline parity delta closes the derived-plan/persistence contract
 split that produced the last sanitized future-plan failure class: a period too

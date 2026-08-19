@@ -10,9 +10,9 @@ omitted.
 
 ### Changed
 
-- Recorded the completed M-17 operational handoff: Chalkwright is the working
-  preferred production application, while the retained legacy application is
-  available only as an obsolete fallback.
+- Corrected the deployment record after live inventory: the historical shadow
+  service remains the active display, while the permanent Chalkwright
+  production lane is being re-grounded with protected configuration.
 
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified

@@ -17,10 +17,10 @@ synthetic fixtures, deterministic display behavior, fail-closed provider
 adapters, and a tested migration and rollback path.
 
 > **Project status:** pre-release public preview. The offline fixture-backed
-> application and migration components are extensively tested. Chalkwright has
-> completed its operational handoff and is the preferred production application;
-> the legacy application remains available only as an obsolete fallback. General
-> installation and public production deployment are not yet released. See the
+> application and migration components are extensively tested. The current live
+> display still uses the historical shadow service while the permanent
+> Chalkwright production lane is re-grounded. General installation and public
+> production deployment are not yet released. See the
 > [publication gate](docs/publication-readiness.md) for the exact evidence and
 > limitations of this source snapshot.
 
@@ -170,9 +170,9 @@ private route, service topology, and state root. Physical-display qualification
 has accepted the course label, stable polling, and future-class-day preview.
 The latest header-parity refinements remain reviewed but undeployed.
 
-M-17 completed the operational handoff. Chalkwright is the working preferred
-production application. The legacy application remains available as a fallback,
-but is obsolete for production use.
+The historical shadow service is currently serving the display. The permanent
+Chalkwright production lane, including its Calendar synchronization boundary,
+is being rebuilt from the current repository and protected configuration.
 
 M-17 used an isolated parallel canary with:
 
