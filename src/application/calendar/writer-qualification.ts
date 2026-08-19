@@ -42,7 +42,10 @@ export interface CalendarWriterExecutionManifest {
 }
 
 export type CalendarWriterExecutionEnvironment =
-  'non-production' | 'production-trial' | 'parallel-canary';
+  | 'non-production'
+  | 'production-trial'
+  | 'parallel-canary'
+  | 'production';
 
 export interface CalendarWriterQualificationOptions {
   readonly environment: CalendarWriterExecutionEnvironment;
@@ -620,7 +623,8 @@ function validManifestForExecution(
     manifest.kind !== 'calendar-writer-execution-approval' ||
     (options.environment !== 'non-production' &&
       options.environment !== 'production-trial' &&
-      options.environment !== 'parallel-canary') ||
+      options.environment !== 'parallel-canary' &&
+      options.environment !== 'production') ||
     manifest.environment !== options.environment ||
     !boundedId(manifest.approvalId) ||
     manifest.scopeId !== options.scopeId ||
