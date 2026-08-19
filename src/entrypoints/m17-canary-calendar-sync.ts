@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto';
 import type { OpaqueId } from '../contracts/v1/common.js';
 import type { RoomId, ScreenId } from '../domain/identities.js';
 import { synchronizeM17CanaryCalendar } from '../application/calendar/canary-sync.js';
-import { loadM17CanaryCalendarConfig } from '../config/m17-canary.js';
+import {
+  loadM17CanaryCalendarConfig,
+  type M17CanaryCalendarConfig,
+} from '../config/m17-canary.js';
 import { loadProductionServerConfig } from '../config/production.js';
 import { SqliteCalendarExecutionState } from '../infrastructure/sqlite/calendar-execution-state.js';
 import { SqliteDatabase } from '../infrastructure/sqlite/database.js';
@@ -15,6 +18,8 @@ export async function runM17CanaryCalendarSync(options: {
   readonly environment?: NodeJS.ProcessEnv;
   readonly signal?: AbortSignal;
   readonly now?: () => string;
+  readonly loadConfig?: () => M17CanaryCalendarConfig;
+  readonly requireCanaryInstance?: boolean;
 }): Promise<{
   readonly exitCode: number;
   readonly status: string;
@@ -37,12 +42,14 @@ export async function runM17CanaryCalendarSync(options: {
   if (reference === undefined) return rejected('m17-canary-config-required');
   let database: SqliteDatabase | undefined;
   try {
-    const config = loadM17CanaryCalendarConfig(reference);
+    const config =
+      options.loadConfig?.() ?? loadM17CanaryCalendarConfig(reference);
     const production = loadProductionServerConfig(
       config.productionConfigReference,
     );
     if (
-      !production.instanceId.includes('-canary-') ||
+      (options.requireCanaryInstance !== false &&
+        !production.instanceId.includes('-canary-')) ||
       production.databasePath !== config.databasePath ||
       production.timeZone !== config.timeZone
     )
