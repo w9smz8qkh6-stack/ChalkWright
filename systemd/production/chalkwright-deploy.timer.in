@@ -1,0 +1,12 @@
+# chalkwright-template-status=permanent-production-inert
+[Unit]
+Description=Chalkwright protected-main deploy polling timer
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=1min
+AccuracySec=1s
+Persistent=false
+Unit=chalkwright-deploy.service
+
+# The .in suffix and absent [Install] section keep this timer inert.
