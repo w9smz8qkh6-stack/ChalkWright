@@ -30,10 +30,20 @@ temporary_archive="$archive_root/chalkwright-production-staging-$commit.tar.gz"
 /usr/bin/bash "$work/repository/scripts/operations/build-production-release.sh" "$work/repository" "$temporary_archive"
 digest=$(/usr/bin/sha256sum "$temporary_archive" | /usr/bin/cut -d ' ' -f 1)
 archive="$archive_root/chalkwright-production-$digest.tar.gz"
-[[ ! -e $archive && ! -L $archive ]] || reject production-deploy-archive-exists
-/usr/bin/mv "$temporary_archive" "$archive"
-/usr/bin/bash "$work/repository/scripts/operations/install-production-release.sh" "$archive" "$digest"
+if [[ -e $archive || -L $archive ]]; then
+  [[ -f $archive && ! -L $archive ]] || reject production-deploy-archive-exists
+  [[ $(/usr/bin/sha256sum "$archive" | /usr/bin/cut -d ' ' -f 1) == "$digest" ]] || reject production-deploy-archive-exists
+  /usr/bin/rm -f -- "$temporary_archive"
+else
+  /usr/bin/mv "$temporary_archive" "$archive"
+fi
 release="$release_root/releases/$digest"
+if [[ -e $release || -L $release ]]; then
+  [[ -f "$release/.chalkwright-release.json" && ! -L "$release/.chalkwright-release.json" ]] || reject production-deploy-release-exists
+  /usr/bin/grep -Fqx "{\"version\":1,\"commit\":\"$commit\"}" "$release/.chalkwright-release.json" || reject production-deploy-release-exists
+else
+  /usr/bin/bash "$work/repository/scripts/operations/install-production-release.sh" "$archive" "$digest"
+fi
 CHALKWRIGHT_PRODUCTION_CALENDAR_CONFIG_REFERENCE="$calendar" /usr/sbin/runuser -u classroom-hub -- /usr/bin/node "$release/dist/entrypoints/production-calendar-sync.js" --preflight >/dev/null || reject production-deploy-calendar-preflight-failed
 previous=
 if [[ -L "$release_root/current" ]]; then previous=$(/usr/bin/readlink "$release_root/current"); fi
