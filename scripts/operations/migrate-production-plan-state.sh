@@ -7,9 +7,19 @@ reject() { echo "{\"status\":\"rejected\",\"code\":\"$1\"}" >&2; exit 1; }
 [[ $# -eq 0 ]] || reject production-plan-state-migration-usage-invalid
 
 release=/opt/chalkwright/current
+release_root=/opt/chalkwright/releases
 production_env=/etc/chalkwright/production/jobs/maintenance.env
 legacy_env=/home/bren/.config/classroom-hub/classroom-hub-shadow-server.env
-[[ -L $release && -f "$release/dist/entrypoints/production-plan-state-migration.js" ]] || reject production-plan-state-migration-release-invalid
+if [[ ! -L $release || ! -f "$release/dist/entrypoints/production-plan-state-migration.js" ]]; then
+  mapfile -t candidates < <(
+    /usr/bin/find "$release_root" -mindepth 2 -maxdepth 2 -name .chalkwright-release.json -type f -printf '%h\n' |
+      while read -r candidate; do
+        [[ -f "$candidate/dist/entrypoints/production-plan-state-migration.js" ]] && /usr/bin/printf '%s\n' "$candidate"
+      done
+  )
+  [[ ${#candidates[@]} -eq 1 ]] || reject production-plan-state-migration-release-invalid
+  release=${candidates[0]}
+fi
 [[ -f $production_env && ! -L $production_env ]] || reject production-plan-state-migration-config-missing
 [[ -f $legacy_env && ! -L $legacy_env ]] || reject production-plan-state-migration-legacy-config-missing
 
