@@ -242,6 +242,7 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'chalkwright-integrity.timer.in',
     'chalkwright-plan-refresh.service.in',
     'chalkwright-plan-refresh.timer.in',
+    'chalkwright-powerschool-repair.service.in',
     'chalkwright.service.in',
   ];
   let files;
@@ -287,6 +288,17 @@ function verifyPermanentProductionArtifacts(directory, fail) {
   ])
     if (!calendar.includes(required))
       fail(`chalkwright-calendar-sync.service.in is missing ${required}`);
+  const repair = readFileSync(
+    join(production, 'chalkwright-powerschool-repair.service.in'),
+    'utf8',
+  );
+  for (const required of [
+    'EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env',
+    'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js',
+    'ReadWritePaths=/var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile',
+  ])
+    if (!repair.includes(required))
+      fail(`chalkwright-powerschool-repair.service.in is missing ${required}`);
   for (const name of [
     'chalkwright-backup.service.in',
     'chalkwright-integrity.service.in',
