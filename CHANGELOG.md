@@ -27,6 +27,13 @@ omitted.
   synchronization, SQLite integrity checks, and verified backups. They remain
   uninstalled and contain no protected values.
 
+- Added the permanent protected-`main` deployment controller and immutable
+  release staging scripts. Once separately provisioned and enabled, it polls
+  the isolated GitHub checkout every minute, preflights the owned Calendar,
+  atomically switches the display release, verifies local health/readiness,
+  and restores the prior release on failure. The controller and timer remain
+  inert templates until the controlled first production release.
+
 - Added the first offline glossary-catalog migration and SQLite repository for
   class/year/unit-scoped source terms, additive translations, and verified
   pronunciation or illustration BLOBs. The catalog validates media digests and

@@ -37,6 +37,9 @@
   references, current schema boundaries, and the planned guided setup layer.
 - [Offline operations](operations.md) — bounded M-06 jobs, temporary rehearsal,
   inert deployment artifacts, and future activation gates.
+- [Permanent production deployment](permanent-production-deployment.md) — the
+  protected-main polling controller, immutable releases, local readiness,
+  automatic rollback, and the separately controlled first-release gate.
 - [M-07A synthetic PowerSchool qualification](migration/m07a-review-package.md)
   — completed offline evidence for a repository-owned read-only adapter; live
   characterization remains a separately authorized M-07B gate.

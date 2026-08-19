@@ -1,0 +1,37 @@
+# chalkwright-template-status=permanent-production-inert
+[Unit]
+Description=Chalkwright protected-main deploy controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/opt/chalkwright/current/scripts/operations/deploy-production-from-main.sh
+TimeoutStartSec=10min
+TimeoutStopSec=30s
+UMask=0077
+# The controller starts as root only to stage releases and then uses runuser for
+# the Calendar preflight; NoNewPrivileges would forbid that required UID drop.
+NoNewPrivileges=false
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+ReadWritePaths=/opt/chalkwright /var/lib/chalkwright/deploy
+ReadOnlyPaths=/etc/chalkwright/production
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+MemoryMax=1024M
+TasksMax=256
+
+# The .in suffix and absent [Install] section keep this unit inert.

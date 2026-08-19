@@ -236,6 +236,8 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'chalkwright-calendar-sync.timer.in',
     'chalkwright-classroom-refresh.service.in',
     'chalkwright-classroom-refresh.timer.in',
+    'chalkwright-deploy.service.in',
+    'chalkwright-deploy.timer.in',
     'chalkwright-integrity.service.in',
     'chalkwright-integrity.timer.in',
     'chalkwright-plan-refresh.service.in',
@@ -297,6 +299,25 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     ])
       if (!content.includes(required)) fail(`${name} is missing ${required}`);
   }
+  const deploy = readFileSync(
+    join(production, 'chalkwright-deploy.service.in'),
+    'utf8',
+  );
+  for (const required of [
+    'User=root',
+    'NoNewPrivileges=false',
+    'ExecStart=/opt/chalkwright/current/scripts/operations/deploy-production-from-main.sh',
+    'ReadWritePaths=/opt/chalkwright /var/lib/chalkwright/deploy',
+  ])
+    if (!deploy.includes(required))
+      fail(`chalkwright-deploy.service.in is missing ${required}`);
+  const deployTimer = readFileSync(
+    join(production, 'chalkwright-deploy.timer.in'),
+    'utf8',
+  );
+  for (const required of ['OnUnitActiveSec=1min', 'Persistent=false'])
+    if (!deployTimer.includes(required))
+      fail(`chalkwright-deploy.timer.in is missing ${required}`);
 }
 
 function verifyShadowArtifacts(directory, fail) {
