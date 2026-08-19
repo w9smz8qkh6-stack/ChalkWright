@@ -120,7 +120,7 @@ test('fixed username/password/TOTP repair retains only PowerSchool state and ena
       ),
       requestedDate: date,
       credentials,
-      headless: true,
+      launchContext: headlessLauncher,
     });
     assert.deepEqual(result, {
       status: 'authenticated',
@@ -132,7 +132,7 @@ test('fixed username/password/TOTP repair retains only PowerSchool state and ena
     assert.equal(state.includes(credentials.username), false);
     assert.equal(state.includes(credentials.password), false);
     assert.equal(state.includes(credentials.totp), false);
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
     assert.deepEqual(
       server.requests
         .filter((request) => request.origin === 'identity')
@@ -331,7 +331,7 @@ test('one explicit Try another way transition may reveal the recognized authenti
         { method: 'POST', path: '/totp' },
       ],
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -358,7 +358,7 @@ test('an interrupted initial navigation may continue only from a recognized prov
       }),
       { status: 'authenticated', phoneApprovalObserved: false },
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -399,7 +399,7 @@ test('an explicitly allowed resource iframe is not treated as a top-level naviga
         .map(({ method, path }) => ({ method, path })),
       [{ method: 'GET', path: '/resource-frame' }],
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -427,7 +427,7 @@ test('only an actual browser launch failure is reported as browser unavailable',
       }),
       { status: 'failed', code: 'browser-unavailable' },
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -454,7 +454,7 @@ test('phone approval is observed passively and the browser completes after exter
       }),
       { status: 'authenticated', phoneApprovalObserved: true },
     );
-    assert.deepEqual(profiles(), before);
+    await waitForProfiles(before);
   } finally {
     await server.close();
     rmSync(parent, { recursive: true, force: true });
@@ -522,7 +522,7 @@ test('unknown challenge and popup-to-foreign-origin fail closed and delete the p
           .length,
         0,
       );
-      assert.deepEqual(profiles(), before);
+      await waitForProfiles(before);
     } finally {
       await server.close();
       rmSync(parent, { recursive: true, force: true });
