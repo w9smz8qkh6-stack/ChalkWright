@@ -175,6 +175,39 @@ test('fixed username/password/TOTP repair retains only PowerSchool state and ena
   }
 });
 
+test('repair reserves a bounded startup allowance without extending page navigation', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer({
+    repairFlow: 'credentials-totp',
+  });
+  const parent = mkdtempSync(join(tmpdir(), 'jit-repair-launch-budget-'));
+  const sessionDirectory = join(parent, 'session');
+  let observedLaunchTimeoutMs: number | undefined;
+  try {
+    const result = await repairPowerSchoolSessionWithCredentials({
+      config: repairConfig(
+        server.powerSchoolOrigin,
+        server.identityOrigin,
+        sessionDirectory,
+        60_000,
+      ),
+      requestedDate: date,
+      credentials,
+      launchContext: async (options) => {
+        observedLaunchTimeoutMs = options.timeoutMs;
+        return await headlessLauncher(options);
+      },
+    });
+    assert.deepEqual(result, {
+      status: 'authenticated',
+      phoneApprovalObserved: false,
+    });
+    assert.equal(observedLaunchTimeoutMs, 30_000);
+  } finally {
+    rmSync(parent, { force: true, recursive: true });
+    await server.close();
+  }
+});
+
 test('native repair and credential-free routine reuse one normalized Chrome request identity', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({
     repairFlow: 'credentials-totp',
