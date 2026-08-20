@@ -11,6 +11,10 @@ const sudoPolicy = readFileSync(
   'scripts/operations/install-chalkwright-production-sudo-policy.sh',
   'utf8',
 );
+const repair = readFileSync(
+  'scripts/operations/repair-production-powerschool.sh',
+  'utf8',
+);
 
 test('production deploy waits for restarted display liveness before rollback', () => {
   const restart = deploy.indexOf('systemctl restart chalkwright.service');
@@ -50,5 +54,23 @@ test('production sudo policy pins the current deploy controller digest', () => {
     sudoPolicy,
     new RegExp(`^deploy_digest=${expected}$`, 'mu'),
     'sudo policy must pin the checked-in deploy script exactly',
+  );
+});
+
+test('headed PowerSchool repair uses a temporary single-user desktop ACL', () => {
+  assert.match(repair, /desktop_user=bren/u);
+  assert.match(repair, /desktop_display=:0/u);
+  assert.match(repair, /xhost \+SI:localuser:classroom-hub/u);
+  assert.match(repair, /xhost -SI:localuser:classroom-hub/u);
+  assert.match(repair, /systemctl start "\$unit"/u);
+  assert.doesNotMatch(repair, /Xvfb|xauth|--no-sandbox|openclaw/iu);
+});
+
+test('production sudo policy pins the current PowerSchool repair controller digest', () => {
+  const expected = createHash('sha256').update(repair).digest('hex');
+  assert.match(
+    sudoPolicy,
+    new RegExp(`^repair_digest=${expected}$`, 'mu'),
+    'sudo policy must pin the checked-in repair script exactly',
   );
 });

@@ -288,6 +288,7 @@ test('JIT repair worker decodes only its bounded packet and scrubs ambient autho
   const environment = bootstrapEnvironment();
   environment.CLASSROOM_HUB_POWERSCHOOL_REPAIR_REFERENCE =
     '/tmp/must-not-reach-worker';
+  environment[powerSchoolJitHeadlessEnvironmentName] = '0';
   const result = await runPowerSchoolJitRepairWorker({
     arguments: ['2035-04-13'],
     packet,
@@ -305,6 +306,10 @@ test('JIT repair worker decodes only its bounded packet and scrubs ambient autho
         false,
       );
       assert.equal('OP_SERVICE_ACCOUNT_TOKEN' in browserEnvironment!, false);
+      assert.equal(
+        powerSchoolJitHeadlessEnvironmentName in browserEnvironment!,
+        false,
+      );
       return { status: 'authenticated', phoneApprovalObserved: false };
     },
   });
@@ -360,7 +365,7 @@ test('JIT repair supervisor requires presence confirmation and sends secrets onl
       `OP_SERVICE_ACCOUNT_TOKEN=${serviceAccountValue}\n`,
       { mode: 0o600 },
     );
-    const environment = {
+    const environment: NodeJS.ProcessEnv = {
       ...bootstrapEnvironment(),
       CLASSROOM_HUB_POWERSCHOOL_SESSION_DIRECTORY: join(parent, 'session'),
       CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY: join(
@@ -385,6 +390,23 @@ test('JIT repair supervisor requires presence confirmation and sends secrets onl
       }),
       { exitCode: 64, errorCode: 'repair-usage-invalid' },
     );
+    assert.equal(secretReads, 0);
+
+    const invalidDisplayMode = await runPowerSchoolJitRepairSupervisor({
+      arguments: ['--operator-present', '2035-04-13'],
+      environment: {
+        ...environment,
+        [powerSchoolJitHeadlessEnvironmentName]: 'headed',
+      },
+      secretReader: async () => {
+        secretReads += 1;
+        throw new Error('must-not-run');
+      },
+    });
+    assert.deepEqual(invalidDisplayMode, {
+      exitCode: 64,
+      errorCode: 'repair-config-invalid',
+    });
     assert.equal(secretReads, 0);
 
     const result = await runPowerSchoolJitRepairSupervisor({
@@ -469,6 +491,33 @@ test('JIT repair supervisor requires presence confirmation and sends secrets onl
       exitCode: 0,
       result: { status: 'authenticated', phoneApprovalObserved: false },
     });
+
+    environment[powerSchoolJitHeadlessEnvironmentName] = '0';
+    const headedResult = await runPowerSchoolJitRepairSupervisor({
+      arguments: ['--operator-present', '2035-04-13'],
+      environment,
+      secretReader: async () => ({
+        username: Buffer.from('teacher@example.invalid'),
+        password: Buffer.from('synthetic-password'),
+        totp: Buffer.from('123456'),
+      }),
+      childRunner: async (options) => {
+        assert.equal(
+          options.environment[powerSchoolJitHeadlessEnvironmentName],
+          '0',
+        );
+        options.input?.fill(0);
+        return {
+          status: 'completed',
+          output: JSON.stringify({
+            exitCode: 0,
+            result: { status: 'authenticated', phoneApprovalObserved: false },
+          }),
+        };
+      },
+    });
+    assert.equal(headedResult.exitCode, 0);
+    delete environment[powerSchoolJitHeadlessEnvironmentName];
 
     const persistentResult = await runPowerSchoolJitRepairSupervisor({
       arguments: [

@@ -467,7 +467,7 @@ test('only an actual browser launch failure is reported separately', async () =>
   }
 });
 
-test('a refused local CDP control connection is reported without browser detail', async () => {
+test('a failed managed-context launch is reported without browser detail', async () => {
   const server = await startSyntheticPowerSchoolSessionServer();
   const parent = mkdtempSync(join(tmpdir(), 'jit-repair-cdp-unreachable-'));
   const before = profiles();
@@ -482,10 +482,10 @@ test('a refused local CDP control connection is reported without browser detail'
         requestedDate: date,
         credentials,
         launchContext: async () => {
-          throw new Error('powerschool-direct-cdp-unreachable');
+          throw new Error('managed browser launch failed');
         },
       }),
-      { status: 'failed', code: 'browser-control-unreachable' },
+      { status: 'failed', code: 'browser-launch-failed' },
     );
     await waitForProfiles(before);
   } finally {

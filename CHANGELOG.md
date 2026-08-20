@@ -10,6 +10,17 @@ omitted.
 
 ### Changed
 
+- Added an explicit headed mode for the standalone PowerSchool repair. It
+  grants `classroom-hub` access only to Bren's existing local Xwayland display
+  for the duration of the operator-invoked repair, then revokes it. The repair
+  keeps its independent Chalkwright profile and routine-job boundary.
+
+- Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
+  worker with the managed Playwright persistent-context launch used by the
+  proven legacy repair model. The Chalkwright-owned profile, enabled Chrome
+  sandbox, bounded network controls, and routine credential boundary are
+  unchanged.
+
 - Removed inherited graphical-session variables from the unattended,
   sandboxed PowerSchool repair browser so Chrome headless mode starts without
   attempting to initialize an unavailable desktop display.

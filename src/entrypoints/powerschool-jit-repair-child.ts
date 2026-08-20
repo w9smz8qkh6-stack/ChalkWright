@@ -51,7 +51,11 @@ export async function runPowerSchoolJitRepairWorker(options: {
   }
   const environment = options.environment ?? process.env;
   const headlessSetting = environment[powerSchoolJitHeadlessEnvironmentName];
-  if (headlessSetting !== undefined && headlessSetting !== '1') {
+  if (
+    headlessSetting !== undefined &&
+    headlessSetting !== '0' &&
+    headlessSetting !== '1'
+  ) {
     options.packet.fill(0);
     return { exitCode: 64, errorCode: 'repair-config-invalid' };
   }

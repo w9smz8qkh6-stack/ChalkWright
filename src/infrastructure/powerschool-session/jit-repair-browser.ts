@@ -13,10 +13,6 @@ import {
   installAuthenticatedNetworkBoundary,
   type AuthenticatedNavigationSafetyState,
 } from './authenticated-network-boundary.js';
-import {
-  launchDirectCdpPowerSchoolSession,
-  type DirectCdpPowerSchoolSession,
-} from './direct-cdp-browser.js';
 import type { PowerSchoolRepairCredentials } from './repair-secret-packet.js';
 import {
   acquirePowerSchoolSessionLock,
@@ -34,10 +30,7 @@ import {
 // portion of that existing budget.
 const minimumBrowserLaunchTimeoutMs = 30_000;
 type BrowserLaunchFailureCode =
-  | 'browser-control-unreachable'
-  | 'browser-launch-closed'
-  | 'browser-launch-failed'
-  | 'browser-launch-timeout';
+  'browser-launch-closed' | 'browser-launch-failed' | 'browser-launch-timeout';
 
 export type PowerSchoolJitRepairResult =
   | {
@@ -51,7 +44,6 @@ export type PowerSchoolJitRepairResult =
         | 'browser-launch-closed'
         | 'browser-launch-failed'
         | 'browser-launch-timeout'
-        | 'browser-control-unreachable'
         | 'browser-unavailable'
         | 'collector-already-running'
         | 'credential-rejected'
@@ -99,7 +91,6 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
   }
   let profile: string | undefined;
   let context: BrowserContext | undefined;
-  let browserSession: DirectCdpPowerSchoolSession | undefined;
   let closePromise: Promise<void> | undefined;
   let safety: AuthenticatedNavigationSafetyState | undefined;
   let browserLaunched = false;
@@ -119,8 +110,8 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
       ? timeoutSignal
       : AbortSignal.any([options.signal, timeoutSignal]);
   const closeOnAbort = (): void => {
-    if (browserSession !== undefined && closePromise === undefined) {
-      closePromise = browserSession.close().catch(() => undefined);
+    if (context !== undefined && closePromise === undefined) {
+      closePromise = context.close().catch(() => undefined);
     }
   };
   operationSignal.addEventListener('abort', closeOnAbort, { once: true });
@@ -151,20 +142,12 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
         HOME: profile,
       },
     };
-    if (options.launchContext === undefined) {
-      browserSession = await launchDirectCdpPowerSchoolSession({
-        ...launchOptions,
-        signal: operationSignal,
-      });
-      context = browserSession.context;
-    } else {
-      const injectedContext = await options.launchContext(launchOptions);
-      browserSession = {
-        context: injectedContext,
-        close: async () => await injectedContext.close(),
-      };
-      context = injectedContext;
-    }
+    // The standalone repair follows the proven managed persistent-context
+    // launch shape. Direct CDP attach creates a materially different Chrome
+    // identity and is not used for interactive PowerSchool reauthorization.
+    context = await (options.launchContext ?? launchPowerSchoolSessionContext)(
+      launchOptions,
+    );
     browserLaunched = true;
     context.setDefaultTimeout(options.config.navigationTimeoutMs);
     context.setDefaultNavigationTimeout(options.config.navigationTimeoutMs);
@@ -259,8 +242,8 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
     operationSignal.removeEventListener('abort', closeOnAbort);
     options.signal?.removeEventListener('abort', recordCallerAbort);
     timeoutSignal.removeEventListener('abort', recordTimeout);
-    if (browserSession !== undefined && closePromise === undefined) {
-      closePromise = browserSession.close().catch(() => undefined);
+    if (context !== undefined && closePromise === undefined) {
+      closePromise = context.close().catch(() => undefined);
     }
     await closePromise;
     if (profile !== undefined && temporaryProfile)
@@ -278,8 +261,6 @@ function classifyBrowserLaunchFailure(
   error: unknown,
 ): BrowserLaunchFailureCode {
   if (!(error instanceof Error)) return 'browser-launch-failed';
-  if (error.message === 'powerschool-direct-cdp-unreachable')
-    return 'browser-control-unreachable';
   if (/Target page, context or browser has been closed/iu.test(error.message))
     return 'browser-launch-closed';
   if (/timeout/iu.test(error.message)) return 'browser-launch-timeout';

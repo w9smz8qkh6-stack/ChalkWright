@@ -10,17 +10,27 @@ Type=oneshot
 User=classroom-hub
 Group=classroom-hub
 WorkingDirectory=/opt/chalkwright/current
+RuntimeDirectory=chalkwright-powerschool-repair-client
+RuntimeDirectoryMode=0700
 EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
 EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env
 Environment=NODE_ENV=production
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
+Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0
+Environment=DISPLAY=:0
+Environment=TMPDIR=/run/chalkwright-powerschool-repair-client
 ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js
 TimeoutStartSec=6min
 TimeoutStopSec=30s
 UMask=0077
 NoNewPrivileges=true
 PrivateDevices=true
-PrivateTmp=true
+# The repair browser uses only Bren's existing local Xwayland socket. The root
+# controller grants the dedicated local-user ACL immediately before this unit
+# starts and revokes it after the unit reaches a terminal state. A private /tmp
+# namespace would make that socket unreachable; temporary files remain in this
+# unit's own mode-0700 runtime directory.
+PrivateTmp=false
 ProtectClock=true
 ProtectControlGroups=true
 ProtectHome=true

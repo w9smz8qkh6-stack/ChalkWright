@@ -294,12 +294,21 @@ function verifyPermanentProductionArtifacts(directory, fail) {
   );
   for (const required of [
     'EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env',
+    'Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0',
+    'Environment=DISPLAY=:0',
+    'RuntimeDirectory=chalkwright-powerschool-repair-client',
+    'RuntimeDirectoryMode=0700',
+    'Environment=TMPDIR=/run/chalkwright-powerschool-repair-client',
     'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js',
     'ReadWritePaths=/var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile',
     'RestrictNamespaces=~cgroup ipc uts time',
   ])
     if (!repair.includes(required))
       fail(`chalkwright-powerschool-repair.service.in is missing ${required}`);
+  if (repair.includes('PrivateTmp=true'))
+    fail(
+      'chalkwright-powerschool-repair.service.in isolates its required X socket',
+    );
   const planRefresh = readFileSync(
     join(production, 'chalkwright-plan-refresh.service.in'),
     'utf8',
