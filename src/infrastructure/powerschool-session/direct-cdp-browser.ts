@@ -119,7 +119,10 @@ async function connectDirectCdpBrowser(options: {
     try {
       return await chromium.connectOverCDP(endpoint, {
         isLocal: true,
-        timeout: remainingMs,
+        // A refused local port must not consume the complete Chrome-startup
+        // budget. Keep each readiness probe short while preserving the caller's
+        // original overall deadline.
+        timeout: Math.min(250, remainingMs),
       });
     } catch (error: unknown) {
       if (!isConnectionRefused(error)) throw error;
