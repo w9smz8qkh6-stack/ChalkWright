@@ -10,10 +10,10 @@ omitted.
 
 ### Changed
 
-- Added an on-demand, authenticated Xvfb display owned by the standalone
-  service identity for the explicitly invoked PowerSchool repair. It runs a
-  managed headed Chrome context without access to the interactive desktop,
-  legacy profile, or routine-job authority.
+- Added an explicit headed mode for the standalone PowerSchool repair. It
+  grants `classroom-hub` access only to Bren's existing local Xwayland display
+  for the duration of the operator-invoked repair, then revokes it. The repair
+  keeps its independent Chalkwright profile and routine-job boundary.
 
 - Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
   worker with the managed Playwright persistent-context launch used by the

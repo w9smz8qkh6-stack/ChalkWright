@@ -26,7 +26,6 @@ units=(
   chalkwright-plan-refresh.service
   chalkwright-plan-refresh.timer
   chalkwright-powerschool-repair.service
-  chalkwright-powerschool-repair-display.service
 )
 for path in /etc/chalkwright/production/server.json /etc/chalkwright/production/calendar.json /etc/chalkwright/production/jobs/plan-refresh.env /etc/chalkwright/production/jobs/classroom-refresh.env /etc/chalkwright/production/jobs/maintenance.env; do
   [[ -f $path && ! -L $path ]] || reject production-provision-config-missing
@@ -73,4 +72,4 @@ done
 /usr/bin/bash "$source_root/scripts/operations/switch-production-release.sh" "$digest" >/dev/null
 created_units=0
 created_source=0
-echo "{\"status\":\"provisioned-inert\",\"release\":\"sha256:$digest\",\"unitsInstalled\":15,\"unitsStarted\":0,\"routeChanges\":0,\"providerRequests\":0}"
+echo "{\"status\":\"provisioned-inert\",\"release\":\"sha256:$digest\",\"unitsInstalled\":14,\"unitsStarted\":0,\"routeChanges\":0,\"providerRequests\":0}"

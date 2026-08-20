@@ -242,7 +242,6 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'chalkwright-integrity.timer.in',
     'chalkwright-plan-refresh.service.in',
     'chalkwright-plan-refresh.timer.in',
-    'chalkwright-powerschool-repair-display.service.in',
     'chalkwright-powerschool-repair.service.in',
     'chalkwright.service.in',
   ];
@@ -294,12 +293,9 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'utf8',
   );
   for (const required of [
-    'Requires=chalkwright-powerschool-repair-display.service',
-    'After=network-online.target chalkwright-powerschool-repair-display.service',
     'EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env',
     'Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0',
-    'Environment=DISPLAY=:99',
-    'Environment=XAUTHORITY=/run/chalkwright-powerschool-repair/Xauthority',
+    'Environment=DISPLAY=:0',
     'RuntimeDirectory=chalkwright-powerschool-repair-client',
     'RuntimeDirectoryMode=0700',
     'Environment=TMPDIR=/run/chalkwright-powerschool-repair-client',
@@ -313,22 +309,6 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     fail(
       'chalkwright-powerschool-repair.service.in isolates its required X socket',
     );
-  const display = readFileSync(
-    join(production, 'chalkwright-powerschool-repair-display.service.in'),
-    'utf8',
-  );
-  for (const required of [
-    'StopWhenUnneeded=yes',
-    'RuntimeDirectory=chalkwright-powerschool-repair',
-    'RuntimeDirectoryMode=0700',
-    'ExecStart=/opt/chalkwright/current/scripts/operations/run-chalkwright-powerschool-repair-display.sh',
-    'PrivateTmp=false',
-    'RestrictAddressFamilies=AF_UNIX',
-  ])
-    if (!display.includes(required))
-      fail(
-        `chalkwright-powerschool-repair-display.service.in is missing ${required}`,
-      );
   const planRefresh = readFileSync(
     join(production, 'chalkwright-plan-refresh.service.in'),
     'utf8',

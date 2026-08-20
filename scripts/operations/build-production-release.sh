@@ -26,7 +26,7 @@ trap cleanup EXIT INT TERM
 /usr/bin/install -d -m 0755 "$stage/runtime" "$stage/runtime/systemd" "$stage/runtime/scripts/operations"
 /usr/bin/cp -a "$source_root"/dist "$source_root"/public "$source_root"/package.json "$source_root"/package-lock.json "$stage/runtime/"
 /usr/bin/cp -a "$source_root"/systemd/production "$stage/runtime/systemd/"
-/usr/bin/cp -a "$source_root"/scripts/operations/activate-production.sh "$source_root"/scripts/operations/cutover-production-tailscale-route.sh "$source_root"/scripts/operations/migrate-production-plan-state.sh "$source_root"/scripts/operations/install-production-release.sh "$source_root"/scripts/operations/switch-production-release.sh "$source_root"/scripts/operations/deploy-production-from-main.sh "$source_root"/scripts/operations/provision-production-inert.sh "$source_root"/scripts/operations/run-chalkwright-powerschool-repair-display.sh "$stage/runtime/scripts/operations/"
+/usr/bin/cp -a "$source_root"/scripts/operations/activate-production.sh "$source_root"/scripts/operations/cutover-production-tailscale-route.sh "$source_root"/scripts/operations/migrate-production-plan-state.sh "$source_root"/scripts/operations/install-production-release.sh "$source_root"/scripts/operations/switch-production-release.sh "$source_root"/scripts/operations/deploy-production-from-main.sh "$source_root"/scripts/operations/provision-production-inert.sh "$stage/runtime/scripts/operations/"
 /usr/bin/printf '{"version":1,"commit":"%s"}\n' "$commit" > "$stage/runtime/.chalkwright-release.json"
 (
   cd "$stage/runtime"

@@ -15,10 +15,6 @@ const repair = readFileSync(
   'scripts/operations/repair-production-powerschool.sh',
   'utf8',
 );
-const display = readFileSync(
-  'scripts/operations/run-chalkwright-powerschool-repair-display.sh',
-  'utf8',
-);
 
 test('production deploy waits for restarted display liveness before rollback', () => {
   const restart = deploy.indexOf('systemctl restart chalkwright.service');
@@ -61,17 +57,13 @@ test('production sudo policy pins the current deploy controller digest', () => {
   );
 });
 
-test('headed PowerSchool repair requires only its private authenticated display', () => {
-  assert.match(repair, /chalkwright-powerschool-repair-display\.service/u);
-  assert.match(repair, /production-powerschool-repair-display-unavailable/u);
+test('headed PowerSchool repair uses a temporary single-user desktop ACL', () => {
+  assert.match(repair, /desktop_user=bren/u);
+  assert.match(repair, /desktop_display=:0/u);
+  assert.match(repair, /xhost \+SI:localuser:classroom-hub/u);
+  assert.match(repair, /xhost -SI:localuser:classroom-hub/u);
   assert.match(repair, /systemctl start "\$unit"/u);
-  assert.match(display, /RUNTIME_DIRECTORY:-/u);
-  assert.match(display, /xauth -f "\$authority" source -/u);
-  assert.match(
-    display,
-    /Xvfb "\$display" -auth "\$authority" -nolisten tcp -screen 0 1280x720x24/u,
-  );
-  assert.doesNotMatch(display, /xhost|--no-sandbox|openclaw/iu);
+  assert.doesNotMatch(repair, /Xvfb|xauth|--no-sandbox|openclaw/iu);
 });
 
 test('production sudo policy pins the current PowerSchool repair controller digest', () => {

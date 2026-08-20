@@ -341,20 +341,20 @@ profile cleanup. A live repair and credential-free routine read remain required;
 offline launch qualification is not evidence that Google will accept the new
 browser identity.
 
-### Isolated headed repair display
+### Headed repair on the existing desktop session
 
-The production repair unit explicitly requests a headed managed context. Its
-only display dependency is an on-demand local Xvfb server running as
-`classroom-hub` on a fixed Unix-socket display. Systemd creates the server's
-mode-`0700` runtime directory; the display controller generates a new
-mode-`0600` X authority file through stdin and removes both when the repair is
-no longer needed. The repair service and this display alone share the local X
-socket, so the service does not gain access to Bren's desktop, an OpenClaw
-profile, or a usable graphical-session cookie. The display listens on no TCP
-endpoint. The repair browser's temporary files use its separate mode-`0700`
-runtime directory rather than shared `/tmp`. Routine retained-profile
-collection neither depends on nor can start this unit, and it retains no
-repair, 1Password, or display authority.
+The production repair unit explicitly requests a headed managed context on
+Bren's existing local Xwayland display. Immediately before an operator invokes
+the repair, its root controller uses the X server's documented
+`si:localuser:classroom-hub` ACL to grant the dedicated service identity access
+to that one display; an exit trap revokes the ACL after the one-shot unit
+reaches a terminal state. This permits neither a desktop browser profile nor
+desktop credentials to cross into Chalkwright: Chrome still uses the separate
+Chalkwright-owned profile, and values still flow only through the fixed
+1Password service-account stdin packet. The repair browser's temporary files
+use its separate mode-`0700` runtime directory rather than shared `/tmp`.
+Routine retained-profile collection neither depends on nor can obtain the
+temporary desktop ACL, repair, or 1Password authority.
 
 The user then authorized exactly one such live gate for 2026-08-11. The fixed
 service-account-backed 1Password handoff completed far enough to launch the
