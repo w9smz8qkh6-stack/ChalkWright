@@ -77,7 +77,7 @@ export async function installAuthenticatedNetworkBoundary(options: {
     topLevelRequests: 0,
     authenticationReturnExpected: false,
   };
-  const allowedResources = new Set(
+  const explicitlyAllowedResources = new Set(
     options.config.allowedBootstrapResourceOrigins,
   );
   await options.context.routeWebSocket('**/*', async (socket) => {
@@ -90,7 +90,7 @@ export async function installAuthenticatedNetworkBoundary(options: {
     const violation = requestViolation(
       route,
       options.config,
-      allowedResources,
+      explicitlyAllowedResources,
       state,
     );
     if (violation !== undefined) {
@@ -141,7 +141,7 @@ export async function installAuthenticatedNetworkBoundary(options: {
 function requestViolation(
   route: Route,
   config: PowerSchoolBootstrapConfig,
-  allowedResources: ReadonlySet<string>,
+  explicitlyAllowedResources: ReadonlySet<string>,
   state: AuthenticatedNavigationSafetyState,
 ): AuthenticatedNetworkViolationReason | undefined {
   const request = route.request();
@@ -192,9 +192,17 @@ function requestViolation(
       ? undefined
       : 'identity-method-blocked';
   }
+  // The proven legacy repair lets Chrome load the identity page's ordinary
+  // HTTPS resources without trying to predict every CDN hostname. Keep that
+  // behavior for read-only subresources while retaining explicit allowances
+  // for synthetic/local HTTP fixtures. Top-level navigation remains confined
+  // above, and non-read methods remain confined below.
   if (
-    !allowedResources.has(url.origin) &&
-    !isPowerSchoolSameSiteResourceOrigin(url, config.powerSchoolOrigin)
+    !isAllowedBrowserResourceOrigin({
+      url,
+      explicitlyAllowedResources,
+      powerSchoolOrigin: config.powerSchoolOrigin,
+    })
   )
     return classifyBlockedResourceOrigin(url, config.powerSchoolOrigin);
   return isAllowedBrowserResourceMethod({
@@ -206,6 +214,18 @@ function requestViolation(
     : url.origin === config.powerSchoolOrigin
       ? 'powerschool-method-blocked'
       : 'resource-method-blocked';
+}
+
+export function isAllowedBrowserResourceOrigin(options: {
+  readonly url: URL;
+  readonly explicitlyAllowedResources: ReadonlySet<string>;
+  readonly powerSchoolOrigin: string;
+}): boolean {
+  return (
+    options.url.protocol === 'https:' ||
+    options.explicitlyAllowedResources.has(options.url.origin) ||
+    isPowerSchoolSameSiteResourceOrigin(options.url, options.powerSchoolOrigin)
+  );
 }
 
 /**

@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   classifyBlockedResourceOrigin,
+  isAllowedBrowserResourceOrigin,
   isAllowedBrowserResourceMethod,
   isPowerSchoolSameSiteResourceOrigin,
 } from '../../../src/infrastructure/powerschool-session/authenticated-network-boundary.js';
@@ -73,6 +74,42 @@ test('classifies a blocked resource without retaining its URL', () => {
   }
 });
 
+test('allows ordinary HTTPS auth resources without a brittle hostname allowlist', () => {
+  const explicitlyAllowedResources = new Set(['http://fixture.invalid']);
+  assert.equal(
+    isAllowedBrowserResourceOrigin({
+      url: new URL('https://current-cdn.invalid/resource.js'),
+      explicitlyAllowedResources,
+      powerSchoolOrigin,
+    }),
+    true,
+  );
+  assert.equal(
+    isAllowedBrowserResourceOrigin({
+      url: new URL('http://fixture.invalid/resource.js'),
+      explicitlyAllowedResources,
+      powerSchoolOrigin,
+    }),
+    true,
+  );
+  assert.equal(
+    isAllowedBrowserResourceOrigin({
+      url: new URL('http://unrelated.invalid/resource.js'),
+      explicitlyAllowedResources,
+      powerSchoolOrigin,
+    }),
+    false,
+  );
+  assert.equal(
+    isAllowedBrowserResourceOrigin({
+      url: new URL('chrome-extension://synthetic-id/resource.js'),
+      explicitlyAllowedResources,
+      powerSchoolOrigin,
+    }),
+    false,
+  );
+});
+
 test('recognizes only HTTPS PowerSchool same-site resource origins', () => {
   assert.equal(
     isPowerSchoolSameSiteResourceOrigin(
@@ -104,7 +141,7 @@ test('recognizes only HTTPS PowerSchool same-site resource origins', () => {
   );
 });
 
-test('allows legacy-compatible same-site sibling resource methods without allowing PowerSchool writes', () => {
+test('allows legacy-compatible same-site sibling methods without allowing PowerSchool writes', () => {
   const sibling = new URL('https://assets-sis.school.example.co.uk/beacon');
   assert.equal(
     isAllowedBrowserResourceMethod({

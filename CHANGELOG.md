@@ -10,6 +10,14 @@ omitted.
 
 ### Changed
 
+- Replaced the PowerSchool authentication browser's brittle third-party
+  subresource-host allowlist with the proven legacy-compatible boundary:
+  ordinary non-top-level HTTPS GET/HEAD resources may load, while top-level
+  navigation remains confined to PowerSchool and the identity provider and
+  unrelated non-read methods remain blocked. This prevents harmless identity
+  CDN changes from breaking unattended repair without weakening the
+  PowerSchool read-only contract.
+
 - Matched the proven PowerSchool authentication return policy by permitting
   exactly one top-level PowerSchool POST only after a top-level Google identity
   navigation, then consuming that permission. Every other top-level
