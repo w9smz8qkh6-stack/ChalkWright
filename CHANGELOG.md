@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Gave the isolated PowerSchool repair browser a bounded startup allowance
+  separate from its short page-navigation timeout. The existing overall repair
+  deadline and cleanup reserve remain authoritative, preventing hardened
+  Chrome startup from failing before any PowerSchool request is made.
+
 - Simplified the isolated production PowerSchool repair browser handoff by
   replacing its manually attached DevTools HTTP control channel with the
   existing sandboxed Playwright-managed launch, while preserving the

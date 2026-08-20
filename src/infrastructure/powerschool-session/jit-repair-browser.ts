@@ -28,6 +28,12 @@ import {
   writeFilteredPowerSchoolState,
 } from './protected-state.js';
 
+// Chrome startup under the hardened one-shot repair service can exceed the
+// short page-navigation allowance. The operation signal and cleanup reserve
+// still cap the whole repair; this only gives process startup its own bounded
+// portion of that existing budget.
+const minimumBrowserLaunchTimeoutMs = 30_000;
+
 export type PowerSchoolJitRepairResult =
   | {
       readonly status: 'authenticated';
@@ -126,7 +132,13 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
       chromeExecutablePath: options.config.chromeExecutablePath,
       headless: options.headless ?? false,
       javaScriptEnabled: true,
-      timeoutMs: options.config.navigationTimeoutMs,
+      timeoutMs: Math.min(
+        options.config.overallTimeoutMs,
+        Math.max(
+          options.config.navigationTimeoutMs,
+          minimumBrowserLaunchTimeoutMs,
+        ),
+      ),
       environment: {
         ...(options.browserEnvironment ?? process.env),
         HOME: profile,
