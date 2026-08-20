@@ -67,6 +67,11 @@ test('headed PowerSchool repair uses a desktop-owner staging lane', () => {
   assert.match(repair, /production-powerschool-repair-session/u);
   assert.match(repair, /desktop_provider=\$runtime\/provider/u);
   assert.match(repair, /CHALKWRIGHT_M17_REPAIR_DATE/u);
+  assert.match(
+    repair,
+    /if \(!\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(date\)\)/u,
+  );
+  assert.doesNotMatch(repair, /if \(!\/\^\\\\d/u);
   assert.match(repair, /powerschool-session\.json/u);
   assert.match(repair, /systemctl start "\$unit"/u);
   assert.doesNotMatch(repair, /Xvfb|xhost|xauth|--no-sandbox|openclaw/iu);

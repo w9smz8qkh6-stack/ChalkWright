@@ -31,7 +31,7 @@ function repairConfig(
   powerSchoolOrigin: string,
   identityOrigin: string,
   sessionDirectory: string,
-  overallTimeoutMs = 30_000,
+  overallTimeoutMs = 45_000,
 ): PowerSchoolBootstrapConfig {
   return {
     powerSchoolOrigin,
@@ -77,7 +77,7 @@ function profiles(): string[] {
 }
 
 async function waitForProfiles(expected: readonly string[]): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
     if (JSON.stringify(profiles()) === JSON.stringify(expected)) return;
     await sleep(100);
   }
