@@ -245,7 +245,11 @@ export function isAllowedBrowserResourceMethod(options: {
   if (
     (method === 'OPTIONS' || method === 'POST') &&
     options.url.origin !== options.powerSchoolOrigin &&
-    isPowerSchoolSameSiteResourceOrigin(options.url, options.powerSchoolOrigin)
+    (options.url.protocol === 'https:' ||
+      isPowerSchoolSameSiteResourceOrigin(
+        options.url,
+        options.powerSchoolOrigin,
+      ))
   ) {
     return true;
   }

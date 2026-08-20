@@ -334,10 +334,10 @@ gate for the replacement JIT design; the design itself does not require a
 manual PowerSchool sign-in.
 
 The earlier direct-CDP alternative was retained only as offline evidence. The
-standalone repair now uses a managed Playwright persistent Chrome context,
-matching the proven legacy repair's launch model while retaining the
-Chalkwright-owned profile, enabled Chrome sandbox, fixed request boundary, and
-bounded cleanup. Synthetic localhost tests exercise the managed launch,
+standalone repair now uses Playwright's managed persistent-context launch API
+over a disposable Chalkwright-owned profile, matching the proven legacy
+repair's browser model while retaining the enabled Chrome sandbox, fixed
+request boundary, and bounded cleanup. Synthetic localhost tests exercise the managed launch,
 identity/PowerSchool guard, filtered-state reuse, launch failure, and complete
 profile cleanup. A live repair and credential-free routine read remain required;
 offline launch qualification is not evidence that Google will accept the new
@@ -349,12 +349,13 @@ The production repair unit runs in Bren's existing graphical systemd user
 manager. That manager already owns the desktop's `DISPLAY`, Wayland, D-Bus,
 runtime, and Xauthority values, so the repair does not reconstruct a desktop
 session inside the system manager, grant another account display access, or
-hard-code a display target. Chrome still uses the separate Chalkwright-owned
-profile. The root controller stages only fixed repair configuration and
+hard-code a display target. Chrome uses a fresh Chalkwright-owned profile under
+that invocation's private runtime directory. The root controller stages only fixed repair configuration and
 1Password authority in a mode-`0700` directory under Bren's runtime directory,
 waits for the user one-shot, validates its bounded output, transfers only the
 filtered PowerSchool state to the routine account, and removes the staging
-directory. Routine retained-profile collection neither depends on nor can
+directory together with the high-authority browser profile. Routine
+retained-profile collection neither depends on nor can
 obtain the user repair unit or its temporary 1Password authority.
 
 The authentication request boundary keeps ordinary top-level PowerSchool
@@ -440,9 +441,9 @@ The routine phase must still avoid Google, 1Password, credential automation,
 and private page evidence.
 
 Accepted ADR-0024 composes the existing JIT worker into Chalkwright's own M-17
-operator-invoked repair service. The service has no timer, uses a dedicated
-Chalkwright-owned retained profile and fixed protected 1Password
-references, and writes only filtered canary session state. This removes the
+operator-invoked repair service. The service has no timer, uses a disposable
+Chalkwright-owned runtime profile and fixed protected 1Password references,
+and writes only filtered canary session state. This removes the
 legacy OpenClaw browser from the intended steady-state authentication path
 without granting repair authority to routine collection. The legacy bridge
 has been removed from the executable repository; the independently running
@@ -526,11 +527,12 @@ baseline was the wrong abstraction: the current identity page requested an
 ordinary HTTPS resource from another origin before any credential form was
 submitted. The proven legacy browser did not predict or filter CDN hostnames.
 The standalone repair and retained reader now likewise permit non-top-level
-HTTPS GET/HEAD resources regardless of hostname, while retaining the actual
-security boundary: only the fixed PowerSchool and identity origins may be
-top-level, the single expected PowerSchool SSO-return POST is consumable once,
-unrelated non-read methods remain blocked, and popups, downloads, WebSockets,
-non-HTTP resources, navigation-budget violations, and oversized declared
-responses still fail closed. Explicit origin configuration remains only for
-reviewed HTTP fixtures or other non-HTTPS resources; it is no longer required
-to chase normal HTTPS identity-page dependencies.
+HTTPS GET/HEAD/OPTIONS/POST resources regardless of hostname, while retaining
+the actual security boundary: only the fixed PowerSchool and identity origins
+may be top-level, the single expected PowerSchool SSO-return POST is consumable
+once, direct PowerSchool writes and unrelated PUT/PATCH/DELETE methods remain
+blocked, and popups, downloads, WebSockets, non-HTTP resources,
+navigation-budget violations, and oversized declared responses still fail
+closed. Explicit origin configuration remains only for reviewed HTTP fixtures
+or other non-HTTPS resources; it is no longer required to chase normal HTTPS
+identity-page dependencies.

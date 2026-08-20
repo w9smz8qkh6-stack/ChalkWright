@@ -13,7 +13,6 @@ EnvironmentFile=%t/chalkwright-production-repair/desktop-repair.env
 Environment=NODE_ENV=production
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
 Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0
-Environment=HOME=/var/lib/chalkwright/production-powerschool-desktop-profile
 Environment=TMPDIR=%t/chalkwright-powerschool-repair-client
 UnsetEnvironment=OP_ACCOUNT OP_CONNECT_TOKEN OP_SERVICE_ACCOUNT_TOKEN
 ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js
@@ -21,8 +20,9 @@ TimeoutStartSec=6min
 TimeoutStopSec=30s
 UMask=0077
 # The user manager supplies Bren's real graphical-session environment. Chrome
-# still uses only this dedicated Chalkwright profile; the root controller
-# transfers filtered PowerSchool state after a successful repair.
+# still uses only a disposable Chalkwright profile; the root controller
+# transfers filtered PowerSchool state after a successful repair and removes
+# the high-authority browser profile with the temporary repair runtime.
 # Do not add system-manager namespace or no-new-privileges directives here.
 # They make Chrome's correctly installed SUID sandbox unusable from a user
 # manager. The fixed browser worker retains Chrome's sandbox and its own
