@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Distinguished a PowerSchool repair browser-launch failure from other browser
+  unavailability. The bounded operator result remains free of credentials,
+  provider data, and raw browser errors while allowing production recovery to
+  diagnose a failed Chrome launch.
+
 - Deferred permanent-production Calendar preflight until activation has
   established the canonical local plan. Deploy now stages and health-checks the
   reviewed release without calling Calendar against absent plan state; the
