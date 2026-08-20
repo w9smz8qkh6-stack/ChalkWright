@@ -33,6 +33,11 @@ import {
 // still cap the whole repair; this only gives process startup its own bounded
 // portion of that existing budget.
 const minimumBrowserLaunchTimeoutMs = 30_000;
+type BrowserLaunchFailureCode =
+  | 'browser-control-unreachable'
+  | 'browser-launch-closed'
+  | 'browser-launch-failed'
+  | 'browser-launch-timeout';
 
 export type PowerSchoolJitRepairResult =
   | {
@@ -43,7 +48,9 @@ export type PowerSchoolJitRepairResult =
       readonly status: 'failed';
       readonly code:
         | 'aborted'
+        | 'browser-launch-closed'
         | 'browser-launch-failed'
+        | 'browser-launch-timeout'
         | 'browser-control-unreachable'
         | 'browser-unavailable'
         | 'collector-already-running'
@@ -246,11 +253,7 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
     if (browserLaunched) return unexpectedChallenge('unclassified');
     return {
       status: 'failed',
-      code:
-        error instanceof Error &&
-        error.message === 'powerschool-direct-cdp-unreachable'
-          ? 'browser-control-unreachable'
-          : 'browser-launch-failed',
+      code: classifyBrowserLaunchFailure(error),
     };
   } finally {
     operationSignal.removeEventListener('abort', closeOnAbort);
@@ -264,6 +267,23 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
       removeTemporaryBrowserProfile(profile);
     lock.release();
   }
+}
+
+/**
+ * Converts the browser runtime's local launch failure into one finite,
+ * provider-free operator code. The raw browser error can contain host details
+ * and must never be retained or returned.
+ */
+function classifyBrowserLaunchFailure(
+  error: unknown,
+): BrowserLaunchFailureCode {
+  if (!(error instanceof Error)) return 'browser-launch-failed';
+  if (error.message === 'powerschool-direct-cdp-unreachable')
+    return 'browser-control-unreachable';
+  if (/Target page, context or browser has been closed/iu.test(error.message))
+    return 'browser-launch-closed';
+  if (/timeout/iu.test(error.message)) return 'browser-launch-timeout';
+  return 'browser-launch-failed';
 }
 
 async function driveRecognizedRepairFlow(options: {
