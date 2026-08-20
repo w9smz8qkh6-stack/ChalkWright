@@ -148,9 +148,9 @@ function assertMatchingRuntime(
 function exitCodeFor(result: TypedJobResult): number {
   switch (result.category) {
     case 'succeeded':
+    case 'skipped':
       return 0;
     case 'degraded':
-    case 'skipped':
       return 2;
     case 'repair-required':
       return 3;

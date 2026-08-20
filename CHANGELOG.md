@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Treat a normal production job skip as a clean process exit while retaining a
+  nonzero exit for degraded work. Permanent activation can now complete when
+  Classroom refresh has no active class, without hiding provider or cache
+  degradation from systemd.
+
 - Wired permanent production plan refresh to the credential-free filtered-state
   reader that consumes the successful headed repair's bounded handoff. The
   routine unit no longer receives access to the unused Google-bearing retained

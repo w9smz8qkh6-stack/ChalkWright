@@ -767,6 +767,7 @@ test('inactive and invalid production jobs fail before provider construction', a
       },
     });
     assert.equal(inactive.status, 'skipped');
+    assert.equal(inactive.exitCode, 0);
     assert.equal(sourceConstructions, 0);
 
     const invalidUsage = await runProductionPlanRefresh({
