@@ -26,9 +26,10 @@ import {
 } from './protected-state.js';
 
 // Chrome startup under the hardened one-shot repair service can exceed the
-// short page-navigation allowance. The operation signal and cleanup reserve
-// still cap the whole repair; this only gives process startup its own bounded
-// portion of that existing budget.
+// short page-navigation allowance. Give Playwright its documented bounded
+// launch window even when the operation deadline fires sooner: awaiting a
+// settled launch lets us close the context and remove the disposable profile
+// only after the browser process is under our control.
 const minimumBrowserLaunchTimeoutMs = 30_000;
 type BrowserLaunchFailureCode =
   'browser-launch-closed' | 'browser-launch-failed' | 'browser-launch-timeout';
@@ -135,12 +136,9 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
       chromeExecutablePath: options.config.chromeExecutablePath,
       headless: options.headless ?? false,
       javaScriptEnabled: true,
-      timeoutMs: Math.min(
-        options.config.overallTimeoutMs,
-        Math.max(
-          options.config.navigationTimeoutMs,
-          minimumBrowserLaunchTimeoutMs,
-        ),
+      timeoutMs: Math.max(
+        options.config.navigationTimeoutMs,
+        minimumBrowserLaunchTimeoutMs,
       ),
       environment: {
         ...(options.browserEnvironment ?? process.env),
