@@ -10,6 +10,10 @@ omitted.
 
 ### Changed
 
+- Removed inherited graphical-session variables from the unattended,
+  sandboxed PowerSchool repair browser so Chrome headless mode starts without
+  attempting to initialize an unavailable desktop display.
+
 - Classified isolated PowerSchool repair browser exits and launch timeouts with
   finite redacted operator codes, without retaining browser output, provider
   data, or host details.

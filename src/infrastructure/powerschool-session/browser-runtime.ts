@@ -2,6 +2,7 @@ import { chromium, type BrowserContext, type Page } from 'playwright-core';
 
 export function sanitizedChromeEnvironment(
   source: NodeJS.ProcessEnv = process.env,
+  options: { readonly headless?: boolean } = {},
 ): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = {};
   for (const name of [
@@ -19,6 +20,15 @@ export function sanitizedChromeEnvironment(
   ]) {
     const value = source[name];
     if (value !== undefined) environment[name] = value;
+  }
+  if (options.headless === true) {
+    // A retained desktop-session display target makes unified Chrome 150 try
+    // to initialize that unavailable display even when headless. The repair
+    // worker deliberately runs unattended, so retain only non-graphical
+    // runtime inputs while preserving Chrome's enabled sandbox.
+    delete environment.DISPLAY;
+    delete environment.WAYLAND_DISPLAY;
+    delete environment.XAUTHORITY;
   }
   return environment;
 }
@@ -58,7 +68,9 @@ export async function launchPowerSchoolSessionContext(options: {
     acceptDownloads: false,
     serviceWorkers: 'block',
     javaScriptEnabled: options.javaScriptEnabled,
-    env: sanitizedChromeEnvironment(options.environment ?? process.env),
+    env: sanitizedChromeEnvironment(options.environment ?? process.env, {
+      headless: options.headless,
+    }),
     timeout: options.timeoutMs,
   });
 }
