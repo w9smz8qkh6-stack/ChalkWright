@@ -20,6 +20,7 @@ desktop_environment=
 source_references=/etc/chalkwright/migration/powerschool-repair-references.json
 source_service_account=/etc/chalkwright/migration/powerschool-onepassword-service-account.env
 production_config=/etc/chalkwright/production/server.json
+state_file=.classroom-hub-auth-state.json
 candidate=
 cleanup() {
   if [[ -n $candidate ]]; then
@@ -75,8 +76,8 @@ user_systemctl=(/usr/sbin/runuser -u "$desktop_user" -- /usr/bin/env XDG_RUNTIME
 "${user_systemctl[@]}" daemon-reload || reject production-powerschool-repair-user-manager-unavailable
 "${user_systemctl[@]}" reset-failed "$unit" >/dev/null 2>&1 || true
 "${user_systemctl[@]}" start "$unit" || reject production-powerschool-repair-failed
-source_state=$desktop_session/powerschool-session.json
-target_state=$routine_session/powerschool-session.json
+source_state=$desktop_session/$state_file
+target_state=$routine_session/$state_file
 [[ -d $desktop_session && ! -L $desktop_session && -f $source_state && ! -L $source_state && -s $source_state && -d $routine_session && ! -L $routine_session ]] || reject production-powerschool-repair-state-unavailable
 [[ $(/usr/bin/stat -c %U "$desktop_session") == "$desktop_user" && $(/usr/bin/stat -c %a "$desktop_session") == 700 && $(/usr/bin/stat -c %U "$source_state") == "$desktop_user" && $(/usr/bin/stat -c %a "$source_state") == 600 && $(/usr/bin/stat -c %h "$source_state") == 1 && $(/usr/bin/stat -c %s "$source_state") -le 1048576 && $(/usr/bin/stat -c %U "$routine_session") == classroom-hub && $(/usr/bin/stat -c %a "$routine_session") == 700 ]] || reject production-powerschool-repair-state-unsafe
 candidate=$routine_session/.powerschool-session.repair.$$.candidate
