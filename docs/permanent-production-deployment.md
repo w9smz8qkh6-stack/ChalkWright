@@ -34,6 +34,21 @@ Calendar, change Calendar targets, or start provider refresh jobs directly.
 The already enabled refresh and Calendar timers continue using the atomically
 selected release.
 
+PowerSchool authentication repair remains an explicit operator action:
+
+```sh
+sudo -n /usr/local/sbin/chalkwright-production-admin repair-powerschool
+```
+
+The constrained root controller stages the fixed repair authority under the
+logged-in desktop owner's private runtime directory and starts the inert
+`chalkwright-powerschool-repair.service` through that owner's systemd user
+manager. The user manager supplies the real graphical-session environment;
+Chrome uses only Chalkwright's dedicated persistent profile. On success the
+controller copies only validated, filtered PowerSchool state to the
+credential-free routine account and deletes the temporary authority. The
+repair has no timer and neither invokes nor depends on OpenClaw.
+
 Before the deploy timer is active, an operator can trigger the same fixed
 controller manually through the constrained admin wrapper. The wrapper calls a
 digest-bound root-staged copy of the deploy controller so retry behavior can be

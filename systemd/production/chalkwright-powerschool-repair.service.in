@@ -2,50 +2,30 @@
 # No scheduling or enablement section: this high-authority repair is operator-invoked only.
 [Unit]
 Description=Chalkwright production PowerSchool authentication repair
-After=network-online.target
-Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=bren
-Group=bren
 WorkingDirectory=/opt/chalkwright/current
 RuntimeDirectory=chalkwright-powerschool-repair-client
 RuntimeDirectoryMode=0700
-EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
-EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env
-EnvironmentFile=/run/chalkwright-production-repair/desktop-repair.env
+EnvironmentFile=%t/chalkwright-production-repair/plan-refresh.env
+EnvironmentFile=%t/chalkwright-production-repair/desktop-repair.env
 Environment=NODE_ENV=production
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
 Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0
-Environment=DISPLAY=:0
-Environment=TMPDIR=/run/chalkwright-powerschool-repair-client
+Environment=HOME=/var/lib/chalkwright/production-powerschool-desktop-profile
+Environment=TMPDIR=%t/chalkwright-powerschool-repair-client
+UnsetEnvironment=OP_ACCOUNT OP_CONNECT_TOKEN OP_SERVICE_ACCOUNT_TOKEN
 ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js
 TimeoutStartSec=6min
 TimeoutStopSec=30s
 UMask=0077
-NoNewPrivileges=true
-PrivateDevices=true
-# The repair browser is a dedicated Bren-owned context. It never uses a
-# pre-existing browser profile; the root controller supplies only fixed staging
-# paths and transfers filtered state after a successful repair.
-PrivateTmp=false
-ProtectClock=true
-ProtectControlGroups=true
-ProtectHome=true
-ProtectHostname=true
-ProtectKernelLogs=true
-ProtectKernelModules=true
-ProtectKernelTunables=true
-ProtectSystem=strict
-InaccessiblePaths=-/etc/chalkwright/production/providers/google-classroom -/etc/chalkwright/production/providers/google-calendar
-ReadWritePaths=/var/lib/chalkwright/production-powerschool-desktop-profile /var/lib/chalkwright/production-powerschool-repair-session
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
-# Chromium's enabled Linux sandbox also requires mount namespaces. Retain a
-# deny-list for cgroup, IPC, UTS, and time namespaces instead of blocking its
-# required user, PID, network, and mount namespaces.
-RestrictNamespaces=~cgroup ipc uts time
-RestrictRealtime=true
-RestrictSUIDSGID=true
+# The user manager supplies Bren's real graphical-session environment. Chrome
+# still uses only this dedicated Chalkwright profile; the root controller
+# transfers filtered PowerSchool state after a successful repair.
+# Do not add system-manager namespace or no-new-privileges directives here.
+# They make Chrome's correctly installed SUID sandbox unusable from a user
+# manager. The fixed browser worker retains Chrome's sandbox and its own
+# request boundary, while this user one-shot remains resource bounded.
 MemoryMax=768M
 TasksMax=192

@@ -16,20 +16,26 @@ omitted.
   filesystem boundary while allowing the operator-invoked repair to resolve
   its fixed credentials.
 
-- Made the standalone headed PowerSchool repair run as the local desktop owner
-  in an independent Chalkwright profile. The root controller stages its
-  one-time provider references only in `/run`, removes them when the repair
-  ends, and atomically transfers only the bounded, validated PowerSchool
-  session state to the credential-free routine account.
+- Made the standalone headed PowerSchool repair run in the local desktop
+  owner's actual systemd user manager, matching the proven graphical-session
+  launch model while retaining an independent Chalkwright profile. The root
+  controller stages its one-time provider references only in Bren's private
+  runtime directory, removes them when the repair ends, and atomically
+  transfers only the bounded, validated PowerSchool session state to the
+  credential-free routine account.
 
 - The root repair controller now derives and supplies only the validated local
   school date required by the desktop repair. The protected production server
   reference itself remains inaccessible to that desktop-owned process.
 
-- The headed repair controller now passes the validated desktop runtime and
-  Xauthority paths to its `bren`-owned browser process, allowing it to use the
-  existing graphical session without copying its authority file or granting
-  another account display access.
+- The headed repair now inherits `DISPLAY`, Wayland, D-Bus, runtime, and
+  Xauthority directly from Bren's graphical user manager. It no longer tries
+  to reconstruct that desktop context inside a system-manager service or
+  hard-codes a display target. System-manager namespace directives that
+  prevented Chrome's correctly installed SUID sandbox from starting are not
+  applied to the user one-shot; the fixed worker retains Chrome's enabled
+  sandbox, its bounded request policy, resource limits, and filtered state
+  boundary.
 
 - Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
   worker with the managed Playwright persistent-context launch used by the

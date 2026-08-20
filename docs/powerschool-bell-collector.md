@@ -343,18 +343,17 @@ browser identity.
 
 ### Headed repair on the existing desktop session
 
-The production repair unit explicitly requests a headed managed context on
-Bren's existing local Xwayland display. Immediately before an operator invokes
-the repair, its root controller uses the X server's documented
-`si:localuser:classroom-hub` ACL to grant the dedicated service identity access
-to that one display; an exit trap revokes the ACL after the one-shot unit
-reaches a terminal state. This permits neither a desktop browser profile nor
-desktop credentials to cross into Chalkwright: Chrome still uses the separate
-Chalkwright-owned profile, and values still flow only through the fixed
-1Password service-account stdin packet. The repair browser's temporary files
-use its separate mode-`0700` runtime directory rather than shared `/tmp`.
-Routine retained-profile collection neither depends on nor can obtain the
-temporary desktop ACL, repair, or 1Password authority.
+The production repair unit runs in Bren's existing graphical systemd user
+manager. That manager already owns the desktop's `DISPLAY`, Wayland, D-Bus,
+runtime, and Xauthority values, so the repair does not reconstruct a desktop
+session inside the system manager, grant another account display access, or
+hard-code a display target. Chrome still uses the separate Chalkwright-owned
+profile. The root controller stages only fixed repair configuration and
+1Password authority in a mode-`0700` directory under Bren's runtime directory,
+waits for the user one-shot, validates its bounded output, transfers only the
+filtered PowerSchool state to the routine account, and removes the staging
+directory. Routine retained-profile collection neither depends on nor can
+obtain the user repair unit or its temporary 1Password authority.
 
 The user then authorized exactly one such live gate for 2026-08-11. The fixed
 service-account-backed 1Password handoff completed far enough to launch the
