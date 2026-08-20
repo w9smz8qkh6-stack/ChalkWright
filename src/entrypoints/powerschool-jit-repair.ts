@@ -305,6 +305,7 @@ function isRepairResult(
     Object.keys(record).sort().join(',') === 'code,status' &&
     [
       'aborted',
+      'browser-launch-failed',
       'browser-unavailable',
       'collector-already-running',
       'credential-rejected',

@@ -112,15 +112,28 @@ function main() {
   );
   if (identity.uid === 0 || identity.gid === 0)
     throw new Error('m17-repair-provision-identity-invalid');
-  exactDirectory(
-    '/etc/chalkwright/canary/providers',
-    identity.uid,
-    identity.gid,
-  );
-  exactDirectory('/etc/chalkwright/canary/jobs', identity.uid, identity.gid);
-  for (const path of Object.values(target))
+  const providerRoot = production
+    ? '/etc/chalkwright/production/providers'
+    : '/etc/chalkwright/canary/providers';
+  const jobsRoot = production
+    ? '/etc/chalkwright/production/jobs'
+    : '/etc/chalkwright/canary/jobs';
+  exactDirectory(providerRoot, identity.uid, identity.gid);
+  exactDirectory(jobsRoot, identity.uid, identity.gid);
+  for (const path of [
+    target.providerDirectory,
+    target.references,
+    target.serviceAccount,
+    target.environment,
+  ])
     if (existsSync(path) || lstatSafe(path))
       throw new Error('m17-repair-provision-target-exists');
+  const existingProfile =
+    existsSync(target.profile) || lstatSafe(target.profile);
+  if (existingProfile) {
+    if (!production) throw new Error('m17-repair-provision-target-exists');
+    exactDirectory(target.profile, identity.uid, identity.gid);
+  }
 
   let referenceBytes;
   let serviceAccountBytes;
@@ -134,7 +147,8 @@ function main() {
     validateServiceAccount(serviceAccountBytes);
     try {
       makeNewDirectory(target.providerDirectory, identity.uid, identity.gid);
-      makeNewDirectory(target.profile, identity.uid, identity.gid);
+      if (!existingProfile)
+        makeNewDirectory(target.profile, identity.uid, identity.gid);
       writeNew(target.references, referenceBytes, identity.uid, identity.gid);
       writeNew(
         target.serviceAccount,
@@ -144,12 +158,10 @@ function main() {
       );
       writeNew(target.environment, renderRepairEnvironment(), 0, 0);
     } catch (error) {
-      for (const path of [
-        target.environment,
-        target.profile,
-        target.providerDirectory,
-      ])
+      for (const path of [target.environment, target.providerDirectory])
         rmSync(path, { recursive: true, force: true });
+      if (!existingProfile)
+        rmSync(target.profile, { recursive: true, force: true });
       throw error;
     }
   } finally {

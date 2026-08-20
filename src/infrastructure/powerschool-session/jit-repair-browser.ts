@@ -37,6 +37,7 @@ export type PowerSchoolJitRepairResult =
       readonly status: 'failed';
       readonly code:
         | 'aborted'
+        | 'browser-launch-failed'
         | 'browser-unavailable'
         | 'collector-already-running'
         | 'credential-rejected'
@@ -231,7 +232,7 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
     }
     return browserLaunched
       ? unexpectedChallenge('unclassified')
-      : { status: 'failed', code: 'browser-unavailable' };
+      : { status: 'failed', code: 'browser-launch-failed' };
   } finally {
     operationSignal.removeEventListener('abort', closeOnAbort);
     options.signal?.removeEventListener('abort', recordCallerAbort);

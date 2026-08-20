@@ -21,7 +21,7 @@ provision_digest=dd1659d9a5807fa48044afab8fb1fd7c8e55d686cbe9ce311f24e25944bb052
 deploy_digest=7090d2c37b2ea3e00a4e79761c3d870458314963ac2d50fad96eadb1e5374836
 migration_digest=22bcf8b71558f013662b7fff5028603dfc0715b96824ee2d2a1c7af62bc63c8b
 repair_digest=0a429d26c815421972fd30a9022d392c60d1a207fe38a47ab160fc07de056cdb
-repair_provision_digest=9b7b4b7d25feb2fa7990695c26be598a06a08fb986e5b7a0b944ebced2d9536b
+repair_provision_digest=f27fb2431a36b4e4339583eb1ec341b582d7397ca624765c40ea58e0b5d1ccae
 bootstrap_helper_digest=72d7ad3023fa1fb9292499073ae42b02b2c30f2fe06630cff85762d790b6edbb
 
 [[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing

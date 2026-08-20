@@ -406,7 +406,7 @@ test('an explicitly allowed resource iframe is not treated as a top-level naviga
   }
 });
 
-test('only an actual browser launch failure is reported as browser unavailable', async () => {
+test('only an actual browser launch failure is reported separately', async () => {
   const server = await startSyntheticPowerSchoolSessionServer();
   const parent = mkdtempSync(join(tmpdir(), 'jit-repair-launch-'));
   const before = profiles();
@@ -425,7 +425,7 @@ test('only an actual browser launch failure is reported as browser unavailable',
         credentials,
         headless: true,
       }),
-      { status: 'failed', code: 'browser-unavailable' },
+      { status: 'failed', code: 'browser-launch-failed' },
     );
     await waitForProfiles(before);
   } finally {
