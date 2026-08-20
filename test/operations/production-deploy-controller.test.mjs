@@ -77,7 +77,10 @@ test('headed PowerSchool repair uses the desktop owner user manager', () => {
     /if \(!\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(date\)\)/u,
   );
   assert.doesNotMatch(repair, /if \(!\/\^\\\\d/u);
-  assert.match(repair, /powerschool-session\.json/u);
+  assert.match(repair, /state_file=\.classroom-hub-auth-state\.json/u);
+  assert.match(repair, /source_state=\$desktop_session\/\$state_file/u);
+  assert.match(repair, /target_state=\$routine_session\/\$state_file/u);
+  assert.doesNotMatch(repair, /powerschool-session\.json/u);
   assert.doesNotMatch(repair, /^XAUTHORITY=/mu);
   assert.doesNotMatch(
     repair,

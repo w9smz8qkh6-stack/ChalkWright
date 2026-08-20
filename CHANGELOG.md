@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Fixed the production PowerSchool repair handoff to transfer Chalkwright's
+  actual protected-state filename into the credential-free routine session
+  directory. A successful headed authentication can now complete its atomic
+  filtered-state handoff instead of being rejected as state-unavailable.
+
 - Completed the legacy-compatible PowerSchool repair boundary by permitting
   ordinary non-top-level HTTPS GET/HEAD/OPTIONS/POST traffic required by the
   identity page, while direct PowerSchool POST remains blocked except for the
