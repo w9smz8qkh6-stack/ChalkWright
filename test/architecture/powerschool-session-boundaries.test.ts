@@ -49,7 +49,7 @@ test('accepted JIT repair authority is isolated from routine, scheduler, and Cal
     const source = read(path);
     assert.doesNotMatch(
       source,
-      /powerschool-jit-repair|jit-repair-browser|direct-cdp-browser|powerschool-repair-secrets|one-password/iu,
+      /powerschool-jit-repair|jit-repair-browser|powerschool-repair-secrets|one-password/iu,
       path,
     );
   }
@@ -192,10 +192,13 @@ test('locked browser launch disables downloads and service workers', () => {
 
 test('managed repair launch stays sandboxed, disposable, and repair-only', () => {
   const source = read(
-    'src/infrastructure/powerschool-session/direct-cdp-browser.ts',
+    'src/infrastructure/powerschool-session/jit-repair-browser.ts',
   );
   assert.match(source, /launchPowerSchoolSessionContext/u);
-  assert.doesNotMatch(source, /--no-sandbox|launchPersistentContext/iu);
+  assert.doesNotMatch(
+    source,
+    /direct-cdp-browser|launchDirectCdpPowerSchoolSession|--no-sandbox|launchPersistentContext/iu,
+  );
 
   for (const path of [
     'src/infrastructure/powerschool-session/passive-collector.ts',

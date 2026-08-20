@@ -270,15 +270,15 @@ termination plus one-second forced-quiescence proof. Other production jobs
 retain the ordinary one-second hard-stop grace.
 The manual operator-present bootstrap uses normal browser identity navigation
 and does not claim application-level origin, method, request-count, or
-response-byte confinement. The direct-CDP JIT browser necessarily starts
-Chrome before application routing exists, but starts only at `about:blank` with
-background networking reduced; no application navigation occurs until the
-attached context has its guards. The JIT browser installs context-wide HTTP and
-WebSocket guards before navigation, permits PowerSchool GET/HEAD plus expected
-identity GET/HEAD/POST flows, enforces a main-frame navigation count, permits
-GET/HEAD child-frame loads only from the same exact resource-origin allowlist,
-and treats non-top-level HTTPS PowerSchool same-site `OPTIONS`/`POST` requests
-as browser-internal resource traffic rather than top-level application writes,
+response-byte confinement. The managed persistent-context JIT browser starts
+Chrome before application routing exists, but starts only at its empty initial
+page; no application navigation occurs until the managed context has its
+guards. The JIT browser installs context-wide HTTP and WebSocket guards before
+navigation, permits PowerSchool GET/HEAD plus expected identity GET/HEAD/POST
+flows, enforces a main-frame navigation count, permits GET/HEAD child-frame
+loads only from the same exact resource-origin allowlist, and treats
+non-top-level HTTPS PowerSchool same-site `OPTIONS`/`POST` requests as
+browser-internal resource traffic rather than top-level application writes,
 rejects pre-frame/foreign popups and downloads, and rejects declared oversized
 responses. Browser-
 native SSO still prevents a hard cap on an undeclared response body, so the
@@ -331,17 +331,15 @@ unavailable. Successful repair and credential-free routine reuse remain the
 gate for the replacement JIT design; the design itself does not require a
 manual PowerSchool sign-in.
 
-The user later authorized an offline-only direct-CDP alternative. The locked
-Playwright 1.62 API supports attaching to an existing Chromium browser, and
-Chrome's documented post-136 remote-debugging policy requires the non-default
-user-data directory already supplied by the disposable profile. Exact installed
-Chrome 150 synthetic tests exercise direct launch, loopback endpoint discovery,
-attach-before-navigation, the existing identity/PowerSchool guard,
-filtered-state reuse, launch failure, and complete profile/process cleanup. No
-PowerSchool, Google, 1Password, protected state, service, or deployment action
-was part of this offline qualification. One separately authorized live repair
-and credential-free routine read remain required; this result is not evidence
-that Google will accept the new launch shape.
+The earlier direct-CDP alternative was retained only as offline evidence. The
+standalone repair now uses a managed Playwright persistent Chrome context,
+matching the proven legacy repair's launch model while retaining the
+Chalkwright-owned profile, enabled Chrome sandbox, fixed request boundary, and
+bounded cleanup. Synthetic localhost tests exercise the managed launch,
+identity/PowerSchool guard, filtered-state reuse, launch failure, and complete
+profile cleanup. A live repair and credential-free routine read remain required;
+offline launch qualification is not evidence that Google will accept the new
+browser identity.
 
 The user then authorized exactly one such live gate for 2026-08-11. The fixed
 service-account-backed 1Password handoff completed far enough to launch the
