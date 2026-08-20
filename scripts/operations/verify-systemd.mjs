@@ -322,6 +322,19 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     join(production, 'chalkwright-plan-refresh.service.in'),
     'utf8',
   );
+  for (const required of [
+    'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-plan-refresh.js',
+    'ReadWritePaths=/var/lib/chalkwright/production /var/lib/chalkwright/production-session',
+  ])
+    if (!planRefresh.includes(required))
+      fail(`chalkwright-plan-refresh.service.in is missing ${required}`);
+  if (
+    planRefresh.includes('production-retained-plan-refresh.js') ||
+    planRefresh.includes('/var/lib/chalkwright/production-powerschool-profile')
+  )
+    fail(
+      'chalkwright-plan-refresh.service.in must consume filtered session state, not a retained profile',
+    );
   if (!planRefresh.includes('RestrictNamespaces=~cgroup ipc uts time'))
     fail(
       'chalkwright-plan-refresh.service.in is missing the Chromium namespace policy',

@@ -134,6 +134,16 @@ test('retained-profile collection is wired only to the dedicated credential-free
   }
 });
 
+test('permanent production plan refresh consumes only filtered PowerSchool state', () => {
+  const unit = read('systemd/production/chalkwright-plan-refresh.service.in');
+  assert.match(unit, /production-plan-refresh\.js/u);
+  assert.match(unit, /ReadWritePaths=.*production-session/u);
+  assert.doesNotMatch(
+    unit,
+    /production-retained-plan-refresh|production-powerschool-profile|POWERSCHOOL_IDENTITY_ORIGIN/iu,
+  );
+});
+
 test('native M17 repair starts through an installed release symlink', () => {
   const repair = read('src/entrypoints/m17-powerschool-repair.ts');
   assert.match(

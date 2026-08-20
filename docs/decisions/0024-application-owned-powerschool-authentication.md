@@ -110,3 +110,19 @@ reader into M-17 rather than adding another authentication mechanism. The
 historical module name contains “compatibility,” but the runtime profile,
 entrypoint, systemd units, and data roots are all Chalkwright-owned. No legacy
 runtime component is called or copied.
+
+## 2026-08-20 permanent-production amendment
+
+The permanent headed repair now runs in the desktop owner's real graphical
+session with a fresh, disposable Chrome profile and retains only validated
+PowerSchool state. A live repair authenticated without human approval, and the
+following credential-free `production-plan-refresh` invocation consumed that
+filtered state and stored the canonical local plan successfully. Permanent
+production therefore uses the filtered-state reader and does not grant its
+routine plan unit access to the Google-bearing retained-profile directory.
+
+This supersedes the retained-profile choice only for permanent production,
+based on the newer end-to-end production evidence. The historical M-17 canary
+units and evidence remain unchanged. Repair still has no timer, routine reads
+still have no credential or 1Password authority, and neither path depends on
+OpenClaw.

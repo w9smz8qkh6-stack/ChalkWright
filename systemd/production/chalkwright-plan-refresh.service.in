@@ -11,7 +11,7 @@ Group=classroom-hub
 WorkingDirectory=/opt/chalkwright/current
 EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
 Environment=NODE_ENV=production
-ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-retained-plan-refresh.js
+ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-plan-refresh.js
 TimeoutStartSec=3min
 TimeoutStopSec=30s
 UMask=0077
@@ -27,7 +27,7 @@ ProtectKernelModules=true
 ProtectKernelTunables=true
 ProtectSystem=strict
 InaccessiblePaths=-/etc/chalkwright/production/providers/google-classroom -/etc/chalkwright/production/providers/google-calendar
-ReadWritePaths=/var/lib/chalkwright/production /var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile
+ReadWritePaths=/var/lib/chalkwright/production /var/lib/chalkwright/production-session
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 # Chromium's enabled Linux sandbox also requires mount namespaces. Retain a
 # deny-list for cgroup, IPC, UTS, and time namespaces instead of blocking its

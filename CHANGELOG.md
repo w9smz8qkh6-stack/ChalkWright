@@ -10,6 +10,12 @@ omitted.
 
 ### Changed
 
+- Wired permanent production plan refresh to the credential-free filtered-state
+  reader that consumes the successful headed repair's bounded handoff. The
+  routine unit no longer receives access to the unused Google-bearing retained
+  profile; live production evidence confirmed the filtered reader stored the
+  canonical plan successfully before this wiring change.
+
 - Fixed the production PowerSchool repair handoff to transfer Chalkwright's
   actual protected-state filename into the credential-free routine session
   directory. A successful headed authentication can now complete its atomic
