@@ -39,7 +39,7 @@ const values = Object.fromEntries(
     .map((part) => [part.type, part.value]),
 );
 const date = `${values.year}-${values.month}-${values.day}`;
-if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) process.exit(64);
+if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) process.exit(64);
 process.stdout.write(date);
 ' "$production_config") || reject production-powerschool-repair-date-unavailable
 [[ $repair_date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || reject production-powerschool-repair-date-invalid
