@@ -44,9 +44,10 @@ The constrained root controller stages the fixed repair authority under the
 logged-in desktop owner's private runtime directory and starts the inert
 `chalkwright-powerschool-repair.service` through that owner's systemd user
 manager. The user manager supplies the real graphical-session environment;
-Chrome uses only Chalkwright's dedicated persistent profile. On success the
+Chrome uses only a fresh profile beneath the private repair runtime. On success the
 controller copies only validated, filtered PowerSchool state to the
-credential-free routine account and deletes the temporary authority. The
+credential-free routine account and deletes the temporary authority and
+high-authority browser profile. The
 repair has no timer and neither invokes nor depends on OpenClaw.
 
 Before the deploy timer is active, an operator can trigger the same fixed

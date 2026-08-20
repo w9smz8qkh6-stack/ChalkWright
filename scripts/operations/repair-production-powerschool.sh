@@ -8,7 +8,7 @@ root=/usr/local/lib/chalkwright-production-admin
 release=/opt/chalkwright/current
 unit=chalkwright-powerschool-repair.service
 desktop_user=bren
-desktop_profile=/var/lib/chalkwright/production-powerschool-desktop-profile
+desktop_profile=
 desktop_session=/var/lib/chalkwright/production-powerschool-repair-session
 routine_session=/var/lib/chalkwright/production-session
 source_plan_environment=/etc/chalkwright/production/jobs/plan-refresh.env
@@ -38,6 +38,7 @@ desktop_xauthority=$(/usr/sbin/runuser -u "$desktop_user" -- /usr/bin/env XDG_RU
 [[ $desktop_xauthority == "$desktop_runtime"/* && -f $desktop_xauthority && ! -L $desktop_xauthority && $(/usr/bin/stat -c %U "$desktop_xauthority") == "$desktop_user" && $(/usr/bin/stat -c %a "$desktop_xauthority") == 600 && $(/usr/bin/stat -c %h "$desktop_xauthority") == 1 ]] || reject production-powerschool-repair-desktop-authority-unsafe
 runtime=$desktop_runtime/chalkwright-production-repair
 desktop_provider=$runtime/provider
+desktop_profile=$runtime/profile
 desktop_plan_environment=$runtime/plan-refresh.env
 desktop_environment=$runtime/desktop-repair.env
 repair_date=$(/usr/bin/node -e '
@@ -64,6 +65,7 @@ CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY="$desktop_profile"
 CLASSROOM_HUB_POWERSCHOOL_ONEPASSWORD_SERVICE_ACCOUNT_ENV="$desktop_provider/onepassword-service-account.env"
 CLASSROOM_HUB_POWERSCHOOL_REPAIR_REFERENCE="$desktop_provider/repair-references.json"
 CHALKWRIGHT_M17_REPAIR_DATE="$repair_date"
+HOME="$desktop_profile"
 EOF
 /usr/bin/chown "$desktop_user:$desktop_user" "$desktop_environment"
 /usr/bin/chmod 0600 "$desktop_environment"

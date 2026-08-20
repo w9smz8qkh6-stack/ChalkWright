@@ -10,6 +10,15 @@ omitted.
 
 ### Changed
 
+- Completed the legacy-compatible PowerSchool repair boundary by permitting
+  ordinary non-top-level HTTPS GET/HEAD/OPTIONS/POST traffic required by the
+  identity page, while direct PowerSchool POST remains blocked except for the
+  single expected SSO return and PUT/PATCH/DELETE remain blocked. The headed
+  high-authority repair now uses a fresh runtime-owned profile on every
+  invocation and retains only validated filtered PowerSchool state, avoiding
+  installed Chrome's repeat-headed-profile crash without weakening the
+  separate credential-free routine reader.
+
 - Replaced the PowerSchool authentication browser's brittle third-party
   subresource-host allowlist with the proven legacy-compatible boundary:
   ordinary non-top-level HTTPS GET/HEAD resources may load, while top-level

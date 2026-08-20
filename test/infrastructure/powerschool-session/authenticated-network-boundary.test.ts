@@ -141,7 +141,7 @@ test('recognizes only HTTPS PowerSchool same-site resource origins', () => {
   );
 });
 
-test('allows legacy-compatible same-site sibling methods without allowing PowerSchool writes', () => {
+test('allows legacy-compatible HTTPS auth methods without allowing PowerSchool writes', () => {
   const sibling = new URL('https://assets-sis.school.example.co.uk/beacon');
   assert.equal(
     isAllowedBrowserResourceMethod({
@@ -179,6 +179,22 @@ test('allows legacy-compatible same-site sibling methods without allowing PowerS
     isAllowedBrowserResourceMethod({
       method: 'POST',
       url: new URL('https://ssl.gstatic.com/report'),
+      powerSchoolOrigin,
+    }),
+    true,
+  );
+  assert.equal(
+    isAllowedBrowserResourceMethod({
+      method: 'OPTIONS',
+      url: new URL('https://current-cdn.invalid/preflight'),
+      powerSchoolOrigin,
+    }),
+    true,
+  );
+  assert.equal(
+    isAllowedBrowserResourceMethod({
+      method: 'DELETE',
+      url: new URL('https://current-cdn.invalid/resource'),
       powerSchoolOrigin,
     }),
     false,

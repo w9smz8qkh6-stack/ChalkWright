@@ -63,10 +63,11 @@ test('production sudo policy pins the current deploy controller digest', () => {
 
 test('headed PowerSchool repair uses the desktop owner user manager', () => {
   assert.match(repair, /desktop_user=bren/u);
-  assert.match(repair, /production-powerschool-desktop-profile/u);
+  assert.match(repair, /desktop_profile=\$runtime\/profile/u);
   assert.match(repair, /production-powerschool-repair-session/u);
   assert.match(repair, /desktop_provider=\$runtime\/provider/u);
   assert.match(repair, /CHALKWRIGHT_M17_REPAIR_DATE/u);
+  assert.match(repair, /^HOME="\$desktop_profile"$/mu);
   assert.match(repair, /\/etc\/systemd\/user\/\$unit/u);
   assert.match(repair, /\/usr\/bin\/systemctl --user/u);
   assert.match(repair, /"\$\{user_systemctl\[@\]\}" start "\$unit"/u);
@@ -90,6 +91,7 @@ test('headed PowerSchool repair inherits the user manager desktop with dedicated
     repairUnit,
     /EnvironmentFile=%t\/chalkwright-production-repair\/desktop-repair\.env/u,
   );
+  assert.doesNotMatch(repairUnit, /^Environment=HOME=/mu);
   assert.match(repairUnit, /^UnsetEnvironment=.*OP_SERVICE_ACCOUNT_TOKEN/mu);
   assert.doesNotMatch(
     repairUnit,
