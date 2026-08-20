@@ -11,7 +11,7 @@ deploy_root=/var/lib/chalkwright/deploy
 source_root="$deploy_root/source"
 archive_root="$deploy_root/archives"
 release_root=/opt/chalkwright
-units=(
+system_units=(
   chalkwright.service
   chalkwright-backup.service
   chalkwright-backup.timer
@@ -25,8 +25,8 @@ units=(
   chalkwright-integrity.timer
   chalkwright-plan-refresh.service
   chalkwright-plan-refresh.timer
-  chalkwright-powerschool-repair.service
 )
+user_unit=chalkwright-powerschool-repair.service
 for path in /etc/chalkwright/production/server.json /etc/chalkwright/production/calendar.json /etc/chalkwright/production/jobs/plan-refresh.env /etc/chalkwright/production/jobs/classroom-refresh.env /etc/chalkwright/production/jobs/maintenance.env; do
   [[ -f $path && ! -L $path ]] || reject production-provision-config-missing
 done
@@ -37,9 +37,10 @@ created_source=0
 created_units=0
 cleanup() {
   [[ $created_units -eq 0 ]] || {
-    for unit in "${units[@]}"; do
+    for unit in "${system_units[@]}"; do
       [[ -f "/etc/systemd/system/$unit" && ! -L "/etc/systemd/system/$unit" ]] && /usr/bin/rm -f -- "/etc/systemd/system/$unit"
     done
+    [[ -f "/etc/systemd/user/$user_unit" && ! -L "/etc/systemd/user/$user_unit" ]] && /usr/bin/rm -f -- "/etc/systemd/user/$user_unit"
     /usr/bin/systemctl daemon-reload || true
   }
   [[ $created_source -eq 0 ]] || /usr/bin/rm -rf -- "$source_root"
@@ -60,14 +61,18 @@ archive="$archive_root/chalkwright-production-$digest.tar.gz"
 /usr/bin/mv "$temporary_archive" "$archive"
 /usr/bin/bash "$source_root/scripts/operations/install-production-release.sh" "$archive" "$digest"
 release="$release_root/releases/$digest"
-for unit in "${units[@]}"; do
+for unit in "${system_units[@]}"; do
   [[ ! -e "/etc/systemd/system/$unit" && ! -L "/etc/systemd/system/$unit" ]] || reject production-provision-unit-exists
 done
+[[ ! -e "/etc/systemd/user/$user_unit" && ! -L "/etc/systemd/user/$user_unit" ]] || reject production-provision-unit-exists
 created_units=1
 for unit_source in "$release"/systemd/production/*.service.in "$release"/systemd/production/*.timer.in; do
   unit=$(/usr/bin/basename "$unit_source" .in)
+  [[ $unit != "$user_unit" ]] || continue
   /usr/bin/install -o root -g root -m 0644 "$unit_source" "/etc/systemd/system/$unit"
 done
+/usr/bin/install -d -o root -g root -m 0755 /etc/systemd/user
+/usr/bin/install -o root -g root -m 0644 "$release/systemd/production/$user_unit.in" "/etc/systemd/user/$user_unit"
 /usr/bin/systemctl daemon-reload
 /usr/bin/bash "$source_root/scripts/operations/switch-production-release.sh" "$digest" >/dev/null
 created_units=0

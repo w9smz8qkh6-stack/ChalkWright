@@ -293,24 +293,30 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'utf8',
   );
   for (const required of [
-    'EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env',
-    'EnvironmentFile=/run/chalkwright-production-repair/desktop-repair.env',
-    'User=bren',
-    'Group=bren',
+    'EnvironmentFile=%t/chalkwright-production-repair/plan-refresh.env',
+    'EnvironmentFile=%t/chalkwright-production-repair/desktop-repair.env',
     'Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0',
-    'Environment=DISPLAY=:0',
     'RuntimeDirectory=chalkwright-powerschool-repair-client',
     'RuntimeDirectoryMode=0700',
-    'Environment=TMPDIR=/run/chalkwright-powerschool-repair-client',
+    'Environment=TMPDIR=%t/chalkwright-powerschool-repair-client',
+    'UnsetEnvironment=OP_ACCOUNT OP_CONNECT_TOKEN OP_SERVICE_ACCOUNT_TOKEN',
     'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js',
-    'ReadWritePaths=/var/lib/chalkwright/production-powerschool-desktop-profile /var/lib/chalkwright/production-powerschool-repair-session',
-    'RestrictNamespaces=~cgroup ipc uts time',
+    'MemoryMax=768M',
+    'TasksMax=192',
   ])
     if (!repair.includes(required))
       fail(`chalkwright-powerschool-repair.service.in is missing ${required}`);
-  if (repair.includes('PrivateTmp=true'))
+  if (/^(?:User|Group|Environment=DISPLAY)=/mu.test(repair))
     fail(
-      'chalkwright-powerschool-repair.service.in isolates its required X socket',
+      'chalkwright-powerschool-repair.service.in bypasses its user-manager desktop environment',
+    );
+  if (
+    /^(?:NoNewPrivileges|PrivateDevices|ProtectHome|ProtectSystem|RestrictNamespaces|RestrictSUIDSGID)=/mu.test(
+      repair,
+    )
+  )
+    fail(
+      'chalkwright-powerschool-repair.service.in blocks the enabled Chrome sandbox in a user manager',
     );
   const planRefresh = readFileSync(
     join(production, 'chalkwright-plan-refresh.service.in'),

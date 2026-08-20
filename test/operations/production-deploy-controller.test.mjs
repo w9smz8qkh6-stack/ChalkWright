@@ -61,33 +61,42 @@ test('production sudo policy pins the current deploy controller digest', () => {
   );
 });
 
-test('headed PowerSchool repair uses a desktop-owner staging lane', () => {
+test('headed PowerSchool repair uses the desktop owner user manager', () => {
   assert.match(repair, /desktop_user=bren/u);
   assert.match(repair, /production-powerschool-desktop-profile/u);
   assert.match(repair, /production-powerschool-repair-session/u);
   assert.match(repair, /desktop_provider=\$runtime\/provider/u);
   assert.match(repair, /CHALKWRIGHT_M17_REPAIR_DATE/u);
+  assert.match(repair, /\/etc\/systemd\/user\/\$unit/u);
+  assert.match(repair, /\/usr\/bin\/systemctl --user/u);
+  assert.match(repair, /"\$\{user_systemctl\[@\]\}" start "\$unit"/u);
+  assert.match(repair, /desktop_xauthority == "\$desktop_runtime"\/\*/u);
   assert.match(
     repair,
     /if \(!\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(date\)\)/u,
   );
   assert.doesNotMatch(repair, /if \(!\/\^\\\\d/u);
   assert.match(repair, /powerschool-session\.json/u);
-  assert.match(repair, /systemctl start "\$unit"/u);
-  assert.doesNotMatch(repair, /Xvfb|xhost|xauth|--no-sandbox|openclaw/iu);
+  assert.doesNotMatch(repair, /^XAUTHORITY=/mu);
+  assert.doesNotMatch(
+    repair,
+    /Xvfb|xhost|\/usr\/bin\/xauth|--no-sandbox|openclaw/iu,
+  );
 });
 
-test('headed PowerSchool repair runs as the desktop owner with dedicated paths', () => {
-  assert.match(repairUnit, /^User=bren$/mu);
-  assert.match(repairUnit, /^Group=bren$/mu);
+test('headed PowerSchool repair inherits the user manager desktop with dedicated paths', () => {
+  assert.doesNotMatch(repairUnit, /^(?:User|Group|Environment=DISPLAY)=/mu);
   assert.match(
     repairUnit,
-    /EnvironmentFile=\/run\/chalkwright-production-repair\/desktop-repair\.env/u,
+    /EnvironmentFile=%t\/chalkwright-production-repair\/desktop-repair\.env/u,
   );
-  assert.match(
+  assert.match(repairUnit, /^UnsetEnvironment=.*OP_SERVICE_ACCOUNT_TOKEN/mu);
+  assert.doesNotMatch(
     repairUnit,
-    /ReadWritePaths=\/var\/lib\/chalkwright\/production-powerschool-desktop-profile \/var\/lib\/chalkwright\/production-powerschool-repair-session/u,
+    /^(?:NoNewPrivileges|PrivateDevices|ProtectHome|ProtectSystem|RestrictNamespaces|RestrictSUIDSGID)=/mu,
   );
+  assert.match(repairUnit, /^MemoryMax=768M$/mu);
+  assert.match(repairUnit, /^TasksMax=192$/mu);
 });
 
 test('production sudo policy pins the current PowerSchool repair controller digest', () => {
