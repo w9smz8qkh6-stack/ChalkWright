@@ -355,6 +355,13 @@ filtered PowerSchool state to the routine account, and removes the staging
 directory. Routine retained-profile collection neither depends on nor can
 obtain the user repair unit or its temporary 1Password authority.
 
+The authentication request boundary keeps ordinary top-level PowerSchool
+navigations GET/HEAD-only. After it observes a top-level request to the fixed
+Google identity origin, it may consume exactly one top-level PowerSchool POST
+as the SSO authentication return; no other PowerSchool POST is allowed. A
+blocked request crosses the supervisor boundary only as a fixed violation
+category, never as a URL, body, response, or provider value.
+
 The user then authorized exactly one such live gate for 2026-08-11. The fixed
 service-account-backed 1Password handoff completed far enough to launch the
 direct-CDP browser, but Google again returned the sanitized

@@ -597,6 +597,38 @@ test('JIT repair supervisor requires presence confirmation and sends secrets onl
       },
     });
 
+    const policyDiagnostic = await runPowerSchoolJitRepairSupervisor({
+      arguments: ['--operator-present', '2035-04-13'],
+      environment,
+      secretReader: async () => ({
+        username: Buffer.from('teacher@example.invalid'),
+        password: Buffer.from('synthetic-password'),
+        totp: Buffer.from('123456'),
+      }),
+      childRunner: async (options) => {
+        options.input?.fill(0);
+        return {
+          status: 'completed',
+          output: JSON.stringify({
+            exitCode: 1,
+            result: {
+              status: 'failed',
+              code: 'repair-policy-violation',
+              policyReason: 'powerschool-method-blocked',
+            },
+          }),
+        };
+      },
+    });
+    assert.deepEqual(policyDiagnostic, {
+      exitCode: 1,
+      result: {
+        status: 'failed',
+        code: 'repair-policy-violation',
+        policyReason: 'powerschool-method-blocked',
+      },
+    });
+
     const malformedDiagnostic = await runPowerSchoolJitRepairSupervisor({
       arguments: ['--operator-present', '2035-04-13'],
       environment,

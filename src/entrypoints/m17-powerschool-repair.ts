@@ -98,7 +98,9 @@ function sanitize(
           code:
             output.result.code === 'unexpected-challenge'
               ? `unexpected-challenge-${output.result.challengeCategory}`
-              : output.result.code,
+              : output.result.code === 'repair-policy-violation'
+                ? `repair-policy-violation-${output.result.policyReason}`
+                : output.result.code,
         };
   }
   return {

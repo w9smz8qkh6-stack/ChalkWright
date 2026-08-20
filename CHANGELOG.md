@@ -10,6 +10,13 @@ omitted.
 
 ### Changed
 
+- Matched the proven PowerSchool authentication return policy by permitting
+  exactly one top-level PowerSchool POST only after a top-level Google identity
+  navigation, then consuming that permission. Every other top-level
+  PowerSchool POST remains blocked. Repair policy failures now retain only the
+  existing finite violation category for diagnosis, without URLs, request
+  bodies, provider content, or credentials.
+
 - Fixed the production PowerSchool repair's temporary 1Password CLI
   configuration and CLI temporary-directory environment to use the service
   unit's private runtime directory. This preserves the read-only systemd
