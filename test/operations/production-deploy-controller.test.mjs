@@ -67,6 +67,9 @@ test('headed PowerSchool repair uses a desktop-owner staging lane', () => {
   assert.match(repair, /production-powerschool-repair-session/u);
   assert.match(repair, /desktop_provider=\$runtime\/provider/u);
   assert.match(repair, /CHALKWRIGHT_M17_REPAIR_DATE/u);
+  assert.match(repair, /XDG_RUNTIME_DIR="\$desktop_runtime"/u);
+  assert.match(repair, /XAUTHORITY="\$desktop_xauthority"/u);
+  assert.match(repair, /desktop_xauthority == "\$desktop_runtime"\/\*/u);
   assert.match(
     repair,
     /if \(!\/\^\\d\{4\}-\\d\{2\}-\\d\{2\}\$\/\.test\(date\)\)/u,
@@ -74,7 +77,10 @@ test('headed PowerSchool repair uses a desktop-owner staging lane', () => {
   assert.doesNotMatch(repair, /if \(!\/\^\\\\d/u);
   assert.match(repair, /powerschool-session\.json/u);
   assert.match(repair, /systemctl start "\$unit"/u);
-  assert.doesNotMatch(repair, /Xvfb|xhost|xauth|--no-sandbox|openclaw/iu);
+  assert.doesNotMatch(
+    repair,
+    /Xvfb|xhost|\/usr\/bin\/xauth|--no-sandbox|openclaw/iu,
+  );
 });
 
 test('headed PowerSchool repair runs as the desktop owner with dedicated paths', () => {

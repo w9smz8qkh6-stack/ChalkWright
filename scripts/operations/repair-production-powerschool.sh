@@ -28,8 +28,12 @@ cleanup() {
   fi
 }
 trap cleanup EXIT INT TERM
-[[ -x /usr/bin/node && -x /usr/bin/install && -d "/home/$desktop_user" && ! -L "/home/$desktop_user" ]] || reject production-powerschool-repair-controller-invalid
+[[ -x /usr/bin/node && -x /usr/bin/install && -x /usr/bin/loginctl && -x /usr/sbin/runuser && -d "/home/$desktop_user" && ! -L "/home/$desktop_user" ]] || reject production-powerschool-repair-controller-invalid
 [[ -L $release && -f "$release/dist/entrypoints/m17-powerschool-repair.js" && -f "$release/systemd/production/$unit.in" ]] || reject production-powerschool-repair-release-invalid
+desktop_runtime=$(/usr/bin/loginctl show-user "$desktop_user" -p RuntimePath --value) || reject production-powerschool-repair-desktop-runtime-unavailable
+desktop_xauthority=$(/usr/sbin/runuser -u "$desktop_user" -- /usr/bin/env XDG_RUNTIME_DIR="$desktop_runtime" /usr/bin/systemctl --user show-environment | /usr/bin/sed -n 's/^XAUTHORITY=//p') || reject production-powerschool-repair-desktop-authority-unavailable
+[[ $desktop_runtime == /run/user/* && -d $desktop_runtime && ! -L $desktop_runtime && $(/usr/bin/stat -c %U "$desktop_runtime") == "$desktop_user" && $(/usr/bin/stat -c %a "$desktop_runtime") == 700 ]] || reject production-powerschool-repair-desktop-runtime-unsafe
+[[ $desktop_xauthority == "$desktop_runtime"/* && -f $desktop_xauthority && ! -L $desktop_xauthority && $(/usr/bin/stat -c %U "$desktop_xauthority") == "$desktop_user" && $(/usr/bin/stat -c %a "$desktop_xauthority") == 600 && $(/usr/bin/stat -c %h "$desktop_xauthority") == 1 ]] || reject production-powerschool-repair-desktop-authority-unsafe
 repair_date=$(/usr/bin/node -e '
 const fs = require("node:fs");
 const config = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
@@ -53,6 +57,8 @@ CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY="$desktop_profile"
 CLASSROOM_HUB_POWERSCHOOL_ONEPASSWORD_SERVICE_ACCOUNT_ENV="$desktop_provider/onepassword-service-account.env"
 CLASSROOM_HUB_POWERSCHOOL_REPAIR_REFERENCE="$desktop_provider/repair-references.json"
 CHALKWRIGHT_M17_REPAIR_DATE="$repair_date"
+XDG_RUNTIME_DIR="$desktop_runtime"
+XAUTHORITY="$desktop_xauthority"
 EOF
 /usr/bin/chown root:root "$desktop_environment"
 /usr/bin/chmod 0600 "$desktop_environment"

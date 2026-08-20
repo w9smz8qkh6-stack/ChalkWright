@@ -26,6 +26,11 @@ omitted.
   school date required by the desktop repair. The protected production server
   reference itself remains inaccessible to that desktop-owned process.
 
+- The headed repair controller now passes the validated desktop runtime and
+  Xauthority paths to its `bren`-owned browser process, allowing it to use the
+  existing graphical session without copying its authority file or granting
+  another account display access.
+
 - Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
   worker with the managed Playwright persistent-context launch used by the
   proven legacy repair model. The Chalkwright-owned profile, enabled Chrome
