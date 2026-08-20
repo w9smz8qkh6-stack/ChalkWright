@@ -10,6 +10,10 @@ omitted.
 
 ### Changed
 
+- Distinguished a PowerSchool repair browser that starts but cannot accept its
+  isolated loopback CDP control connection from a general browser-launch
+  failure, without retaining browser output, credentials, or provider data.
+
 - Fixed production PowerSchool repair browser startup to discard only a
   validated stale local Chrome DevTools endpoint before starting its isolated
   browser, preventing an old loopback port from being mistaken for the new

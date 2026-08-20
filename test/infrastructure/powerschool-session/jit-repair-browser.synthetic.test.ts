@@ -434,6 +434,33 @@ test('only an actual browser launch failure is reported separately', async () =>
   }
 });
 
+test('a refused local CDP control connection is reported without browser detail', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer();
+  const parent = mkdtempSync(join(tmpdir(), 'jit-repair-cdp-unreachable-'));
+  const before = profiles();
+  try {
+    assert.deepEqual(
+      await repairPowerSchoolSessionWithCredentials({
+        config: repairConfig(
+          server.powerSchoolOrigin,
+          server.identityOrigin,
+          join(parent, 'session'),
+        ),
+        requestedDate: date,
+        credentials,
+        launchContext: async () => {
+          throw new Error('powerschool-direct-cdp-unreachable');
+        },
+      }),
+      { status: 'failed', code: 'browser-control-unreachable' },
+    );
+    await waitForProfiles(before);
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
 test('phone approval is observed passively and the browser completes after external approval', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({
     repairFlow: 'phone-approval',

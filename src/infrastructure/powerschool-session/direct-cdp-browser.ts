@@ -163,7 +163,9 @@ async function connectDirectCdpBrowser(options: {
       await new Promise<void>((resolveWait) => setTimeout(resolveWait, 25));
     }
   }
-  throw lastRefusal ?? new Error('powerschool-direct-chrome-timeout');
+  if (lastRefusal !== undefined)
+    throw new Error('powerschool-direct-cdp-unreachable');
+  throw new Error('powerschool-direct-chrome-timeout');
 }
 
 async function waitForDevToolsEndpoint(options: {

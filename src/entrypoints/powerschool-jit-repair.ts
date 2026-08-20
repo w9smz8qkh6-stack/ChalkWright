@@ -306,6 +306,7 @@ function isRepairResult(
     [
       'aborted',
       'browser-launch-failed',
+      'browser-control-unreachable',
       'browser-unavailable',
       'collector-already-running',
       'credential-rejected',

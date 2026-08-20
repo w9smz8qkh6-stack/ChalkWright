@@ -38,6 +38,7 @@ export type PowerSchoolJitRepairResult =
       readonly code:
         | 'aborted'
         | 'browser-launch-failed'
+        | 'browser-control-unreachable'
         | 'browser-unavailable'
         | 'collector-already-running'
         | 'credential-rejected'
@@ -230,9 +231,15 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
     if (safety?.violation === true) {
       return { status: 'failed', code: 'repair-policy-violation' };
     }
-    return browserLaunched
-      ? unexpectedChallenge('unclassified')
-      : { status: 'failed', code: 'browser-launch-failed' };
+    if (browserLaunched) return unexpectedChallenge('unclassified');
+    return {
+      status: 'failed',
+      code:
+        error instanceof Error &&
+        error.message === 'powerschool-direct-cdp-unreachable'
+          ? 'browser-control-unreachable'
+          : 'browser-launch-failed',
+    };
   } finally {
     operationSignal.removeEventListener('abort', closeOnAbort);
     options.signal?.removeEventListener('abort', recordCallerAbort);
