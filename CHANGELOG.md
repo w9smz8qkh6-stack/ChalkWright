@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Fixed production PowerSchool repair browser startup to discard only a
+  validated stale local Chrome DevTools endpoint before starting its isolated
+  browser, preventing an old loopback port from being mistaken for the new
+  repair browser.
+
 - Fixed production PowerSchool repair browser startup to tolerate Chrome's
   brief local DevTools-endpoint readiness race with short bounded local retries,
   without weakening its bounded loopback-only connection policy.

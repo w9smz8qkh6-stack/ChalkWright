@@ -5,6 +5,7 @@ import {
   fstatSync,
   openSync,
   readFileSync,
+  unlinkSync,
 } from 'node:fs';
 import { join } from 'node:path';
 
@@ -32,6 +33,7 @@ export async function launchDirectCdpPowerSchoolSession(options: {
   readonly environment?: NodeJS.ProcessEnv;
   readonly signal?: AbortSignal;
 }): Promise<DirectCdpPowerSchoolSession> {
+  clearStaleDevToolsEndpoint(options.profileDirectory);
   const arguments_ = [
     '--disable-background-networking',
     '--disable-component-update',
@@ -89,6 +91,37 @@ export async function launchDirectCdpPowerSchoolSession(options: {
     await close();
     if (options.signal?.aborted === true) throw options.signal.reason;
     throw error;
+  }
+}
+
+function clearStaleDevToolsEndpoint(profileDirectory: string): void {
+  const path = join(profileDirectory, 'DevToolsActivePort');
+  let descriptor: number;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch (error: unknown) {
+    if (isErrno(error, 'ENOENT')) return;
+    throw new Error('powerschool-direct-chrome-endpoint-unsafe');
+  }
+  try {
+    const state = fstatSync(descriptor);
+    if (
+      !state.isFile() ||
+      state.nlink !== 1 ||
+      state.uid !== effectiveUid() ||
+      state.size < 3 ||
+      state.size > 1_024
+    ) {
+      throw new Error('powerschool-direct-chrome-endpoint-unsafe');
+    }
+  } finally {
+    closeSync(descriptor);
+  }
+  try {
+    unlinkSync(path);
+  } catch (error: unknown) {
+    if (isErrno(error, 'ENOENT')) return;
+    throw new Error('powerschool-direct-chrome-endpoint-unsafe');
   }
 }
 
