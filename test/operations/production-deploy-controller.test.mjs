@@ -76,6 +76,10 @@ test('headed PowerSchool repair runs as the desktop owner with dedicated paths',
   assert.match(repairUnit, /^Group=bren$/mu);
   assert.match(
     repairUnit,
+    /^Environment=CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=\/etc\/chalkwright\/production\/server\.json$/mu,
+  );
+  assert.match(
+    repairUnit,
     /EnvironmentFile=\/run\/chalkwright-production-repair\/desktop-repair\.env/u,
   );
   assert.match(
