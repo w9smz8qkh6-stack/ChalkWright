@@ -151,6 +151,7 @@ function sanitizedOnePasswordEnvironment(
     'LANG',
     'OP_ACCOUNT',
     'SSH_AUTH_SOCK',
+    'TMPDIR',
     'WAYLAND_DISPLAY',
     'XDG_CONFIG_HOME',
     'XDG_RUNTIME_DIR',

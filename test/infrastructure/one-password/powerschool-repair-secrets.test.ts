@@ -34,11 +34,13 @@ test('uses only fixed op read arguments and returns destroyable buffers', async 
       HOME: '/tmp/synthetic-home',
       OP_ACCOUNT: 'synthetic-account',
       OP_SERVICE_ACCOUNT_TOKEN: 'must-not-propagate',
+      TMPDIR: '/tmp/synthetic-runtime',
       CLASSROOM_HUB_POWERSCHOOL_GOOGLE_PASSWORD: 'must-not-propagate',
     },
     execute: async (executable, arguments_, options) => {
       calls.push({ executable, arguments_ });
       assert.equal(options.environment.OP_SERVICE_ACCOUNT_TOKEN, undefined);
+      assert.equal(options.environment.TMPDIR, '/tmp/synthetic-runtime');
       assert.equal(
         options.environment.CLASSROOM_HUB_POWERSCHOOL_GOOGLE_PASSWORD,
         undefined,
