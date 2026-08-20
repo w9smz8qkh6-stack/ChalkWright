@@ -10,6 +10,10 @@ omitted.
 
 ### Changed
 
+- Fixed production PowerSchool repair browser startup to tolerate Chrome's
+  brief local DevTools-endpoint readiness race without weakening its bounded
+  loopback-only connection policy.
+
 - Distinguished a PowerSchool repair browser-launch failure from other browser
   unavailability. The bounded operator result remains free of credentials,
   provider data, and raw browser errors while allowing production recovery to
