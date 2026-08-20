@@ -296,9 +296,18 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env',
     'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js',
     'ReadWritePaths=/var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile',
+    'RestrictNamespaces=~cgroup ipc uts time',
   ])
     if (!repair.includes(required))
       fail(`chalkwright-powerschool-repair.service.in is missing ${required}`);
+  const planRefresh = readFileSync(
+    join(production, 'chalkwright-plan-refresh.service.in'),
+    'utf8',
+  );
+  if (!planRefresh.includes('RestrictNamespaces=~cgroup ipc uts time'))
+    fail(
+      'chalkwright-plan-refresh.service.in is missing the Chromium namespace policy',
+    );
   for (const name of [
     'chalkwright-backup.service.in',
     'chalkwright-integrity.service.in',

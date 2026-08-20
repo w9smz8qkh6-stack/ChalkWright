@@ -10,6 +10,10 @@ omitted.
 
 ### Changed
 
+- Adjusted the production PowerSchool repair and retained-plan units to allow
+  Chromium's required mount namespace while continuing to deny cgroup, IPC,
+  UTS, and time namespaces. Chrome's own sandbox remains enabled.
+
 - Gave the isolated PowerSchool repair browser a bounded startup allowance
   separate from its short page-navigation timeout. The existing overall repair
   deadline and cleanup reserve remain authoritative, preventing hardened

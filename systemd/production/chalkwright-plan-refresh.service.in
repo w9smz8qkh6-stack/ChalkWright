@@ -29,7 +29,10 @@ ProtectSystem=strict
 InaccessiblePaths=-/etc/chalkwright/production/providers/google-classroom -/etc/chalkwright/production/providers/google-calendar
 ReadWritePaths=/var/lib/chalkwright/production /var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
-RestrictNamespaces=user pid net
+# Chromium's enabled Linux sandbox also requires mount namespaces. Retain a
+# deny-list for cgroup, IPC, UTS, and time namespaces instead of blocking its
+# required user, PID, network, and mount namespaces.
+RestrictNamespaces=~cgroup ipc uts time
 RestrictRealtime=true
 RestrictSUIDSGID=true
 MemoryMax=768M
