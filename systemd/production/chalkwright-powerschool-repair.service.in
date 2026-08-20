@@ -2,7 +2,8 @@
 # No scheduling or enablement section: this high-authority repair is operator-invoked only.
 [Unit]
 Description=Chalkwright production PowerSchool authentication repair
-After=network-online.target
+Requires=chalkwright-powerschool-repair-display.service
+After=network-online.target chalkwright-powerschool-repair-display.service
 Wants=network-online.target
 
 [Service]
@@ -10,17 +11,26 @@ Type=oneshot
 User=classroom-hub
 Group=classroom-hub
 WorkingDirectory=/opt/chalkwright/current
+RuntimeDirectory=chalkwright-powerschool-repair-client
+RuntimeDirectoryMode=0700
 EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
 EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env
 Environment=NODE_ENV=production
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
+Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0
+Environment=DISPLAY=:99
+Environment=XAUTHORITY=/run/chalkwright-powerschool-repair/Xauthority
+Environment=TMPDIR=/run/chalkwright-powerschool-repair-client
 ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js
 TimeoutStartSec=6min
 TimeoutStopSec=30s
 UMask=0077
 NoNewPrivileges=true
 PrivateDevices=true
-PrivateTmp=true
+# The repair browser uses only the display service's authenticated local X
+# socket. A private /tmp namespace would make that socket unreachable; its
+# writable temporary directory remains its own mode-0700 runtime directory.
+PrivateTmp=false
 ProtectClock=true
 ProtectControlGroups=true
 ProtectHome=true

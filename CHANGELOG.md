@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Added an on-demand, authenticated Xvfb display owned by the standalone
+  service identity for the explicitly invoked PowerSchool repair. It runs a
+  managed headed Chrome context without access to the interactive desktop,
+  legacy profile, or routine-job authority.
+
 - Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
   worker with the managed Playwright persistent-context launch used by the
   proven legacy repair model. The Chalkwright-owned profile, enabled Chrome

@@ -65,9 +65,11 @@ export async function runPowerSchoolJitRepairSupervisor(options: {
   const environment = options.environment ?? process.env;
   let bootstrapConfig;
   let references;
+  let headlessRepair: boolean;
   try {
     bootstrapConfig = loadPowerSchoolBootstrapConfig(environment);
     references = loadPowerSchoolRepairReferences(environment);
+    headlessRepair = resolveHeadlessRepair(environment);
     if (persistentCompatibility)
       loadPowerSchoolPersistentProfileDirectory(environment);
   } catch {
@@ -95,7 +97,6 @@ export async function runPowerSchoolJitRepairSupervisor(options: {
   } catch {
     return { exitCode: 69, errorCode: 'repair-secret-unavailable' };
   }
-  const headlessRepair = serviceAccountToken !== undefined;
   let secrets;
   try {
     secrets = await (options.secretReader ?? readPowerSchoolRepairSecrets)({
@@ -219,8 +220,26 @@ function childEnvironment(
   output.CLASSROOM_HUB_POWERSCHOOL_BOOTSTRAP_TIMEOUT_SECONDS = String(
     bootstrapTimeoutSeconds,
   );
-  if (headlessRepair) output[powerSchoolJitHeadlessEnvironmentName] = '1';
+  output[powerSchoolJitHeadlessEnvironmentName] = headlessRepair ? '1' : '0';
   return output;
+}
+
+/**
+ * The service-account repair retains its original headless default. A
+ * root-owned production unit may explicitly request a headed Chrome context
+ * only for the dedicated, authenticated repair display; routine jobs never
+ * reach this supervisor.
+ */
+function resolveHeadlessRepair(source: NodeJS.ProcessEnv): boolean {
+  const configured = source[powerSchoolJitHeadlessEnvironmentName];
+  if (configured === undefined) {
+    return (
+      source[powerSchoolOnePasswordServiceAccountEnvironmentName] !== undefined
+    );
+  }
+  if (configured === '0') return false;
+  if (configured === '1') return true;
+  throw new Error('powerschool-repair-config-invalid');
 }
 
 function remainingBudget(overallMs: number, startedAt: number): number {
@@ -308,7 +327,6 @@ function isRepairResult(
       'browser-launch-closed',
       'browser-launch-failed',
       'browser-launch-timeout',
-      'browser-control-unreachable',
       'browser-unavailable',
       'collector-already-running',
       'credential-rejected',
