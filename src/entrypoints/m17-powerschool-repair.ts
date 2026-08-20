@@ -1,4 +1,5 @@
 import { loadProductionServerConfig } from '../config/production.js';
+import { isIsoDate } from '../domain/runtime-validation.js';
 import { isDirectEntrypoint } from './direct-invocation.js';
 import type { PowerSchoolJitRepairSupervisorOutput } from './powerschool-jit-repair.js';
 import { runPowerSchoolJitRepairSupervisor } from './powerschool-jit-repair.js';
@@ -28,23 +29,13 @@ export async function runM17PowerSchoolRepair(options: {
       code: 'm17-repair-usage-invalid',
     };
   const environment = options.environment ?? process.env;
-  let date: string;
-  try {
-    const reference = environment.CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE;
-    if (reference === undefined || reference.length === 0)
-      throw new Error('config');
-    const production = loadProductionServerConfig(reference);
-    date = localDate(
-      (options.now ?? (() => new Date().toISOString()))(),
-      production.timeZone,
-    );
-  } catch {
+  const date = repairDate(environment, options.now);
+  if (date === undefined)
     return {
       exitCode: 64,
       status: 'rejected',
       code: 'm17-repair-config-invalid',
     };
-  }
   const output = await (
     options.supervisor ?? runPowerSchoolJitRepairSupervisor
   )({
@@ -53,6 +44,25 @@ export async function runM17PowerSchoolRepair(options: {
     ...(options.signal === undefined ? {} : { signal: options.signal }),
   });
   return sanitize(output);
+}
+
+function repairDate(
+  environment: NodeJS.ProcessEnv,
+  now: (() => string) | undefined,
+): string | undefined {
+  const supplied = environment.CHALKWRIGHT_M17_REPAIR_DATE;
+  if (supplied !== undefined) return isIsoDate(supplied) ? supplied : undefined;
+  try {
+    const reference = environment.CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE;
+    if (reference === undefined || reference.length === 0)
+      throw new Error('config');
+    return localDate(
+      (now ?? (() => new Date().toISOString()))(),
+      loadProductionServerConfig(reference).timeZone,
+    );
+  } catch {
+    return undefined;
+  }
 }
 
 function localDate(instant: string, timeZone: string): string {

@@ -16,6 +16,7 @@ desktop_provider=$runtime/provider
 desktop_environment=$runtime/desktop-repair.env
 source_references=/etc/chalkwright/migration/powerschool-repair-references.json
 source_service_account=/etc/chalkwright/migration/powerschool-onepassword-service-account.env
+production_config=/etc/chalkwright/production/server.json
 candidate=
 cleanup() {
   /usr/bin/rm -f -- "$desktop_environment" || true
@@ -29,6 +30,19 @@ cleanup() {
 trap cleanup EXIT INT TERM
 [[ -x /usr/bin/node && -x /usr/bin/install && -d "/home/$desktop_user" && ! -L "/home/$desktop_user" ]] || reject production-powerschool-repair-controller-invalid
 [[ -L $release && -f "$release/dist/entrypoints/m17-powerschool-repair.js" && -f "$release/systemd/production/$unit.in" ]] || reject production-powerschool-repair-release-invalid
+repair_date=$(/usr/bin/node -e '
+const fs = require("node:fs");
+const config = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const values = Object.fromEntries(
+  new Intl.DateTimeFormat("en-CA", { timeZone: config.timeZone, year: "numeric", month: "2-digit", day: "2-digit" })
+    .formatToParts(new Date())
+    .map((part) => [part.type, part.value]),
+);
+const date = `${values.year}-${values.month}-${values.day}`;
+if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) process.exit(64);
+process.stdout.write(date);
+' "$production_config") || reject production-powerschool-repair-date-unavailable
+[[ $repair_date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || reject production-powerschool-repair-date-invalid
 /usr/bin/install -d -o root -g root -m 0711 "$runtime" || reject production-powerschool-repair-runtime-prepare-failed
 /usr/bin/install -d -o "$desktop_user" -g "$desktop_user" -m 0700 "$desktop_provider" "$desktop_profile" "$desktop_session" || reject production-powerschool-repair-desktop-prepare-failed
 /usr/bin/install -o "$desktop_user" -g "$desktop_user" -m 0600 "$source_references" "$desktop_provider/repair-references.json" || reject production-powerschool-repair-provider-prepare-failed
@@ -38,6 +52,7 @@ CLASSROOM_HUB_POWERSCHOOL_SESSION_DIRECTORY="$desktop_session"
 CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY="$desktop_profile"
 CLASSROOM_HUB_POWERSCHOOL_ONEPASSWORD_SERVICE_ACCOUNT_ENV="$desktop_provider/onepassword-service-account.env"
 CLASSROOM_HUB_POWERSCHOOL_REPAIR_REFERENCE="$desktop_provider/repair-references.json"
+CHALKWRIGHT_M17_REPAIR_DATE="$repair_date"
 EOF
 /usr/bin/chown root:root "$desktop_environment"
 /usr/bin/chmod 0600 "$desktop_environment"

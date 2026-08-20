@@ -22,6 +22,10 @@ omitted.
   ends, and atomically transfers only the bounded, validated PowerSchool
   session state to the credential-free routine account.
 
+- The root repair controller now derives and supplies only the validated local
+  school date required by the desktop repair. The protected production server
+  reference itself remains inaccessible to that desktop-owned process.
+
 - Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
   worker with the managed Playwright persistent-context launch used by the
   proven legacy repair model. The Chalkwright-owned profile, enabled Chrome

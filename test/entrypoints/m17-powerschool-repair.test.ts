@@ -115,6 +115,36 @@ test('fails closed before repair for arguments or invalid production policy', as
   assert.equal(calls, 0);
 });
 
+test('accepts only a validated controller-supplied local date', async () => {
+  let received: readonly string[] = [];
+  const output = await runM17PowerSchoolRepair({
+    arguments: [],
+    environment: { CHALKWRIGHT_M17_REPAIR_DATE: '2026-08-15' },
+    supervisor: async (options) => {
+      received = options.arguments;
+      return {
+        exitCode: 0,
+        result: { status: 'authenticated', phoneApprovalObserved: false },
+      };
+    },
+  });
+  assert.deepEqual(received, [
+    '--operator-present',
+    '--persistent-compatibility',
+    '2026-08-15',
+  ]);
+  assert.equal(output.status, 'authenticated');
+  assert.equal(
+    (
+      await runM17PowerSchoolRepair({
+        arguments: [],
+        environment: { CHALKWRIGHT_M17_REPAIR_DATE: 'invalid' },
+      })
+    ).code,
+    'm17-repair-config-invalid',
+  );
+});
+
 test('installed-release symlink invocation executes the repair entrypoint', () => {
   const root = mkdtempSync(join(tmpdir(), 'm17-repair-entrypoint-link-'));
   try {

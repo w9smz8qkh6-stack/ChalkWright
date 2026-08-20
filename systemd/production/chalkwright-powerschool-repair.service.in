@@ -16,7 +16,6 @@ EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
 EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env
 EnvironmentFile=/run/chalkwright-production-repair/desktop-repair.env
 Environment=NODE_ENV=production
-Environment=CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=/etc/chalkwright/production/server.json
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
 Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0
 Environment=DISPLAY=:0
