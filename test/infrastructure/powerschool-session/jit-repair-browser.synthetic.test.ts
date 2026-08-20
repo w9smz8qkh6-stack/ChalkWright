@@ -494,6 +494,33 @@ test('a refused local CDP control connection is reported without browser detail'
   }
 });
 
+test('a closed managed browser returns a finite launch diagnostic', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer();
+  const parent = mkdtempSync(join(tmpdir(), 'jit-repair-launch-closed-'));
+  const before = profiles();
+  try {
+    assert.deepEqual(
+      await repairPowerSchoolSessionWithCredentials({
+        config: repairConfig(
+          server.powerSchoolOrigin,
+          server.identityOrigin,
+          join(parent, 'session'),
+        ),
+        requestedDate: date,
+        credentials,
+        launchContext: async () => {
+          throw new Error('Target page, context or browser has been closed');
+        },
+      }),
+      { status: 'failed', code: 'browser-launch-closed' },
+    );
+    await waitForProfiles(before);
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
 test('phone approval is observed passively and the browser completes after external approval', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({
     repairFlow: 'phone-approval',

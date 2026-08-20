@@ -305,7 +305,9 @@ function isRepairResult(
     Object.keys(record).sort().join(',') === 'code,status' &&
     [
       'aborted',
+      'browser-launch-closed',
       'browser-launch-failed',
+      'browser-launch-timeout',
       'browser-control-unreachable',
       'browser-unavailable',
       'collector-already-running',

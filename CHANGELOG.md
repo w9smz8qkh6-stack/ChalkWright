@@ -10,6 +10,10 @@ omitted.
 
 ### Changed
 
+- Classified isolated PowerSchool repair browser exits and launch timeouts with
+  finite redacted operator codes, without retaining browser output, provider
+  data, or host details.
+
 - Adjusted the production PowerSchool repair and retained-plan units to allow
   Chromium's required mount namespace while continuing to deny cgroup, IPC,
   UTS, and time namespaces. Chrome's own sandbox remains enabled.
