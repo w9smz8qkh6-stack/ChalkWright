@@ -15,6 +15,10 @@ const repair = readFileSync(
   'scripts/operations/repair-production-powerschool.sh',
   'utf8',
 );
+const repairUnit = readFileSync(
+  'systemd/production/chalkwright-powerschool-repair.service.in',
+  'utf8',
+);
 
 test('production deploy waits for restarted display liveness before rollback', () => {
   const restart = deploy.indexOf('systemctl restart chalkwright.service');
@@ -57,13 +61,27 @@ test('production sudo policy pins the current deploy controller digest', () => {
   );
 });
 
-test('headed PowerSchool repair uses a temporary single-user desktop ACL', () => {
+test('headed PowerSchool repair uses a desktop-owner staging lane', () => {
   assert.match(repair, /desktop_user=bren/u);
-  assert.match(repair, /desktop_display=:0/u);
-  assert.match(repair, /xhost \+SI:localuser:classroom-hub/u);
-  assert.match(repair, /xhost -SI:localuser:classroom-hub/u);
+  assert.match(repair, /production-powerschool-desktop-profile/u);
+  assert.match(repair, /production-powerschool-repair-session/u);
+  assert.match(repair, /desktop_provider=\$runtime\/provider/u);
+  assert.match(repair, /powerschool-session\.json/u);
   assert.match(repair, /systemctl start "\$unit"/u);
-  assert.doesNotMatch(repair, /Xvfb|xauth|--no-sandbox|openclaw/iu);
+  assert.doesNotMatch(repair, /Xvfb|xhost|xauth|--no-sandbox|openclaw/iu);
+});
+
+test('headed PowerSchool repair runs as the desktop owner with dedicated paths', () => {
+  assert.match(repairUnit, /^User=bren$/mu);
+  assert.match(repairUnit, /^Group=bren$/mu);
+  assert.match(
+    repairUnit,
+    /EnvironmentFile=\/run\/chalkwright-production-repair\/desktop-repair\.env/u,
+  );
+  assert.match(
+    repairUnit,
+    /ReadWritePaths=\/var\/lib\/chalkwright\/production-powerschool-desktop-profile \/var\/lib\/chalkwright\/production-powerschool-repair-session/u,
+  );
 });
 
 test('production sudo policy pins the current PowerSchool repair controller digest', () => {

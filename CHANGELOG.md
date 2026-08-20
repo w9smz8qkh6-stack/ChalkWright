@@ -16,10 +16,11 @@ omitted.
   filesystem boundary while allowing the operator-invoked repair to resolve
   its fixed credentials.
 
-- Added an explicit headed mode for the standalone PowerSchool repair. It
-  grants `classroom-hub` access only to Bren's existing local Xwayland display
-  for the duration of the operator-invoked repair, then revokes it. The repair
-  keeps its independent Chalkwright profile and routine-job boundary.
+- Made the standalone headed PowerSchool repair run as the local desktop owner
+  in an independent Chalkwright profile. The root controller stages its
+  one-time provider references only in `/run`, removes them when the repair
+  ends, and atomically transfers only the bounded, validated PowerSchool
+  session state to the credential-free routine account.
 
 - Replaced direct Chrome DevTools attachment in the isolated PowerSchool repair
   worker with the managed Playwright persistent-context launch used by the
