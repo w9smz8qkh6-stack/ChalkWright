@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Simplified the isolated production PowerSchool repair browser handoff by
+  replacing its manually attached DevTools HTTP control channel with the
+  existing sandboxed Playwright-managed launch, while preserving the
+  short-lived repair worker and protected browser profile boundary.
+
 - Distinguished a PowerSchool repair browser that starts but cannot accept its
   isolated loopback CDP control connection from a general browser-launch
   failure, without retaining browser output, credentials, or provider data.

@@ -190,17 +190,11 @@ test('locked browser launch disables downloads and service workers', () => {
   assert.match(source, /chromiumSandbox: true/u);
 });
 
-test('direct CDP repair launch stays sandboxed, local, disposable, and repair-only', () => {
+test('managed repair launch stays sandboxed, disposable, and repair-only', () => {
   const source = read(
     'src/infrastructure/powerschool-session/direct-cdp-browser.ts',
   );
-  assert.match(source, /--remote-debugging-address=127\.0\.0\.1/u);
-  assert.match(source, /--remote-debugging-port=0/u);
-  assert.match(source, /--user-data-dir=/u);
-  assert.match(source, /about:blank/u);
-  assert.match(source, /connectOverCDP/u);
-  assert.match(source, /acceptDownloads: false/u);
-  assert.match(source, /serviceWorkers: 'block'/u);
+  assert.match(source, /launchPowerSchoolSessionContext/u);
   assert.doesNotMatch(source, /--no-sandbox|launchPersistentContext/iu);
 
   for (const path of [
