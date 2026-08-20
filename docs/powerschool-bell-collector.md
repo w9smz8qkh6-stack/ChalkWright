@@ -276,11 +276,13 @@ page; no application navigation occurs until the managed context has its
 guards. The JIT browser installs context-wide HTTP and WebSocket guards before
 navigation, permits PowerSchool GET/HEAD plus expected identity GET/HEAD/POST
 flows, enforces a main-frame navigation count, permits GET/HEAD child-frame
-loads only from the same exact resource-origin allowlist, and treats
+and ordinary subresource loads over HTTPS without trying to predict the
+identity provider's current CDN hostnames, and treats
 non-top-level HTTPS PowerSchool same-site `OPTIONS`/`POST` requests as
 browser-internal resource traffic rather than top-level application writes,
-rejects pre-frame/foreign popups and downloads, and rejects declared oversized
-responses. Browser-
+rejects unrelated non-read resource methods, non-HTTPS resources that were not
+explicitly configured, pre-frame/foreign popups, and downloads, and rejects
+declared oversized responses. Browser-
 native SSO still prevents a hard cap on an undeclared response body, so the
 shared byte value is not represented as a complete JIT transfer cap. Both
 repair paths always remove their temporary profile, and only state filtered to
@@ -518,3 +520,17 @@ origin from migrated browser state or permit a registrable-domain wildcard.
 An explicit list must still include the exact PowerSchool and identity origins
 and may add only individually validated exact origins; it cannot remove the
 fixed reviewed baseline.
+
+The first permanent-production attempt then showed why that fixed static-host
+baseline was the wrong abstraction: the current identity page requested an
+ordinary HTTPS resource from another origin before any credential form was
+submitted. The proven legacy browser did not predict or filter CDN hostnames.
+The standalone repair and retained reader now likewise permit non-top-level
+HTTPS GET/HEAD resources regardless of hostname, while retaining the actual
+security boundary: only the fixed PowerSchool and identity origins may be
+top-level, the single expected PowerSchool SSO-return POST is consumable once,
+unrelated non-read methods remain blocked, and popups, downloads, WebSockets,
+non-HTTP resources, navigation-budget violations, and oversized declared
+responses still fail closed. Explicit origin configuration remains only for
+reviewed HTTP fixtures or other non-HTTPS resources; it is no longer required
+to chase normal HTTPS identity-page dependencies.
