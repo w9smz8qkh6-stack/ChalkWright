@@ -31,7 +31,7 @@ function repairConfig(
   powerSchoolOrigin: string,
   identityOrigin: string,
   sessionDirectory: string,
-  overallTimeoutMs = 20_000,
+  overallTimeoutMs = 30_000,
 ): PowerSchoolBootstrapConfig {
   return {
     powerSchoolOrigin,

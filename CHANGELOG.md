@@ -10,6 +10,11 @@ omitted.
 
 ### Changed
 
+- Fixed the production PowerSchool repair's temporary 1Password CLI
+  configuration to use the service unit's private runtime directory. This
+  preserves the read-only systemd filesystem boundary while allowing the
+  operator-invoked repair to resolve its fixed credentials.
+
 - Added an explicit headed mode for the standalone PowerSchool repair. It
   grants `classroom-hub` access only to Bren's existing local Xwayland display
   for the duration of the operator-invoked repair, then revokes it. The repair

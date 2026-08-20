@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -111,7 +113,10 @@ test('passes explicit service-account authority only to fixed op reads', async (
       assert.equal(arguments_[0], '--config');
       assert.match(
         arguments_[1]!,
-        /^\/tmp\/chalkwright-onepassword-config-[A-Za-z0-9]+$/u,
+        new RegExp(
+          `^${escapeRegExp(join(tmpdir(), 'chalkwright-onepassword-config-'))}[A-Za-z0-9]+$`,
+          'u',
+        ),
       );
       configurationDirectory ??= arguments_[1]!;
       assert.equal(arguments_[1], configurationDirectory);
@@ -162,3 +167,7 @@ test('removes the private service-account configuration after failure', async ()
   );
   serviceAccountToken.fill(0);
 });
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+}

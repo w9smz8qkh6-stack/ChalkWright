@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import {
   lockedOnePasswordExecutable,
@@ -42,7 +44,7 @@ export async function readPowerSchoolRepairSecrets(options: {
   const configurationDirectory =
     options.serviceAccountToken === undefined
       ? undefined
-      : mkdtempSync('/tmp/chalkwright-onepassword-config-');
+      : mkdtempSync(join(tmpdir(), 'chalkwright-onepassword-config-'));
   const acquired: Buffer[] = [];
   try {
     for (const reference of [
