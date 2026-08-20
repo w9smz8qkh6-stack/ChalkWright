@@ -21,6 +21,7 @@ import {
   loadPowerSchoolOnePasswordServiceAccountToken,
   powerSchoolOnePasswordServiceAccountEnvironmentName,
 } from '../infrastructure/one-password/service-account-authority.js';
+import { isAuthenticatedNetworkViolationReason } from '../infrastructure/powerschool-session/authenticated-network-boundary.js';
 import { encodePowerSchoolRepairSecretPacket } from '../infrastructure/powerschool-session/repair-secret-packet.js';
 import { runQuiescentChild } from '../infrastructure/process/quiescent-child.js';
 import type { PowerSchoolJitRepairWorkerOutput } from './powerschool-jit-repair-child.js';
@@ -319,6 +320,12 @@ function isRepairResult(
       ].includes(String(record.challengeCategory))
     );
   }
+  if (record.status === 'failed' && record.code === 'repair-policy-violation') {
+    return (
+      Object.keys(record).sort().join(',') === 'code,policyReason,status' &&
+      isAuthenticatedNetworkViolationReason(record.policyReason)
+    );
+  }
   return (
     record.status === 'failed' &&
     Object.keys(record).sort().join(',') === 'code,status' &&
@@ -330,7 +337,6 @@ function isRepairResult(
       'browser-unavailable',
       'collector-already-running',
       'credential-rejected',
-      'repair-policy-violation',
       'session-state-unsafe',
       'timeout',
     ].includes(String(record.code))

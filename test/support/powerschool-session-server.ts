@@ -32,6 +32,7 @@ export type SyntheticRepairFlow =
   | 'bad-password'
   | 'challenge-selection'
   | 'credentials-totp'
+  | 'credentials-totp-post-return'
   | 'delayed-totp'
   | 'phone-approval'
   | 'try-another-totp'
@@ -150,7 +151,11 @@ function routePowerSchool(
   },
 ): void {
   const url = new URL(request.url ?? '/', options.powerSchoolOrigin);
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
+  if (
+    request.method !== 'GET' &&
+    request.method !== 'HEAD' &&
+    !(url.pathname === '/auth/callback' && request.method === 'POST')
+  ) {
     request.resume();
     respond(response, 405, page('Method rejected', '<main>Rejected</main>'));
     return;
@@ -243,6 +248,7 @@ function routePowerSchool(
     return;
   }
   if (url.pathname === '/auth/callback') {
+    request.resume();
     if (options.bindSessionToUserAgent) {
       options.sessionIdentity.userAgent = request.headers['user-agent'];
     }
@@ -510,6 +516,17 @@ function routeRepairIdentity(
   }
   if (url.pathname === '/totp' && request.method === 'POST') {
     request.resume();
+    if (flow === 'credentials-totp-post-return') {
+      respond(
+        response,
+        200,
+        page(
+          'Synthetic identity accepted',
+          `<form method="post" action="${escapeHtml(returnUrl)}"><input type="hidden" name="synthetic_assertion" value="accepted"></form><script>document.forms[0].submit()</script>`,
+        ),
+      );
+      return;
+    }
     respond(
       response,
       200,

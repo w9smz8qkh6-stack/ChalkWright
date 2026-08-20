@@ -145,6 +145,26 @@ test('accepts only a validated controller-supplied local date', async () => {
   );
 });
 
+test('retains only a finite policy reason from a failed repair', async () => {
+  const output = await runM17PowerSchoolRepair({
+    arguments: [],
+    environment: { CHALKWRIGHT_M17_REPAIR_DATE: '2026-08-15' },
+    supervisor: async () => ({
+      exitCode: 1,
+      result: {
+        status: 'failed',
+        code: 'repair-policy-violation',
+        policyReason: 'powerschool-method-blocked',
+      },
+    }),
+  });
+  assert.deepEqual(output, {
+    exitCode: 1,
+    status: 'failed',
+    code: 'repair-policy-violation-powerschool-method-blocked',
+  });
+});
+
 test('installed-release symlink invocation executes the repair entrypoint', () => {
   const root = mkdtempSync(join(tmpdir(), 'm17-repair-entrypoint-link-'));
   try {

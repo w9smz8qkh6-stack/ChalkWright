@@ -175,6 +175,42 @@ test('fixed username/password/TOTP repair retains only PowerSchool state and ena
   }
 });
 
+test('one identity-observed PowerSchool POST may complete the SSO return', async () => {
+  const server = await startSyntheticPowerSchoolSessionServer({
+    repairFlow: 'credentials-totp-post-return',
+  });
+  const parent = mkdtempSync(join(tmpdir(), 'jit-repair-post-return-'));
+  try {
+    const result = await repairPowerSchoolSessionWithCredentials({
+      config: repairConfig(
+        server.powerSchoolOrigin,
+        server.identityOrigin,
+        join(parent, 'session'),
+      ),
+      requestedDate: date,
+      credentials,
+      launchContext: headlessLauncher,
+    });
+    assert.deepEqual(result, {
+      status: 'authenticated',
+      phoneApprovalObserved: false,
+    });
+    assert.equal(
+      server.requests.some(
+        (request) =>
+          request.origin === 'powerschool' &&
+          request.method === 'POST' &&
+          new URL(request.path, server.powerSchoolOrigin).pathname ===
+            '/auth/callback',
+      ),
+      true,
+    );
+  } finally {
+    await server.close();
+    rmSync(parent, { recursive: true, force: true });
+  }
+});
+
 test('repair reserves a bounded startup allowance without extending page navigation', async () => {
   const server = await startSyntheticPowerSchoolSessionServer({
     repairFlow: 'credentials-totp',

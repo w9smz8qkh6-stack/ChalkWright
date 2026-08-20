@@ -7,46 +7,59 @@ export interface AuthenticatedNavigationSafetyState {
   violation: boolean;
   violationReason?: AuthenticatedNetworkViolationReason;
   topLevelRequests: number;
+  authenticationReturnExpected: boolean;
 }
 
+export const authenticatedNetworkViolationReasons = [
+  'declared-response-oversize',
+  'download-attempted',
+  'identity-method-blocked',
+  'invalid-request-url',
+  'network-control-failed',
+  'popup-attempted',
+  'powerschool-method-blocked',
+  'resource-method-blocked',
+  'resource-origin-blocked-google-accounts-static',
+  'resource-origin-blocked-google-font-css',
+  'resource-origin-blocked-google-other',
+  'resource-origin-blocked-google-user-content',
+  'resource-origin-blocked-non-http',
+  'resource-origin-blocked-powerschool-child',
+  'resource-origin-blocked-powerschool-parent',
+  'resource-origin-blocked-powerschool-sibling-assets',
+  'resource-origin-blocked-powerschool-sibling-assets-child',
+  'resource-origin-blocked-powerschool-sibling-assets-sis-child',
+  'resource-origin-blocked-powerschool-sibling-auth',
+  'resource-origin-blocked-powerschool-sibling-auth-child',
+  'resource-origin-blocked-powerschool-sibling-cdn',
+  'resource-origin-blocked-powerschool-sibling-cdn-child',
+  'resource-origin-blocked-powerschool-sibling-login',
+  'resource-origin-blocked-powerschool-sibling-login-child',
+  'resource-origin-blocked-powerschool-sibling-other',
+  'resource-origin-blocked-powerschool-sibling-sso',
+  'resource-origin-blocked-powerschool-sibling-sso-child',
+  'resource-origin-blocked-powerschool-sibling-static',
+  'resource-origin-blocked-powerschool-sibling-static-child',
+  'resource-origin-blocked-powerschool-sibling-www',
+  'resource-origin-blocked-powerschool-sibling-www-child',
+  'resource-origin-blocked-powerschool-sibling',
+  'resource-origin-blocked',
+  'top-level-budget-exceeded',
+  'top-level-origin-blocked',
+  'untrusted-navigation',
+  'websocket-attempted',
+] as const;
+
 export type AuthenticatedNetworkViolationReason =
-  | 'declared-response-oversize'
-  | 'download-attempted'
-  | 'identity-method-blocked'
-  | 'invalid-request-url'
-  | 'network-control-failed'
-  | 'popup-attempted'
-  | 'powerschool-method-blocked'
-  | 'resource-method-blocked'
-  | 'resource-origin-blocked-google-accounts-static'
-  | 'resource-origin-blocked-google-font-css'
-  | 'resource-origin-blocked-google-other'
-  | 'resource-origin-blocked-google-user-content'
-  | 'resource-origin-blocked-non-http'
-  | 'resource-origin-blocked-powerschool-child'
-  | 'resource-origin-blocked-powerschool-parent'
-  | 'resource-origin-blocked-powerschool-sibling-assets'
-  | 'resource-origin-blocked-powerschool-sibling-assets-child'
-  | 'resource-origin-blocked-powerschool-sibling-assets-sis-child'
-  | 'resource-origin-blocked-powerschool-sibling-auth'
-  | 'resource-origin-blocked-powerschool-sibling-auth-child'
-  | 'resource-origin-blocked-powerschool-sibling-cdn'
-  | 'resource-origin-blocked-powerschool-sibling-cdn-child'
-  | 'resource-origin-blocked-powerschool-sibling-login'
-  | 'resource-origin-blocked-powerschool-sibling-login-child'
-  | 'resource-origin-blocked-powerschool-sibling-other'
-  | 'resource-origin-blocked-powerschool-sibling-sso'
-  | 'resource-origin-blocked-powerschool-sibling-sso-child'
-  | 'resource-origin-blocked-powerschool-sibling-static'
-  | 'resource-origin-blocked-powerschool-sibling-static-child'
-  | 'resource-origin-blocked-powerschool-sibling-www'
-  | 'resource-origin-blocked-powerschool-sibling-www-child'
-  | 'resource-origin-blocked-powerschool-sibling'
-  | 'resource-origin-blocked'
-  | 'top-level-budget-exceeded'
-  | 'top-level-origin-blocked'
-  | 'untrusted-navigation'
-  | 'websocket-attempted';
+  (typeof authenticatedNetworkViolationReasons)[number];
+
+export function isAuthenticatedNetworkViolationReason(
+  value: unknown,
+): value is AuthenticatedNetworkViolationReason {
+  return authenticatedNetworkViolationReasons.some(
+    (candidate) => candidate === value,
+  );
+}
 
 /**
  * Installs the shared browser-network boundary used by the explicit repair and
@@ -62,6 +75,7 @@ export async function installAuthenticatedNetworkBoundary(options: {
   const state: AuthenticatedNavigationSafetyState = {
     violation: false,
     topLevelRequests: 0,
+    authenticationReturnExpected: false,
   };
   const allowedResources = new Set(
     options.config.allowedBootstrapResourceOrigins,
@@ -153,14 +167,24 @@ function requestViolation(
     state.topLevelRequests += 1;
     if (state.topLevelRequests > config.maxTopLevelRequests)
       return 'top-level-budget-exceeded';
-    if (url.origin === config.powerSchoolOrigin)
-      return method === 'GET' || method === 'HEAD'
-        ? undefined
-        : 'powerschool-method-blocked';
-    if (url.origin === config.identityOrigin)
-      return method === 'GET' || method === 'HEAD' || method === 'POST'
-        ? undefined
-        : 'identity-method-blocked';
+    if (url.origin === config.powerSchoolOrigin) {
+      if (method === 'GET' || method === 'HEAD') {
+        state.authenticationReturnExpected = false;
+        return undefined;
+      }
+      if (method === 'POST' && state.authenticationReturnExpected) {
+        state.authenticationReturnExpected = false;
+        return undefined;
+      }
+      return 'powerschool-method-blocked';
+    }
+    if (url.origin === config.identityOrigin) {
+      if (method === 'GET' || method === 'HEAD' || method === 'POST') {
+        state.authenticationReturnExpected = true;
+        return undefined;
+      }
+      return 'identity-method-blocked';
+    }
     return 'top-level-origin-blocked';
   }
   if (url.origin === config.identityOrigin) {

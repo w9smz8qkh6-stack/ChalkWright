@@ -12,6 +12,7 @@ import {
 import {
   installAuthenticatedNetworkBoundary,
   type AuthenticatedNavigationSafetyState,
+  type AuthenticatedNetworkViolationReason,
 } from './authenticated-network-boundary.js';
 import type { PowerSchoolRepairCredentials } from './repair-secret-packet.js';
 import {
@@ -47,9 +48,13 @@ export type PowerSchoolJitRepairResult =
         | 'browser-unavailable'
         | 'collector-already-running'
         | 'credential-rejected'
-        | 'repair-policy-violation'
         | 'session-state-unsafe'
         | 'timeout';
+    }
+  | {
+      readonly status: 'failed';
+      readonly code: 'repair-policy-violation';
+      readonly policyReason: AuthenticatedNetworkViolationReason;
     }
   | {
       readonly status: 'failed';
@@ -231,7 +236,7 @@ export async function repairPowerSchoolSessionWithCredentials(options: {
       return { status: 'failed', code: 'session-state-unsafe' };
     }
     if (safety?.violation === true) {
-      return { status: 'failed', code: 'repair-policy-violation' };
+      return repairPolicyFailure(safety);
     }
     if (browserLaunched) return unexpectedChallenge('unclassified');
     return {
@@ -443,12 +448,23 @@ async function driveRecognizedRepairFlow(options: {
     } else if (origin === options.config.powerSchoolOrigin) {
       unrecognizedSince = undefined;
     } else if (origin !== null && origin !== 'null') {
-      return { status: 'failed', code: 'repair-policy-violation' };
+      return repairPolicyFailure(options.safety, 'top-level-origin-blocked');
     }
     await pause();
   }
   if (options.signal.aborted) return { status: 'failed', code: 'aborted' };
-  return { status: 'failed', code: 'repair-policy-violation' };
+  return repairPolicyFailure(options.safety);
+}
+
+function repairPolicyFailure(
+  safety: AuthenticatedNavigationSafetyState,
+  fallback: AuthenticatedNetworkViolationReason = 'network-control-failed',
+): PowerSchoolJitRepairResult {
+  return {
+    status: 'failed',
+    code: 'repair-policy-violation',
+    policyReason: safety.violationReason ?? fallback,
+  };
 }
 
 const emailSelectors = [
