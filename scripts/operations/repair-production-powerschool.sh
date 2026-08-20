@@ -8,22 +8,48 @@ root=/usr/local/lib/chalkwright-production-admin
 release=/opt/chalkwright/current
 unit=chalkwright-powerschool-repair.service
 desktop_user=bren
-desktop_display=:0
-desktop_access_granted=0
-revoke_desktop_access() {
-  [[ $desktop_access_granted -eq 1 ]] || return 0
-  /usr/sbin/runuser -u "$desktop_user" -- /usr/bin/env HOME="/home/$desktop_user" DISPLAY="$desktop_display" /usr/bin/xhost -SI:localuser:classroom-hub >/dev/null 2>&1 || true
+desktop_profile=/var/lib/chalkwright/production-powerschool-desktop-profile
+desktop_session=/var/lib/chalkwright/production-powerschool-repair-session
+routine_session=/var/lib/chalkwright/production-session
+runtime=/run/chalkwright-production-repair
+desktop_provider=$runtime/provider
+desktop_environment=$runtime/desktop-repair.env
+source_references=/etc/chalkwright/migration/powerschool-repair-references.json
+source_service_account=/etc/chalkwright/migration/powerschool-onepassword-service-account.env
+candidate=
+cleanup() {
+  /usr/bin/rm -f -- "$desktop_environment" || true
+  if [[ -n $candidate ]]; then
+    /usr/bin/rm -f -- "$candidate" || true
+  fi
+  if [[ -d $desktop_provider && ! -L $desktop_provider && $(/usr/bin/stat -c %U "$desktop_provider") == "$desktop_user" && $(/usr/bin/stat -c %a "$desktop_provider") == 700 ]]; then
+    /usr/bin/rm -rf -- "$desktop_provider"
+  fi
 }
-trap revoke_desktop_access EXIT INT TERM
-[[ -x /usr/bin/node && -f "$root/provision-m17-powerschool-repair.mjs" && ! -L "$root/provision-m17-powerschool-repair.mjs" ]] || reject production-powerschool-repair-controller-invalid
-[[ -x /usr/bin/xhost && -x /usr/sbin/runuser && -d "/home/$desktop_user" && ! -L "/home/$desktop_user" ]] || reject production-powerschool-repair-desktop-unavailable
+trap cleanup EXIT INT TERM
+[[ -x /usr/bin/node && -x /usr/bin/install && -d "/home/$desktop_user" && ! -L "/home/$desktop_user" ]] || reject production-powerschool-repair-controller-invalid
 [[ -L $release && -f "$release/dist/entrypoints/m17-powerschool-repair.js" && -f "$release/systemd/production/$unit.in" ]] || reject production-powerschool-repair-release-invalid
-if [[ ! -e /etc/chalkwright/production/jobs/powerschool-repair.env ]]; then
-  /usr/bin/node "$root/provision-m17-powerschool-repair.mjs" --production-apply || reject production-powerschool-repair-provision-failed
-fi
+/usr/bin/install -d -o root -g root -m 0711 "$runtime" || reject production-powerschool-repair-runtime-prepare-failed
+/usr/bin/install -d -o "$desktop_user" -g "$desktop_user" -m 0700 "$desktop_provider" "$desktop_profile" "$desktop_session" || reject production-powerschool-repair-desktop-prepare-failed
+/usr/bin/install -o "$desktop_user" -g "$desktop_user" -m 0600 "$source_references" "$desktop_provider/repair-references.json" || reject production-powerschool-repair-provider-prepare-failed
+/usr/bin/install -o "$desktop_user" -g "$desktop_user" -m 0600 "$source_service_account" "$desktop_provider/onepassword-service-account.env" || reject production-powerschool-repair-provider-prepare-failed
+/usr/bin/tee "$desktop_environment" >/dev/null <<EOF
+CLASSROOM_HUB_POWERSCHOOL_SESSION_DIRECTORY="$desktop_session"
+CLASSROOM_HUB_POWERSCHOOL_COMPATIBILITY_PROFILE_DIRECTORY="$desktop_profile"
+CLASSROOM_HUB_POWERSCHOOL_ONEPASSWORD_SERVICE_ACCOUNT_ENV="$desktop_provider/onepassword-service-account.env"
+CLASSROOM_HUB_POWERSCHOOL_REPAIR_REFERENCE="$desktop_provider/repair-references.json"
+EOF
+/usr/bin/chown root:root "$desktop_environment"
+/usr/bin/chmod 0600 "$desktop_environment"
 /usr/bin/install -o root -g root -m 0644 "$release/systemd/production/$unit.in" "/etc/systemd/system/$unit"
 /usr/bin/systemctl daemon-reload
-/usr/sbin/runuser -u "$desktop_user" -- /usr/bin/env HOME="/home/$desktop_user" DISPLAY="$desktop_display" /usr/bin/xhost +SI:localuser:classroom-hub >/dev/null 2>&1 || reject production-powerschool-repair-desktop-grant-failed
-desktop_access_granted=1
 /usr/bin/systemctl start "$unit" || reject production-powerschool-repair-failed
-echo '{"status":"production-powerschool-repaired","providerWrites":0}'
+source_state=$desktop_session/powerschool-session.json
+target_state=$routine_session/powerschool-session.json
+[[ -d $desktop_session && ! -L $desktop_session && -f $source_state && ! -L $source_state && -s $source_state && -d $routine_session && ! -L $routine_session ]] || reject production-powerschool-repair-state-unavailable
+[[ $(/usr/bin/stat -c %U "$desktop_session") == "$desktop_user" && $(/usr/bin/stat -c %a "$desktop_session") == 700 && $(/usr/bin/stat -c %U "$source_state") == "$desktop_user" && $(/usr/bin/stat -c %a "$source_state") == 600 && $(/usr/bin/stat -c %h "$source_state") == 1 && $(/usr/bin/stat -c %s "$source_state") -le 1048576 && $(/usr/bin/stat -c %U "$routine_session") == classroom-hub && $(/usr/bin/stat -c %a "$routine_session") == 700 ]] || reject production-powerschool-repair-state-unsafe
+candidate=$routine_session/.powerschool-session.repair.$$.candidate
+/usr/bin/install -o classroom-hub -g classroom-hub -m 0600 "$source_state" "$candidate" || reject production-powerschool-repair-state-copy-failed
+/usr/bin/mv -f -- "$candidate" "$target_state" || reject production-powerschool-repair-state-commit-failed
+candidate=
+echo '{"status":"production-powerschool-repaired","providerWrites":0,"profilesCopied":0,"googleOriginsCopied":0}'

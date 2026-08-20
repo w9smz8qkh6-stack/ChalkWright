@@ -7,13 +7,14 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=classroom-hub
-Group=classroom-hub
+User=bren
+Group=bren
 WorkingDirectory=/opt/chalkwright/current
 RuntimeDirectory=chalkwright-powerschool-repair-client
 RuntimeDirectoryMode=0700
 EnvironmentFile=/etc/chalkwright/production/jobs/plan-refresh.env
 EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env
+EnvironmentFile=/run/chalkwright-production-repair/desktop-repair.env
 Environment=NODE_ENV=production
 Environment=CLASSROOM_HUB_POWERSCHOOL_IDENTITY_ORIGIN=https://accounts.google.com
 Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0
@@ -25,11 +26,9 @@ TimeoutStopSec=30s
 UMask=0077
 NoNewPrivileges=true
 PrivateDevices=true
-# The repair browser uses only Bren's existing local Xwayland socket. The root
-# controller grants the dedicated local-user ACL immediately before this unit
-# starts and revokes it after the unit reaches a terminal state. A private /tmp
-# namespace would make that socket unreachable; temporary files remain in this
-# unit's own mode-0700 runtime directory.
+# The repair browser is a dedicated Bren-owned context. It never uses a
+# pre-existing browser profile; the root controller supplies only fixed staging
+# paths and transfers filtered state after a successful repair.
 PrivateTmp=false
 ProtectClock=true
 ProtectControlGroups=true
@@ -40,7 +39,7 @@ ProtectKernelModules=true
 ProtectKernelTunables=true
 ProtectSystem=strict
 InaccessiblePaths=-/etc/chalkwright/production/providers/google-classroom -/etc/chalkwright/production/providers/google-calendar
-ReadWritePaths=/var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile
+ReadWritePaths=/var/lib/chalkwright/production-powerschool-desktop-profile /var/lib/chalkwright/production-powerschool-repair-session
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 # Chromium's enabled Linux sandbox also requires mount namespaces. Retain a
 # deny-list for cgroup, IPC, UTS, and time namespaces instead of blocking its

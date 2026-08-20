@@ -294,13 +294,16 @@ function verifyPermanentProductionArtifacts(directory, fail) {
   );
   for (const required of [
     'EnvironmentFile=/etc/chalkwright/production/jobs/powerschool-repair.env',
+    'EnvironmentFile=/run/chalkwright-production-repair/desktop-repair.env',
+    'User=bren',
+    'Group=bren',
     'Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0',
     'Environment=DISPLAY=:0',
     'RuntimeDirectory=chalkwright-powerschool-repair-client',
     'RuntimeDirectoryMode=0700',
     'Environment=TMPDIR=/run/chalkwright-powerschool-repair-client',
     'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/m17-powerschool-repair.js',
-    'ReadWritePaths=/var/lib/chalkwright/production-session /var/lib/chalkwright/production-powerschool-profile',
+    'ReadWritePaths=/var/lib/chalkwright/production-powerschool-desktop-profile /var/lib/chalkwright/production-powerschool-repair-session',
     'RestrictNamespaces=~cgroup ipc uts time',
   ])
     if (!repair.includes(required))
