@@ -297,7 +297,6 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'EnvironmentFile=/run/chalkwright-production-repair/desktop-repair.env',
     'User=bren',
     'Group=bren',
-    'Environment=CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE=/etc/chalkwright/production/server.json',
     'Environment=CLASSROOM_HUB_POWERSCHOOL_JIT_HEADLESS=0',
     'Environment=DISPLAY=:0',
     'RuntimeDirectory=chalkwright-powerschool-repair-client',
