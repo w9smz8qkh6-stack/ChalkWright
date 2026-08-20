@@ -67,15 +67,11 @@ export async function launchDirectCdpPowerSchoolSession(options: {
     await terminateChromeChild(child, 2_000);
   };
   try {
-    const endpoint = await waitForDevToolsEndpoint({
+    browser = await connectDirectCdpBrowser({
       child,
       profileDirectory: options.profileDirectory,
       timeoutMs: options.timeoutMs,
       ...(options.signal === undefined ? {} : { signal: options.signal }),
-    });
-    browser = await chromium.connectOverCDP(endpoint, {
-      isLocal: true,
-      timeout: options.timeoutMs,
     });
     context = await browser.newContext({
       acceptDownloads: false,
@@ -94,6 +90,44 @@ export async function launchDirectCdpPowerSchoolSession(options: {
     if (options.signal?.aborted === true) throw options.signal.reason;
     throw error;
   }
+}
+
+/**
+ * Chrome writes DevToolsActivePort just before its loopback HTTP endpoint can
+ * reliably accept a connection. The repair worker is deliberately detached,
+ * which makes that brief race observable more often than an interactive
+ * launch. Retry only a refused local connection; other CDP failures remain
+ * fail-closed.
+ */
+async function connectDirectCdpBrowser(options: {
+  readonly child: ChildProcess;
+  readonly profileDirectory: string;
+  readonly timeoutMs: number;
+  readonly signal?: AbortSignal;
+}): Promise<Browser> {
+  const startedAt = performance.now();
+  let lastRefusal: unknown;
+  while (performance.now() - startedAt < options.timeoutMs) {
+    const remainingMs = Math.max(
+      1,
+      Math.floor(options.timeoutMs - (performance.now() - startedAt)),
+    );
+    const endpoint = await waitForDevToolsEndpoint({
+      ...options,
+      timeoutMs: remainingMs,
+    });
+    try {
+      return await chromium.connectOverCDP(endpoint, {
+        isLocal: true,
+        timeout: remainingMs,
+      });
+    } catch (error: unknown) {
+      if (!isConnectionRefused(error)) throw error;
+      lastRefusal = error;
+      await new Promise<void>((resolveWait) => setTimeout(resolveWait, 25));
+    }
+  }
+  throw lastRefusal ?? new Error('powerschool-direct-chrome-timeout');
 }
 
 async function waitForDevToolsEndpoint(options: {
@@ -212,4 +246,8 @@ function isErrno(error: unknown, code: string): boolean {
     'code' in error &&
     (error as NodeJS.ErrnoException).code === code
   );
+}
+
+function isConnectionRefused(error: unknown): boolean {
+  return error instanceof Error && /\bECONNREFUSED\b/u.test(error.message);
 }
