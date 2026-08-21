@@ -164,6 +164,15 @@ test('multilingual vocabulary rotates one face at a time and fits the classroom 
       );
     }
 
+    const fallbackOpacities = await page
+      .locator('.vocabulary-face')
+      .evaluateAll((faces) => {
+        for (const face of faces)
+          (face as HTMLElement).style.animation = 'none';
+        return faces.map((face) => Number(getComputedStyle(face).opacity));
+      });
+    assert.deepEqual(fallbackOpacities, [1, 0, 0, 0]);
+
     const layout = await page.evaluate(() => ({
       width: document.documentElement.scrollWidth,
       height: document.documentElement.scrollHeight,

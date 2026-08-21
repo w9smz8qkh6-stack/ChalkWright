@@ -853,9 +853,15 @@ a {
   z-index: 0;
   transform: none;
   opacity: 0;
-  animation: vocabulary-face-cycle calc(var(--vocabulary-face-count) * 6s)
-    linear infinite;
-  animation-delay: calc(var(--vocabulary-face-index) * 6s);
+  animation: vocabulary-face-cycle var(--vocabulary-cycle-duration) linear
+    infinite;
+  animation-delay: var(--vocabulary-face-delay);
+}
+
+/* Keep English readable if an older display browser rejects the animation. */
+.vocabulary-stage.vocabulary-multilingual .vocabulary-face:first-child {
+  z-index: 1;
+  opacity: 1;
 }
 
 @keyframes vocabulary-face-cycle {

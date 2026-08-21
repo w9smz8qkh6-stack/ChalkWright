@@ -209,6 +209,14 @@ test('vocabulary renders every multilingual face without flattening semantic tex
   assert.match(html, /aria-label="Simplified Chinese vocabulary"/u);
   assert.match(html, />不变量<\/h2>/u);
   assert.match(html, /vocabulary-multilingual/u);
+  assert.match(
+    html,
+    /--vocabulary-face-delay:0s;--vocabulary-cycle-duration:24s/u,
+  );
+  assert.match(
+    html,
+    /--vocabulary-face-delay:18s;--vocabulary-cycle-duration:24s/u,
+  );
   assert.match(html, /data-duration-ms="24000"/u);
 });
 
