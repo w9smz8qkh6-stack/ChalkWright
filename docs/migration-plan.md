@@ -1015,8 +1015,12 @@ modules and defensive guards remain in source and compiled releases, and
 independent user-scoped OpenClaw workloads remain installed on the shared host.
 M-18 removes only Chalkwright's dormant code and explicitly approved legacy
 artifacts; unrelated host workloads are outside its retirement scope. The
-current PowerSchool repair-required state remains a stabilization gate even
-though it is not an OpenClaw dependency.
+native headed repair is working in the user manager and has three consecutive
+authenticated results. The credential-free plan refresh still returned
+`repair-required` after the latest success, making routine state handoff/reuse a
+stabilization gate even though neither lane depends on OpenClaw. The obsolete
+failed system-manager repair record is historical and must not be mistaken for
+the active repair lane.
 
 - **Objective:** Earn steady-state confidence before deleting rollback paths or
   OpenClaw dependencies.

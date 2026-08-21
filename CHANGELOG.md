@@ -35,6 +35,10 @@ omitted.
   lane has no OpenClaw unit, entrypoint, systemd, package, or protected-config
   dependency; dormant historical modules and unrelated user-scoped host
   workloads remain explicitly separated for later retirement decisions.
+- Corrected the stabilization record to identify the working user-manager
+  PowerSchool repair lane: its last three runs authenticated successfully. The
+  obsolete failed system-manager repair result is historical; the remaining
+  gate is credential-free routine state handoff/reuse after repair.
 
 - Refresh an active meeting's stored vocabulary display data from the latest
   matching catalog row while retaining the same selected term identity. CSV
