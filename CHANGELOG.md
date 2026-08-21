@@ -26,6 +26,16 @@ omitted.
 
 ### Changed
 
+- Reconciled the roadmap and M-17 status documents with the live standalone
+  production handoff: Chalkwright now serves the existing classroom path from
+  protected `main`, permanent timers and the Calendar follower are active, the
+  multilingual local glossary catalog is live, and the retained shadow service
+  is an available rollback reference rather than the current serving path.
+- Recorded the initial M-18 OpenClaw dependency scan: the active production
+  lane has no OpenClaw unit, entrypoint, systemd, package, or protected-config
+  dependency; dormant historical modules and unrelated user-scoped host
+  workloads remain explicitly separated for later retirement decisions.
+
 - Refresh an active meeting's stored vocabulary display data from the latest
   matching catalog row while retaining the same selected term identity. CSV
   capitalization, definition, example, and translation corrections now reach

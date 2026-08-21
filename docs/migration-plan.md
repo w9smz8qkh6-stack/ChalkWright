@@ -891,11 +891,16 @@ final-handoff gate; candidate alerts remain report-only.
 
 ### M-17 — Run an isolated production canary, then hand off
 
-**Current status (2026-08-19):** The historical shadow service is the active
-display path. The prior M-17 release and units remain installed but lack their
-protected runtime configuration. The permanent Chalkwright production lane is
-therefore being re-grounded from the current repository; the detailed record
-below preserves the preceding canary and readiness evidence.
+**Current status (2026-08-21):** The standalone permanent Chalkwright lane is
+deployed from protected GitHub `main` and serves the existing classroom URL and
+display mount. Its production service and seven permanent timers are active;
+PowerSchool and Classroom remain read-only, the glossary display is sourced
+from the imported local catalog, and the owned Google Calendar is a follower of
+the local canonical plan. The historical shadow service remains active only as
+an available rollback reference and was not stopped during handoff. The
+detailed record below preserves the preceding canary and readiness evidence.
+Formal M-17 closure now requires only stabilization evidence and the explicit
+transition into M-18, not another serving-path migration.
 
 **Historical implementation record:** Parallel-canary architecture accepted through ADR-0022 and the exact
 offline implementation passed its independent review in a clean isolated lane.
@@ -1002,6 +1007,16 @@ status update above supersedes that checkpoint.
   final handoff with no unexplained parity, ownership, routing, or alert defect.
 
 ### M-18 — Stabilize and remove legacy dependencies
+
+**Initial dependency scan (2026-08-21):** Active Chalkwright units, production
+entrypoints, systemd dependencies, package metadata, and protected production
+configuration contain no OpenClaw reference. Dormant historical M-15/M-16
+modules and defensive guards remain in source and compiled releases, and
+independent user-scoped OpenClaw workloads remain installed on the shared host.
+M-18 removes only Chalkwright's dormant code and explicitly approved legacy
+artifacts; unrelated host workloads are outside its retirement scope. The
+current PowerSchool repair-required state remains a stabilization gate even
+though it is not an OpenClaw dependency.
 
 - **Objective:** Earn steady-state confidence before deleting rollback paths or
   OpenClaw dependencies.
