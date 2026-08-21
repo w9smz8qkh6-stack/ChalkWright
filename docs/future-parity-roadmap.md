@@ -116,16 +116,17 @@ open before M-18 retirement.
 
 The August 21 OpenClaw dependency scan found no reference in any active
 Chalkwright unit, production entrypoint, systemd dependency, package dependency,
-or protected production configuration. Dormant historical M-15 writer-exclusion
-and M-16 alert-provisioning modules, denial/safety guards, and their tests still
-name OpenClaw and are compiled into release archives even though no production
-unit can invoke them. Independent user-scoped OpenClaw services remain active on
-the shared host but are not a Chalkwright dependency. The PowerSchool-specific
-legacy Chrome instance is now disabled and stopped; its unit template and
-profile remain available for bounded rollback until final removal approval.
-M-18 must classify and remove the dormant repository modules from Chalkwright;
-it must not remove unrelated OpenClaw workloads merely because they share the
-host.
+or protected production configuration. M-18 has removed the obsolete
+managed-profile PowerSchool characterization executor and the historical M-15
+Calendar-trial provisioning/writer-exclusion path from source, package commands,
+tests, and compiled releases. The unrelated dormant M-16 alert-provisioning
+script and deliberate publication/systemd denial guards still name OpenClaw but
+cannot be invoked by a production unit. Independent user-scoped OpenClaw
+services remain active on the shared host but are not a Chalkwright dependency.
+The PowerSchool-specific legacy Chrome instance is now disabled and stopped;
+its unit template and profile remain available for bounded rollback until final
+removal approval. M-18 must not remove unrelated OpenClaw workloads merely
+because they share the host.
 
 The active native repair runs in Bren's systemd user manager and is working:
 its last three recorded runs returned `authenticated` with exit code zero and

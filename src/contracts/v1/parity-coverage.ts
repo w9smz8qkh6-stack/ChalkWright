@@ -83,11 +83,11 @@ export const parityCoverage: readonly ParityCoverageEntry[] = [
     [
       'test/infrastructure/powerschool/browser-read.test.ts',
       'test/infrastructure/process/quiescent-child.test.ts',
-      'test/entrypoints/powerschool-characterization-supervisor.test.ts',
+      'test/architecture/m07a-boundaries.test.ts',
       'docs/migration/m07b-review-package.md',
     ],
-    'M-07A temporary-profile qualification, then M-07B protected-profile characterization',
-    'M-07A validates disposable profile isolation. M-07B binds the exact account-relative designated managed-profile identity and confines the one authorized launch to a forced-teardown process group; no profile material is retained.',
+    'M-07A temporary-profile qualification, historical M-07B evidence, then M-18 managed-profile path removal',
+    'M-07A validates disposable profile isolation. M-07B historical evidence records the one bounded protected-profile characterization; M-18 removes that obsolete executable path and retains only disposable-profile browser reads.',
   ),
   contractTest(
     'PS-003',

@@ -1010,13 +1010,15 @@ status update above supersedes that checkpoint.
 
 **Initial dependency scan (2026-08-21):** Active Chalkwright units, production
 entrypoints, systemd dependencies, package metadata, and protected production
-configuration contain no OpenClaw reference. Dormant historical M-15/M-16
-modules and defensive guards remain in source and compiled releases, and
-independent user-scoped OpenClaw workloads remain installed on the shared host.
-M-18 removes only Chalkwright's dormant code and explicitly approved legacy
-artifacts; unrelated host workloads are outside its retirement scope. The
-native headed repair is working in the user manager and has three consecutive
-authenticated results. A controlled August 21 qualification subsequently ran
+configuration contain no OpenClaw reference. M-18 removed the obsolete
+managed-profile PowerSchool characterization executor and historical M-15
+Calendar-trial provisioning/writer-exclusion path from source, package commands,
+tests, and compiled releases. The unrelated dormant M-16 alert-provisioning
+script and deliberate denial guards remain for separate classification.
+Independent user-scoped OpenClaw workloads remain installed on the shared host;
+they are outside Chalkwright's retirement scope. The native headed repair is
+working in the user manager and has three consecutive authenticated results. A
+controlled August 21 qualification subsequently ran
 the native repair and two consecutive credential-free plan refreshes. Both
 refreshes succeeded and published a current verified plan. The legacy OpenClaw
 PowerSchool Chrome instance was then disabled and stopped, after which a third

@@ -29,8 +29,6 @@
     "format:check": "prettier --check .",
     "ops:job": "node dist/entrypoints/job.js",
     "ops:m14-calendar-qualify": "node dist/entrypoints/m14-calendar-live-qualification.js",
-    "ops:m15-calendar-trial": "node dist/entrypoints/m15-calendar-production-trial.js",
-    "ops:m15-provision": "node dist/entrypoints/m15-provision.js",
     "ops:m16-rehearse": "npm run build --silent && node dist/entrypoints/m16-rehearsal.js",
     "ops:m16-provision-production": "node scripts/operations/provision-m16-production.mjs --apply",
     "ops:m17-calendar-sync": "node dist/entrypoints/m17-canary-calendar-sync.js",

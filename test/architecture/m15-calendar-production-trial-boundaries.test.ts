@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -28,7 +28,7 @@ test('M-15 live authority is absent from services, jobs, and routine application
     }
 });
 
-test('only the separate M-15 and M-17 Calendar entrypoints import the official production transport pair', () => {
+test('only the current M-17 Calendar entrypoint and writer client import the official production transport pair', () => {
   const matches = files('src')
     .filter((path) => path.endsWith('.ts'))
     .filter((path) =>
@@ -40,7 +40,6 @@ test('only the separate M-15 and M-17 Calendar entrypoints import the official p
     matches.sort(),
     [
       'src/entrypoints/m17-canary-calendar-sync.ts',
-      'src/entrypoints/m15-calendar-production-trial.ts',
       'src/infrastructure/google-calendar/official-writer-client.ts',
     ].sort(),
   );
@@ -57,13 +56,13 @@ test('synthetic policy injection is unreachable from production entrypoints', ()
   }
 });
 
-test('M-15 entrypoint has no PowerSchool, Classroom, routing, or service capability', () => {
-  const content = readFileSync(
+test('obsolete M-15 entrypoints and OpenClaw writer adapter are absent', () => {
+  for (const path of [
+    'src/config/m15-calendar-production-trial.ts',
     'src/entrypoints/m15-calendar-production-trial.ts',
-    'utf8',
-  );
-  assert.doesNotMatch(
-    content,
-    /powerschool|google-classroom|systemctl|systemd|listen\(|createServer|route/u,
-  );
+    'src/entrypoints/m15-provision.ts',
+    'src/infrastructure/openclaw/legacy-writer-exclusion.ts',
+  ]) {
+    assert.equal(existsSync(path), false, path);
+  }
 });
