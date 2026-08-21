@@ -21,10 +21,11 @@ omitted.
 
 ### Changed
 
-- Match the proven legacy vocabulary interaction: keep the English term
-  anchored while a contained panel flips from English details through
-  Vietnamese, Korean, and Simplified Chinese. Panel timing starts only when the
-  vocabulary card becomes active, preserving six readable seconds per face.
+- Match the proven legacy vocabulary interaction while supporting three
+  translations: keep the English term, definition, and example anchored while
+  a contained panel flips through Vietnamese, Korean, and Simplified Chinese.
+  Remove redundant vocabulary/English labels, prevent translated-face clipping,
+  and preserve ten readable seconds per translation after the card activates.
 
 - Treat non-BCP-47 values in a glossary CSV's legacy `language` column as
   course/code-context metadata and use the protected course default for the

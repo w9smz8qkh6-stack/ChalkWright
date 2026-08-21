@@ -42,21 +42,25 @@ const model: DisplayPresentationModel = {
             languageCode: 'vi',
             term: 'Thiết kế web đáp ứng',
             definition:
-              'Cách làm cho trang web thích ứng rõ ràng với các kích thước màn hình khác nhau.',
-            example: 'Thiết kế web đáp ứng giúp điều hướng dễ sử dụng.',
+              'Cách làm cho trang web thích ứng rõ ràng với nhiều kích thước màn hình khác nhau để nội dung vẫn dễ đọc và dễ sử dụng.',
+            example:
+              'Thiết kế web đáp ứng giúp phần điều hướng của dự án luôn dễ sử dụng trên điện thoại, máy tính bảng và máy tính.',
           },
           {
             languageCode: 'ko',
             term: '반응형 웹 디자인',
             definition:
-              '웹사이트가 다양한 화면 크기에 명확하게 맞도록 만드는 방법입니다.',
-            example: '반응형 웹 디자인은 탐색을 사용하기 쉽게 유지합니다.',
+              '웹사이트가 여러 화면 크기에 명확하게 맞춰져 콘텐츠를 계속 읽고 사용하기 쉽게 만드는 방법입니다.',
+            example:
+              '반응형 웹 디자인은 휴대전화, 태블릿, 컴퓨터에서 프로젝트의 탐색 기능을 사용하기 쉽게 유지합니다.',
           },
           {
             languageCode: 'zh-Hans',
             term: '响应式网页设计',
-            definition: '一种让网站清晰适应不同屏幕尺寸的方法。',
-            example: '响应式网页设计使导航保持易用。',
+            definition:
+              '一种让网站清晰适应多种屏幕尺寸，使内容始终易于阅读和使用的方法。',
+            example:
+              '响应式网页设计让项目导航在手机、平板电脑和电脑上都保持易用。',
           },
         ],
       },
@@ -140,7 +144,7 @@ test('multilingual vocabulary keeps English anchored while the panel flips throu
         timeout?: number,
         ...arguments_: unknown[]
       ) => {
-        if (timeout === 6000 && typeof handler === 'function') {
+        if (timeout === 10000 && typeof handler === 'function') {
           vocabularyCallbacks.push(() => handler(...arguments_));
           return 900_000 + vocabularyCallbacks.length;
         }
@@ -154,7 +158,6 @@ test('multilingual vocabulary keeps English anchored while the panel flips throu
         faces.map((face) => face.getAttribute('aria-label')),
       );
     assert.deepEqual(labels, [
-      'English vocabulary',
       'Vietnamese vocabulary',
       'Korean vocabulary',
       'Simplified Chinese vocabulary',
@@ -163,6 +166,14 @@ test('multilingual vocabulary keeps English anchored while the panel flips throu
     const anchoredTerm = await page
       .locator('.vocabulary-anchor h2')
       .innerText();
+    const anchoredDefinition = await page
+      .locator('.vocabulary-anchor-definition')
+      .innerText();
+    assert.equal(
+      await page.locator('.card-vocabulary > .card-type').count(),
+      0,
+    );
+    assert.equal(await page.getByText('English', { exact: true }).count(), 0);
     const activeLabels: (string | null)[] = [];
     for (let index = 0; index < labels.length; index += 1) {
       activeLabels.push(
@@ -173,6 +184,10 @@ test('multilingual vocabulary keeps English anchored while the panel flips throu
       assert.equal(
         await page.locator('.vocabulary-anchor h2').innerText(),
         anchoredTerm,
+      );
+      assert.equal(
+        await page.locator('.vocabulary-anchor-definition').innerText(),
+        anchoredDefinition,
       );
       assert.equal(
         await page.locator('.vocabulary-panel-face.is-active').count(),
@@ -192,9 +207,24 @@ test('multilingual vocabulary keeps English anchored while the panel flips throu
       height: document.documentElement.scrollHeight,
       innerWidth: window.innerWidth,
       innerHeight: window.innerHeight,
+      clippedFaces: [
+        ...document.querySelectorAll<HTMLElement>('.vocabulary-panel-face'),
+      ].filter((face) => face.scrollHeight > face.clientHeight).length,
+      faceBounds: [
+        ...document.querySelectorAll<HTMLElement>('.vocabulary-panel-face'),
+      ].map((face) => ({
+        label: face.getAttribute('aria-label'),
+        clientHeight: face.clientHeight,
+        scrollHeight: face.scrollHeight,
+      })),
     }));
     assert.ok(layout.width <= layout.innerWidth, 'horizontal-overflow');
     assert.ok(layout.height <= layout.innerHeight, 'vertical-overflow');
+    assert.equal(
+      layout.clippedFaces,
+      0,
+      `translated-face-overflow:${JSON.stringify(layout.faceBounds)}`,
+    );
     await context.close();
   } finally {
     await browser.close();
@@ -233,9 +263,24 @@ test('reduced motion preserves one readable vocabulary face without overflow', a
           viewportWidth: window.innerWidth,
           scrollHeight: document.documentElement.scrollHeight,
           bodyMargin: getComputedStyle(document.body).margin,
+          clippedFaces: [
+            ...stage.querySelectorAll<HTMLElement>('.vocabulary-panel-face'),
+          ].filter((face) => face.scrollHeight > face.clientHeight).length,
+          faceBounds: [
+            ...stage.querySelectorAll<HTMLElement>('.vocabulary-panel-face'),
+          ].map((face) => ({
+            label: face.getAttribute('aria-label'),
+            clientHeight: face.clientHeight,
+            scrollHeight: face.scrollHeight,
+          })),
         }));
-      assert.equal(result.faceCount, 4);
+      assert.equal(result.faceCount, 3);
       assert.equal(result.visibleCount, 1);
+      assert.equal(
+        result.clippedFaces,
+        0,
+        `translated-face-overflow:${JSON.stringify({ viewport, faceBounds: result.faceBounds })}`,
+      );
       assert.equal(result.bodyMargin, '0px');
       assert.ok(
         result.stageBottom <= result.viewportHeight,

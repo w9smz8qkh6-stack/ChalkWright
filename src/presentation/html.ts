@@ -321,50 +321,39 @@ function vocabularyMarkup(card: PresentationCard): string | undefined {
       (value) => value !== undefined && value.trim().length > 0,
     ),
   );
-  const english = vocabularyPanelFace(
-    'English',
-    'english',
-    {
-      definition: vocabulary.definition,
-      ...(vocabulary.example === undefined
-        ? {}
-        : { example: vocabulary.example }),
-    },
-    true,
-  );
   const language = {
     vi: { label: 'Vietnamese', className: 'vietnamese' },
     ko: { label: 'Korean', className: 'korean' },
     'zh-Hans': { label: 'Simplified Chinese', className: 'chinese' },
   } as const;
   const translated = translations
-    .map((translation) => {
+    .map((translation, index) => {
       const presentation = language[translation.languageCode];
       return vocabularyPanelFace(
         presentation.label,
         presentation.className,
         translation,
+        index === 0,
       );
     })
     .join('');
   return `<div class="vocabulary-stage${translated === '' ? ' single-face' : ' vocabulary-multilingual'}" data-vocabulary-stage>
     <header class="vocabulary-anchor">
-      <p class="vocabulary-language">English</p>
       <h2>${escapeHtml(vocabulary.term)}</h2>
       ${metadata.length === 0 ? '' : `<p class="vocabulary-metadata">${metadata}</p>`}
+      <p class="vocabulary-anchor-definition">${escapeHtml(vocabulary.definition)}</p>
+      ${vocabulary.example === undefined ? '' : `<p class="vocabulary-anchor-example">${escapeHtml(vocabulary.example)}</p>`}
     </header>
-    <div class="vocabulary-panel" data-vocabulary-panel>
-      <div class="vocabulary-panel-flip">${english}${translated}</div>
-    </div>
+    ${translated === '' ? '' : `<div class="vocabulary-panel" data-vocabulary-panel data-vocabulary-interval-ms="10000"><div class="vocabulary-panel-flip">${translated}</div></div>`}
   </div>`;
 }
 
-function vocabularyFaceCount(card: PresentationCard): number {
+function vocabularyTranslationCount(card: PresentationCard): number {
   const vocabulary = card.vocabulary;
   if (vocabulary === undefined) return 0;
   if (vocabulary.translations !== undefined)
-    return 1 + vocabulary.translations.length;
-  return vocabulary.vietnamese === undefined ? 1 : 2;
+    return vocabulary.translations.length;
+  return vocabulary.vietnamese === undefined ? 0 : 1;
 }
 
 function cardMarkup(card: PresentationCard, index: number): string {
@@ -374,7 +363,7 @@ function cardMarkup(card: PresentationCard, index: number): string {
       : 12;
   const durationSeconds = Math.max(
     configuredDurationSeconds,
-    vocabularyFaceCount(card) * 6,
+    vocabularyTranslationCount(card) * 10,
   );
   const vocabulary = vocabularyMarkup(card);
   const title =
@@ -382,7 +371,7 @@ function cardMarkup(card: PresentationCard, index: number): string {
       ? card.title.replace(/^bellringer\s*:\s*/iu, '')
       : card.title;
   return `<article class="carousel-card card-${escapeHtml(card.type)} accent-${escapeHtml(card.accent ?? 'ink')}" data-carousel-card data-card-id="${escapeHtml(card.cardId)}" data-duration-ms="${Math.max(5, durationSeconds) * 1000}" ${index === 0 ? '' : 'hidden'}>
-  <p class="card-type">${escapeHtml(card.type.replaceAll('_', ' '))}</p>
+  ${vocabulary === undefined ? `<p class="card-type">${escapeHtml(card.type.replaceAll('_', ' '))}</p>` : ''}
   ${vocabulary === undefined ? `<h2>${escapeHtml(title)}</h2>` : vocabulary}
   ${card.featured === undefined ? '' : `<p class="featured">${escapeHtml(card.featured)}</p>`}
   ${vocabulary !== undefined || card.lines.length === 0 ? '' : `<ul>${card.lines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>`}
