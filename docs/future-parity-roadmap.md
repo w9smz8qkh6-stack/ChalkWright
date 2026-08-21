@@ -10,6 +10,10 @@ slide enhancement second, and attendance-admin parity later.
 
 ## 1. Vocabulary parity slice
 
+Implementation status: complete in the standalone code path. Live production
+binding still requires the protected Drive-read credential and real academic-
+year folder ID; those values are not stored in the repository.
+
 Goal: make the migrated app's word-of-the-day and vocabulary cards feel as
 useful as the legacy app while remaining explainable and bounded.
 
@@ -23,6 +27,11 @@ Scope:
 - add teacher-configurable vocabulary pools by course, unit, or lesson; and
 - expose safe diagnostics explaining the selection without printing private
   lesson source text.
+
+The implemented source is every direct-child CSV in each teacher-controlled
+`<academic-year>/<course name>/Glossaries` hierarchy. English and
+teacher-supplied translation columns are imported together; no LLM translation
+call is part of the feature.
 
 Acceptance:
 

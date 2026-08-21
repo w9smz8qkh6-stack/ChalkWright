@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type {
   GlossaryCatalogImport,
   GlossaryEntry,
+  GlossaryTranslation,
 } from '../../domain/glossary.js';
 import { compactText, stableId } from '../../domain/pure-values.js';
 
@@ -45,7 +46,11 @@ export function normalizeGlossaryCsv(
     importId: request.importId,
     source: { ...request.source, sourceFormat: 'csv', contentHash },
     entries: terms,
-    translations: [],
+    translations: rows
+      .slice(1)
+      .flatMap((row, ordinal) =>
+        translationFromRow(row, ordinal + 2, headers, request, terms[ordinal]!),
+      ),
     media: [],
   };
 }
@@ -57,6 +62,15 @@ interface HeaderIndexes {
   readonly partOfSpeech?: number;
   readonly example?: number;
   readonly pronunciation?: number;
+  readonly translations: readonly TranslationHeaderIndexes[];
+}
+
+interface TranslationHeaderIndexes {
+  readonly languageCode: 'vi' | 'ko' | 'zh-Hans';
+  readonly term?: number;
+  readonly definition?: number;
+  readonly partOfSpeech?: number;
+  readonly example?: number;
 }
 
 function headerIndexes(headers: readonly string[]): HeaderIndexes {
@@ -76,8 +90,29 @@ function headerIndexes(headers: readonly string[]): HeaderIndexes {
     throw new Error('glossary-csv-required-column-missing');
   const language = optional(['language', 'language code', 'source language']);
   const partOfSpeech = optional(['part of speech', 'partofspeech', 'pos']);
-  const example = optional(['example', 'example sentence']);
+  const example = optional([
+    'example',
+    'example sentence',
+    'sample sentence',
+    'sample sentence en',
+  ]);
   const pronunciation = optional(['pronunciation', 'phonetic']);
+  const translations = [
+    translationHeaders('vi', ['vietnamese', 'vi'], optional),
+    translationHeaders('ko', ['korean', 'ko'], optional),
+    translationHeaders(
+      'zh-Hans',
+      ['simplified chinese', 'chinese', 'zh'],
+      optional,
+    ),
+  ].filter((translation) =>
+    [
+      translation.term,
+      translation.definition,
+      translation.partOfSpeech,
+      translation.example,
+    ].some((index) => index !== undefined),
+  );
   return {
     term,
     definition,
@@ -85,6 +120,36 @@ function headerIndexes(headers: readonly string[]): HeaderIndexes {
     ...(partOfSpeech === undefined ? {} : { partOfSpeech }),
     ...(example === undefined ? {} : { example }),
     ...(pronunciation === undefined ? {} : { pronunciation }),
+    translations,
+  };
+}
+
+function translationHeaders(
+  languageCode: TranslationHeaderIndexes['languageCode'],
+  prefixes: readonly string[],
+  optional: (names: readonly string[]) => number | undefined,
+): TranslationHeaderIndexes {
+  const aliases = (field: string, suffixes: readonly string[] = []): string[] =>
+    prefixes.flatMap((prefix) => [
+      `${prefix} ${field}`,
+      `${field} ${prefix}`,
+      ...suffixes.flatMap((suffix) => [
+        `${prefix} ${suffix}`,
+        `${suffix} ${prefix}`,
+      ]),
+    ]);
+  const term = optional(aliases('term', ['word']));
+  const definition = optional(aliases('definition', ['meaning']));
+  const partOfSpeech = optional(aliases('part of speech', ['pos']));
+  const example = optional(
+    aliases('example', ['example sentence', 'sample sentence']),
+  );
+  return {
+    languageCode,
+    ...(term === undefined ? {} : { term }),
+    ...(definition === undefined ? {} : { definition }),
+    ...(partOfSpeech === undefined ? {} : { partOfSpeech }),
+    ...(example === undefined ? {} : { example }),
   };
 }
 
@@ -134,6 +199,60 @@ function entryFromRow(
     ...(example === undefined ? {} : { example }),
     ...(pronunciation === undefined ? {} : { pronunciation }),
   };
+}
+
+function translationFromRow(
+  row: readonly string[],
+  line: number,
+  indexes: HeaderIndexes,
+  request: GlossaryCsvImportRequest,
+  entry: GlossaryEntry,
+): readonly GlossaryTranslation[] {
+  const value = (index: number | undefined): string | undefined =>
+    index === undefined ? undefined : nonEmpty(row[index]);
+  return indexes.translations.flatMap((translation) => {
+    const translatedTerm = value(translation.term);
+    const translatedDefinition = value(translation.definition);
+    const translatedPartOfSpeech = value(translation.partOfSpeech);
+    const translatedExample = value(translation.example);
+    if (
+      translatedTerm === undefined &&
+      translatedDefinition === undefined &&
+      translatedPartOfSpeech === undefined &&
+      translatedExample === undefined
+    )
+      return [];
+    if (
+      (translatedTerm !== undefined && translatedTerm.length > 512) ||
+      (translatedDefinition !== undefined &&
+        translatedDefinition.length > 8_192) ||
+      (translatedPartOfSpeech !== undefined &&
+        translatedPartOfSpeech.length > 128) ||
+      (translatedExample !== undefined && translatedExample.length > 8_192)
+    )
+      throw new Error(`glossary-csv-row-invalid-${line}`);
+    return [
+      {
+        translationId: stableId(
+          'glossary-translation',
+          request.source.sourceGlossaryId,
+          String(line),
+          translation.languageCode,
+        ),
+        entryId: entry.entryId,
+        languageCode: translation.languageCode,
+        origin: 'teacher',
+        reviewStatus: 'reviewed',
+        createdAt: request.source.importedAt,
+        ...(translatedTerm === undefined ? {} : { translatedTerm }),
+        ...(translatedDefinition === undefined ? {} : { translatedDefinition }),
+        ...(translatedPartOfSpeech === undefined
+          ? {}
+          : { translatedPartOfSpeech }),
+        ...(translatedExample === undefined ? {} : { translatedExample }),
+      },
+    ];
+  });
 }
 
 function csvRows(text: string): readonly (readonly string[])[] {

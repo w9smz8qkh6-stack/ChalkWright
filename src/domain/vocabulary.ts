@@ -26,8 +26,16 @@ export interface VocabularyCandidate {
     readonly definition?: string;
     readonly example?: string;
   };
+  readonly translations?: readonly VocabularyDisplayTranslation[];
   readonly accent?: string;
   readonly durationSeconds?: number;
+}
+
+export interface VocabularyDisplayTranslation {
+  readonly languageCode: 'vi' | 'ko' | 'zh-Hans';
+  readonly term?: string;
+  readonly definition?: string;
+  readonly example?: string;
 }
 
 export interface VocabularySelectionContext {
@@ -63,6 +71,7 @@ export interface VocabularyHistoryEntry {
   readonly partOfSpeech?: string;
   readonly example?: string;
   readonly vietnamese?: VocabularyCandidate['vietnamese'];
+  readonly translations?: readonly VocabularyDisplayTranslation[];
   readonly accent?: string;
   readonly durationSeconds?: number;
   readonly selectionContext?: VocabularySelectionContext;
@@ -83,6 +92,17 @@ export interface VocabularySelection {
   readonly selectionContext?: VocabularySelectionContext;
   readonly historyIntent?: VocabularyHistoryIntent;
   readonly diagnostics: readonly ContractDiagnostic[];
+}
+
+export function vocabularySelectionRecordKey(
+  classId: ClassId,
+  meetingKey: OpaqueId,
+): OpaqueId {
+  return stableId('vocabulary-selection', classId, meetingKey);
+}
+
+export function vocabularyHistoryRecordKey(classId: ClassId): OpaqueId {
+  return stableId('vocabulary-history', classId);
 }
 
 function stableIndex(seed: string, length: number): number {
@@ -211,6 +231,11 @@ function displayLines(candidate: VocabularyCandidate): readonly string[] {
     compactText(candidate.vietnamese?.term),
     compactText(candidate.vietnamese?.definition),
     compactText(candidate.vietnamese?.example),
+    ...(candidate.translations ?? []).flatMap((translation) => [
+      compactText(translation.term),
+      compactText(translation.definition),
+      compactText(translation.example),
+    ]),
   ].filter(Boolean);
 }
 
@@ -249,6 +274,9 @@ function candidateFromHistory(
       : { partOfSpeech: entry.partOfSpeech }),
     ...(entry.example === undefined ? {} : { example: entry.example }),
     ...(entry.vietnamese === undefined ? {} : { vietnamese: entry.vietnamese }),
+    ...(entry.translations === undefined
+      ? {}
+      : { translations: entry.translations }),
     ...(entry.accent === undefined ? {} : { accent: entry.accent }),
     ...(entry.durationSeconds === undefined
       ? {}
@@ -494,6 +522,9 @@ export function selectVocabulary(options: {
     ...(chosen.vietnamese === undefined
       ? {}
       : { vietnamese: chosen.vietnamese }),
+    ...(chosen.translations === undefined
+      ? {}
+      : { translations: chosen.translations }),
     ...(accent === undefined ? {} : { accent }),
     durationSeconds,
     selectionContext,

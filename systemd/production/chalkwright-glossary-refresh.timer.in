@@ -1,0 +1,11 @@
+# chalkwright-template-status=permanent-production-inert
+[Unit]
+Description=Chalkwright production glossary refresh timer
+
+[Timer]
+OnCalendar=Mon..Fri,Sun *-*-* 07:27:00 Asia/Ho_Chi_Minh
+AccuracySec=1s
+Persistent=false
+Unit=chalkwright-glossary-refresh.service
+
+# The .in suffix and absent [Install] section keep this timer inert.

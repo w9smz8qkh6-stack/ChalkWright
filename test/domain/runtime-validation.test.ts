@@ -370,6 +370,24 @@ test('vocabulary history nested types and keys are strict', () => {
   };
   assert.equal(isVocabularyHistoryEntry(entry), true);
   assert.equal(
+    isVocabularyHistoryEntry({
+      ...entry,
+      translations: [
+        { languageCode: 'vi', term: 'mẫu' },
+        { languageCode: 'ko', term: '견본' },
+        { languageCode: 'zh-Hans', term: '示例' },
+      ],
+    }),
+    true,
+  );
+  assert.equal(
+    isVocabularyHistoryEntry({
+      ...entry,
+      translations: [{ languageCode: 'fr', term: 'exemple' }],
+    }),
+    false,
+  );
+  assert.equal(
     isVocabularyHistoryEntry({ ...entry, vietnamese: { term: 3 } }),
     false,
   );

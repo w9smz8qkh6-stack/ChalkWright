@@ -238,6 +238,8 @@ function verifyPermanentProductionArtifacts(directory, fail) {
     'chalkwright-classroom-refresh.timer.in',
     'chalkwright-deploy.service.in',
     'chalkwright-deploy.timer.in',
+    'chalkwright-glossary-refresh.service.in',
+    'chalkwright-glossary-refresh.timer.in',
     'chalkwright-integrity.service.in',
     'chalkwright-integrity.timer.in',
     'chalkwright-plan-refresh.service.in',
@@ -370,6 +372,28 @@ function verifyPermanentProductionArtifacts(directory, fail) {
   for (const required of ['OnUnitActiveSec=1min', 'Persistent=false'])
     if (!deployTimer.includes(required))
       fail(`chalkwright-deploy.timer.in is missing ${required}`);
+  const glossary = readFileSync(
+    join(production, 'chalkwright-glossary-refresh.service.in'),
+    'utf8',
+  );
+  for (const required of [
+    'EnvironmentFile=/etc/chalkwright/production/jobs/glossary-refresh.env',
+    'ExecStart=/usr/bin/node /opt/chalkwright/current/dist/entrypoints/production-glossary-refresh.js',
+    'InaccessiblePaths=-/etc/chalkwright/production/providers/powerschool -/etc/chalkwright/production/providers/google-classroom -/etc/chalkwright/production/providers/google-calendar',
+    'ReadWritePaths=/var/lib/chalkwright/production',
+  ])
+    if (!glossary.includes(required))
+      fail(`chalkwright-glossary-refresh.service.in is missing ${required}`);
+  const glossaryTimer = readFileSync(
+    join(production, 'chalkwright-glossary-refresh.timer.in'),
+    'utf8',
+  );
+  for (const required of [
+    'OnCalendar=Mon..Fri,Sun *-*-* 07:27:00 Asia/Ho_Chi_Minh',
+    'Persistent=false',
+  ])
+    if (!glossaryTimer.includes(required))
+      fail(`chalkwright-glossary-refresh.timer.in is missing ${required}`);
 }
 
 function verifyShadowArtifacts(directory, fail) {

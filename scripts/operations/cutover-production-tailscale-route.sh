@@ -23,31 +23,32 @@ status=$(/usr/bin/mktemp /var/lib/chalkwright/deploy/.tailscale-status.XXXXXXXX)
 cleanup() { /usr/bin/rm -f -- "$status"; }
 trap cleanup EXIT INT TERM
 /usr/bin/tailscale serve status --json > "$status" || reject production-route-status-failed
-serve_port=$(/usr/bin/node --input-type=module - "$status" <<'NODE'
+route=$(/usr/bin/node --input-type=module - "$status" <<'NODE'
 import { readFileSync } from 'node:fs';
 const status = JSON.parse(readFileSync(process.argv[2], 'utf8'));
-const ports = [];
+const routes = [];
 for (const [hostPort, value] of Object.entries(status.Web ?? {})) {
   const handler = value?.Handlers?.['/'];
-  if (typeof handler?.Proxy === 'string' && /^http:\/\/127\.0\.0\.1:4318(?:\/|$)/u.test(handler.Proxy)) {
+  if (handler?.Proxy === 'http://127.0.0.1:4318') {
     const match = /:([0-9]{1,5})$/u.exec(hostPort);
-    if (match !== null) ports.push(match[1]);
+    if (match !== null) routes.push([match[1], handler.Proxy]);
   }
 }
-if (ports.length !== 1) process.exit(1);
-process.stdout.write(ports[0]);
+if (routes.length !== 1) process.exit(1);
+process.stdout.write(routes[0].join('\t'));
 NODE
 ) || reject production-route-legacy-route-ambiguous
+IFS=$'\t' read -r serve_port previous_target <<< "$route"
 [[ $serve_port =~ ^[0-9]{1,5}$ && $serve_port -ge 1 && $serve_port -le 65535 ]] || reject production-route-legacy-route-invalid
+[[ $previous_target == http://127.0.0.1:4318 ]] || reject production-route-legacy-target-invalid
 /usr/bin/install -d -o root -g root -m 0700 "$routes"
 snapshot="$routes/before-production-$serve_port.json"
 [[ ! -e $snapshot && ! -L $snapshot ]] || reject production-route-snapshot-exists
-/usr/bin/tailscale serve get-config "$snapshot" --all || reject production-route-snapshot-failed
-/usr/bin/chmod 0600 "$snapshot"
+/usr/bin/install -o root -g root -m 0600 "$status" "$snapshot" || reject production-route-snapshot-failed
 restored=0
 restore() {
   [[ $restored -eq 0 ]] || return 0
-  /usr/bin/tailscale serve set-config "$snapshot" --all || true
+  /usr/bin/tailscale serve --bg --https="$serve_port" "$previous_target" || true
   restored=1
 }
 if ! /usr/bin/tailscale serve --bg --https="$serve_port" "$target"; then

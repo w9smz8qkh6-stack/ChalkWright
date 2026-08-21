@@ -22,7 +22,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 /usr/bin/tar --no-same-owner --no-same-permissions -xzf "$archive" -C "$release"
-for required in dist/entrypoints/production-server.js dist/entrypoints/production-calendar-sync.js dist/entrypoints/production-plan-state-migration.js dist/entrypoints/production-plan-refresh.js dist/entrypoints/production-classroom-refresh.js dist/entrypoints/m17-powerschool-repair.js dist/entrypoints/job.js .chalkwright-release.json systemd/production/chalkwright.service.in systemd/production/chalkwright-powerschool-repair.service.in; do
+for required in dist/entrypoints/production-server.js dist/entrypoints/production-calendar-sync.js dist/entrypoints/production-plan-state-migration.js dist/entrypoints/production-plan-refresh.js dist/entrypoints/production-classroom-refresh.js dist/entrypoints/production-glossary-refresh.js dist/entrypoints/m17-powerschool-repair.js dist/entrypoints/job.js .chalkwright-release.json systemd/production/chalkwright.service.in systemd/production/chalkwright-powerschool-repair.service.in systemd/production/chalkwright-glossary-refresh.service.in systemd/production/chalkwright-glossary-refresh.timer.in; do
   [[ -f "$release/$required" && ! -L "$release/$required" ]] || reject production-release-runtime-invalid
 done
 /usr/bin/chown -R root:root "$release"

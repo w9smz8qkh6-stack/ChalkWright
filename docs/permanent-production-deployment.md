@@ -66,8 +66,10 @@ owner-only protected production files:
 
 - `/etc/chalkwright/production/server.json`
 - `/etc/chalkwright/production/calendar.json`
+- `/etc/chalkwright/production/glossary.json`
 - `/etc/chalkwright/production/jobs/plan-refresh.env`
 - `/etc/chalkwright/production/jobs/classroom-refresh.env`
+- `/etc/chalkwright/production/jobs/glossary-refresh.env`
 - `/etc/chalkwright/production/jobs/maintenance.env`
 
 The Calendar file must pass `loadProductionCalendarConfig`: it names exactly
@@ -75,6 +77,21 @@ one application-owned Calendar, rejects `primary`, binds the target hash, and
 uses a separate credential reference. The configuration itself is intentionally
 not derived from the legacy or shadow runtime and is never copied into the
 repository.
+
+Glossary provisioning is a separate create-once boundary. The operator stages
+owner-only source files at
+`/home/bren/.config/chalkwright/google-drive-glossary.json` and
+`/home/bren/.config/chalkwright/google-drive-glossary-authorized-user.json`,
+then runs:
+
+```sh
+sudo -n /usr/local/sbin/chalkwright-production-admin provision-glossary
+```
+
+The fixed controller validates the exact `drive.readonly` authorized-user
+shape, rewrites its reference to the isolated production provider path, and
+creates only the protected config, provider credential, and job environment.
+It prints no protected value, contacts no provider, and starts no unit.
 
 Initial provision also creates `/var/lib/chalkwright/deploy/source` as an
 isolated checkout of the canonical GitHub repository and installs the
@@ -89,8 +106,8 @@ available during that acceptance window.
 
 `scripts/operations/activate-production.sh` is the subsequent explicit
 activation step. It proves integrity and backup, runs both read-only refreshes,
-starts the loopback display, requires health/readiness, starts the owned
-Calendar synchronization, and adds only the six permanent timers to
+starts the loopback display, requires health/readiness, starts the isolated
+glossary refresh and owned Calendar synchronization, and adds only the seven permanent timers to
 `multi-user.target`. It does not alter the external route or stop the shadow;
 the separately controlled Tailscale cutover follows only after this local
 acceptance succeeds.
