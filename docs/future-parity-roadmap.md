@@ -111,28 +111,36 @@ The production service serves the existing classroom URL, all permanent timers
 are active, Calendar reconciliation converges, and the historical shadow stays
 available without serving the display. One successful full classroom day is
 recorded. Alert activation, a fresh restore/restart drill, a natural
-post-repair credential-free PowerSchool refresh, and the approved observation
-interval remain open before M-18 retirement.
+scheduled PowerSchool refresh, and the approved observation interval remain
+open before M-18 retirement.
 
 The August 21 OpenClaw dependency scan found no reference in any active
 Chalkwright unit, production entrypoint, systemd dependency, package dependency,
 or protected production configuration. Dormant historical M-15 writer-exclusion
 and M-16 alert-provisioning modules, denial/safety guards, and their tests still
 name OpenClaw and are compiled into release archives even though no production
-unit can invoke them. Independent user-scoped OpenClaw services, including a
-legacy PowerSchool Chrome profile, also remain active on the host but are not a
-Chalkwright dependency. M-18 must classify and remove the dormant repository
-modules from Chalkwright; it must not remove unrelated OpenClaw workloads merely
-because they share the host.
+unit can invoke them. Independent user-scoped OpenClaw services remain active on
+the shared host but are not a Chalkwright dependency. The PowerSchool-specific
+legacy Chrome instance is now disabled and stopped; its unit template and
+profile remain available for bounded rollback until final removal approval.
+M-18 must classify and remove the dormant repository modules from Chalkwright;
+it must not remove unrelated OpenClaw workloads merely because they share the
+host.
 
 The active native repair runs in Bren's systemd user manager and is working:
 its last three recorded runs returned `authenticated` with exit code zero and
 no OpenClaw involvement. The failed `browser-launch-closed` record belongs to
-the obsolete system-manager lane and is not current repair evidence. The
-credential-free production plan refresh that followed the latest successful
-repair still returned `repair-required`, so the remaining stabilization gap is
-routine state handoff/reuse, not native authentication repair. The display
-retained its last-known-good plan and ran successfully.
+the obsolete system-manager lane and is not current repair evidence. A
+controlled August 21 qualification then ran the native repair followed by two
+consecutive credential-free production plan refreshes. Both refreshes returned
+`succeeded`; the display exposed a current, verified, non-degraded three-meeting
+plan with no diagnostics. After the legacy OpenClaw PowerSchool Chrome instance
+was disabled and stopped, a third credential-free refresh also succeeded and
+the display remained ready. The obsolete system-manager repair unit was moved
+to root-owned rollback storage; the working user-manager unit remains loaded.
+This closes native repair-to-routine state handoff and OpenClaw runtime
+separation as functional gates. Natural scheduled execution remains part of the
+stabilization observation interval.
 
 Goal: prove the migrated app can run without babysitting before final handoff.
 
