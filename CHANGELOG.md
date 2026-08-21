@@ -24,7 +24,8 @@ omitted.
 - Treat non-BCP-47 values in a glossary CSV's legacy `language` column as
   course/code-context metadata and use the protected course default for the
   source language. This admits the existing Web Design CSVs without weakening
-  row, quoting, or translation validation.
+  row, quoting, or translation validation. Bound entry and translation IDs by
+  deriving them with SHA-256 instead of embedding source text in identifiers.
 
 - Treat a normal production job skip as a clean process exit while retaining a
   nonzero exit for degraded work. Permanent activation can now complete when
