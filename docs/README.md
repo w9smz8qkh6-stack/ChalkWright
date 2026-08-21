@@ -87,12 +87,11 @@
 - [M-16 cutover rehearsal](migration/m16-review-package.md) — promoted bounded
   target, recovery, candidate, and alert-qualification evidence without a live
   route or scheduler handoff.
-- [M-17 parallel-canary plan](migration/m17-review-package.md) — accepted
-  two-gate architecture for an isolated candidate URL, secondary Calendar,
-  distinct runtime state, staggered jobs, report-only alerts, and the new
-  application-owned PowerSchool repair boundary before a separately approved
-  final handoff. The candidate is stopped and unpromoted; native repair remains
-  offline-only pending protected provisioning and live qualification.
+- [M-17 parallel-canary and handoff record](migration/m17-review-package.md) —
+  historical isolated-candidate evidence plus the current permanent-production
+  handoff status. The standalone lane now serves the existing classroom path;
+  its timers and owned-Calendar follower are active, while the shadow remains
+  available only as a rollback reference pending stabilization and M-18.
 - [Offline PowerSchool collector](powerschool-bell-collector.md) — safe
   configuration, filtered and persistent protected-state handling, four-way
   passive/manual/JIT/compatibility capability split, containment limits, and

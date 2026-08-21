@@ -2,13 +2,17 @@
 
 ## Status
 
-The M-17 parallel canary release and unit templates remain installed, but its
-protected runtime configuration is absent and it is not active. The historical
-shadow service is currently serving the display. The detailed material below is
-retained as the canary and handoff evidence record while a permanent production
-lane is re-grounded from the current repository.
+The M-17 parallel-canary material is retained as historical handoff evidence.
+As of August 21, 2026, the standalone permanent Chalkwright lane is deployed
+from protected GitHub `main`, serves the existing classroom URL and display
+mount, and runs its permanent refresh, glossary, Calendar, integrity, backup,
+and deployment timers. Google Calendar follows the local canonical plan. The
+historical shadow service remains active only as an available rollback
+reference and is not the current serving path. Remaining M-17 work is
+stabilization evidence and an explicit transition to M-18 retirement; the
+detailed canary chronology below remains historical and is not rewritten.
 
-The current offline parity delta closes the derived-plan/persistence contract
+The final canary parity delta closed the derived-plan/persistence contract
 split that produced the last sanitized future-plan failure class: a period too
 short to contain the configured dismissal window is rejected during canonical
 acquisition, before any plan-store call, and the bounded future lookup may
@@ -18,14 +22,14 @@ Chalkwright-owned SQLite with fresh Classroom objectives. The presentation now
 has bilingual English/Vietnamese vocabulary faces, a dedicated bellringer
 treatment, staged details, carousel enter/leave motion, reduced-motion static
 vocabulary, and bounded content compaction. An optional HTTPS-only course
-mapping supplies the independent attendance QR destination. These changes are
-offline only and do not claim that the prior live failure had this exact cause;
-a fresh native read-and-store qualification remains required.
+mapping supplies the independent attendance QR destination. Those changes were
+offline at that checkpoint; subsequent permanent-production qualification and
+classroom use supersede that pending-live statement.
 
-Native repair is now the sole PowerSchool recovery path. The executable
+Native repair is the sole PowerSchool recovery path. The executable
 OpenClaw state bridge, its test, and its repository-safety exception have been
 removed; historical evidence remains in ADR-0024 and this package.
-The host's current inactive installation is retained-profile release
+At that historical checkpoint, the host's inactive installation was release
 `sha256:a0354f63bcae4903d1b076eba1cb5fbbb152f0cd09203df617551a3fad4735b3`;
 it is the exact predecessor and rollback target for the next serialized inert
 upgrade. No candidate unit or provider timer is active and the candidate route

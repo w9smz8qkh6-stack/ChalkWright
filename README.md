@@ -165,14 +165,17 @@ local policy selects an allowed operation.
 ## Current roadmap position
 
 Milestones M-01 through M-16 are recorded as promoted. M-17's isolated
-parallel canary is implemented and live-qualified on a separate owned Calendar,
-private route, service topology, and state root. Physical-display qualification
-has accepted the course label, stable polling, and future-class-day preview.
-The latest header-parity refinements remain reviewed but undeployed.
+parallel-canary evidence supported the permanent handoff, and the standalone
+Chalkwright production lane now serves the existing classroom URL and display
+mount. Its immutable releases follow protected GitHub `main`; the display,
+read-only PowerSchool and Classroom acquisition, offline glossary catalog,
+owned-Calendar reconciliation, integrity, backup, and deployment timers are
+active. Physical classroom use has accepted the course labels, stable polling,
+future-class-day preview, Classroom enrichment, and multilingual vocabulary.
 
-The historical shadow service is currently serving the display. The permanent
-Chalkwright production lane, including its Calendar synchronization boundary,
-is being rebuilt from the current repository and protected configuration.
+The historical shadow service remains active only as an available rollback
+reference; it is not the display's source of truth or current serving path.
+Google Calendar remains a follower of Chalkwright's local canonical plan.
 
 M-17 used an isolated parallel canary with:
 
@@ -182,10 +185,12 @@ M-17 used an isolated parallel canary with:
 - staggered read-only provider acquisition; and
 - report-only candidate alerts.
 
-Those parallel-canary controls remain documented as the reversible deployment
-design. Future stabilization will determine when the retained legacy fallback
-can be removed. See the [migration plan](docs/migration-plan.md) and [M-17
-review package](docs/migration/m17-review-package.md).
+Those parallel-canary controls remain documented as historical handoff and
+rollback evidence. The active roadmap is now stabilization, recovery proof,
+remaining enrichment slices, and an explicitly approved M-18 retirement of the
+retained legacy fallback. See the [migration plan](docs/migration-plan.md),
+[future parity roadmap](docs/future-parity-roadmap.md), and [M-17 review
+package](docs/migration/m17-review-package.md).
 
 ## Configuration direction
 

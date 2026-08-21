@@ -1,18 +1,20 @@
 # Future parity roadmap
 
-This roadmap records the next parity work after the M-17 parallel-canary push.
-Implementation is intentionally paused until the user resumes the roadmap after
-the August 20, 2026 credit reset. In the meantime, small display fixes requested
-during live classroom use may still be handled separately.
+This roadmap records the remaining parity work after the M-17 parallel canary
+and permanent-production handoff. Work resumed on August 21, 2026. The
+standalone Chalkwright service now serves the existing classroom display path;
+its permanent timers and owned-Calendar follower are active, while the
+historical shadow service remains available only as a rollback reference.
 
 The priority order is user-directed: vocabulary first, on-disk lesson-reference
 slide enhancement second, and attendance-admin parity later.
 
 ## 1. Vocabulary parity slice
 
-Implementation status: complete in the standalone code path. Live production
-binding still requires the protected Drive-read credential and real academic-
-year folder ID; those values are not stored in the repository.
+Implementation status: complete and live in standalone production. Protected
+read-only Drive configuration binds the current academic year and five class
+sources outside the repository. The display reads only the imported local
+catalog and keeps working when Drive is unavailable.
 
 Goal: make the migrated app's word-of-the-day and vocabulary cards feel as
 useful as the legacy app while remaining explainable and bounded.
@@ -28,10 +30,12 @@ Scope:
 - expose safe diagnostics explaining the selection without printing private
   lesson source text.
 
-The implemented source is every direct-child CSV in each teacher-controlled
-`<academic-year>/<course name>/Glossaries` hierarchy. English and
-teacher-supplied translation columns are imported together; no LLM translation
-call is part of the feature.
+The implemented source is every direct-child CSV at each teacher-controlled,
+bounded exact course path. English and teacher-supplied Vietnamese, Korean, and
+Simplified Chinese columns are imported together; no LLM translation call is
+part of the feature. Web Design, Robotics, Computer Fundamentals, and Digital
+Media Production are live-bound. Existing meeting selections retain their word
+identity while teacher corrections refresh display capitalization and content.
 
 Acceptance:
 
@@ -79,6 +83,11 @@ Acceptance:
 
 ## 4. Preview and schedule confidence
 
+Implementation status: working in production. Current-day acquisition,
+unavailable-day distinction, bounded future lookahead, and physical
+next-class-day preview have passed. A natural Sunday acquisition of the next
+school week remains stabilization evidence rather than an implementation gap.
+
 Goal: keep Sunday lookahead, morning verification, and end-of-day preview
 boring and trustworthy.
 
@@ -97,14 +106,40 @@ Acceptance:
 
 ## 5. Operational stabilization and handoff evidence
 
+Implementation status: permanent handoff completed; stabilization remains.
+The production service serves the existing classroom URL, all permanent timers
+are active, Calendar reconciliation converges, and the historical shadow stays
+available without serving the display. One successful full classroom day is
+recorded. Alert activation, a fresh restore/restart drill, a natural
+PowerSchool expiry/repair cycle, and the approved observation interval remain
+open before M-18 retirement.
+
+The August 21 OpenClaw dependency scan found no reference in any active
+Chalkwright unit, production entrypoint, systemd dependency, package dependency,
+or protected production configuration. Dormant historical M-15 writer-exclusion
+and M-16 alert-provisioning modules, denial/safety guards, and their tests still
+name OpenClaw and are compiled into release archives even though no production
+unit can invoke them. Independent user-scoped OpenClaw services, including a
+legacy PowerSchool Chrome profile, also remain active on the host but are not a
+Chalkwright dependency. M-18 must classify and remove the dormant repository
+modules from Chalkwright; it must not remove unrelated OpenClaw workloads merely
+because they share the host.
+
+The same scan found that the latest production plan refresh is
+`repair-required` and the latest native repair ended with
+`browser-launch-closed`. The display retained its last-known-good plan and ran
+successfully, but PowerSchool expiry/repair cannot be marked stable until a
+later native repair and credential-free refresh succeed without OpenClaw.
+
 Goal: prove the migrated app can run without babysitting before final handoff.
 
 Scope:
 
 - observe scheduled refresh, backup, integrity, restart, and recovery behavior;
-- keep candidate alerts report-only until final handoff;
+- keep alerts report-only until their permanent ownership and destination are
+  explicitly approved;
 - run Fully Kiosk smoke checks in representative states; and
-- prepare the final route, timer, writer, and alert handoff decision.
+- retain redacted route, timer, writer, and recovery evidence for M-18.
 
 Acceptance:
 

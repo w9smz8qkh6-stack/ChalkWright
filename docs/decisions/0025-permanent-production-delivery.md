@@ -5,10 +5,10 @@
 
 ## Context
 
-The historical shadow service is currently displaying Chalkwright, while the
-M-17 canary release has retained deployment artifacts but no protected runtime
-configuration. This split makes it unclear which release receives fixes and
-prevents ordinary repository changes from reaching the display predictably.
+At acceptance, the historical shadow service displayed Chalkwright while the
+M-17 canary retained deployment artifacts but no protected runtime
+configuration. That split made it unclear which release received fixes and
+prevented ordinary repository changes from reaching the display predictably.
 
 ## Decision
 
@@ -36,6 +36,16 @@ repair authentication, create/share Calendars, or alter its Calendar target.
 - The shadow and M-17 lanes remain rollback references only until the permanent
   lane has completed live readiness, refresh, Calendar convergence, and restore
   verification.
+
+## Deployment status
+
+Implemented on August 21, 2026. The permanent lane now follows protected
+GitHub `main`, serves the existing classroom URL and mount, and runs the active
+production timer set. Live readiness, read-only provider refresh, local glossary
+projection, and owned-Calendar convergence have passed. The shadow service
+remains available but is not the serving path. Stabilization, a fresh restore
+drill, and explicit legacy retirement remain later evidence rather than
+prerequisites for ordinary permanent deployments.
 
 ## Verification
 
