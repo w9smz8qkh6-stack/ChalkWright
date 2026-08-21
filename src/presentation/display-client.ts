@@ -40,6 +40,7 @@
     dots: HTMLButtonElement[];
     serverHeld: boolean;
     timer: number | undefined;
+    vocabularyTimer: number | undefined;
     touchStartX: number | undefined;
   }
 
@@ -195,7 +196,50 @@
 
   function stopCarouselTimer(): void {
     if (carouselState?.timer) window.clearTimeout(carouselState.timer);
-    if (carouselState) carouselState.timer = undefined;
+    if (carouselState?.vocabularyTimer)
+      window.clearTimeout(carouselState.vocabularyTimer);
+    if (carouselState) {
+      carouselState.timer = undefined;
+      carouselState.vocabularyTimer = undefined;
+    }
+  }
+
+  function activateVocabularyFace(card: HTMLElement, index: number): void {
+    const panel = card.querySelector<HTMLElement>('[data-vocabulary-panel]');
+    const faces = [
+      ...card.querySelectorAll<HTMLElement>('[data-vocabulary-face]'),
+    ];
+    if (!panel || faces.length === 0) return;
+    const previous = Number(panel.dataset.activeFace || 0);
+    const active = (index + faces.length) % faces.length;
+    faces.forEach((face, faceIndex) => {
+      face.classList.toggle('is-active', faceIndex === active);
+      face.classList.toggle(
+        'is-leaving',
+        faceIndex === previous && faceIndex !== active,
+      );
+      face.setAttribute('aria-hidden', String(faceIndex !== active));
+    });
+    panel.dataset.activeFace = String(active);
+  }
+
+  function startVocabularyCycle(card: HTMLElement | undefined): void {
+    if (!carouselState || !card) return;
+    const faces = [
+      ...card.querySelectorAll<HTMLElement>('[data-vocabulary-face]'),
+    ];
+    if (faces.length === 0) return;
+    activateVocabularyFace(card, 0);
+    if (faces.length === 1 || carouselState.paused) return;
+    const state = carouselState;
+    let faceIndex = 0;
+    const advance = () => {
+      if (carouselState !== state || state.cards[state.index] !== card) return;
+      faceIndex = (faceIndex + 1) % faces.length;
+      activateVocabularyFace(card, faceIndex);
+      state.vocabularyTimer = window.setTimeout(advance, 6000);
+    };
+    state.vocabularyTimer = window.setTimeout(advance, 6000);
   }
 
   function initializeCarousel(previousState?: CarouselSnapshot): void {
@@ -222,6 +266,7 @@
       paused: sameMeeting ? previousState.paused : false,
       serverHeld: carousel.dataset.serverHeld === 'true',
       timer: undefined,
+      vocabularyTimer: undefined,
       touchStartX: undefined,
     };
 
@@ -264,6 +309,7 @@
       if (userInitiated && active) {
         announce(`Showing card ${state.index + 1} of ${cards.length}`);
       }
+      startVocabularyCycle(active);
       schedule(active);
     }
 
@@ -326,7 +372,10 @@
       pause.setAttribute('aria-pressed', String(carouselState.paused));
       pause.textContent = carouselState.paused ? 'Resume' : 'Pause';
       if (carouselState.paused) stopCarouselTimer();
-      else schedule(cards[carouselState.index]);
+      else {
+        startVocabularyCycle(cards[carouselState.index]);
+        schedule(cards[carouselState.index]);
+      }
       announce(carouselState.paused ? 'Carousel paused' : 'Carousel resumed');
     });
     if (carouselState.serverHeld && pause) {
