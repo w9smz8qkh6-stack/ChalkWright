@@ -344,10 +344,9 @@ export function selectVocabulary(options: {
   );
   if (sameMeeting !== undefined) {
     const candidate =
-      candidateFromHistory(sameMeeting) ??
       candidates.find(
         (item) => item.term.toLowerCase() === sameMeeting.term.toLowerCase(),
-      );
+      ) ?? candidateFromHistory(sameMeeting);
     if (candidate === undefined) {
       return {
         diagnostics: [

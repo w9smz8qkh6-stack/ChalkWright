@@ -146,3 +146,91 @@ test('rejects ambiguous exact course folders without downloading', async () => {
   );
   assert.equal(downloaded, false);
 });
+
+test('resolves an explicit bounded path below the course folder', async () => {
+  const listed: string[] = [];
+  await importDriveGlossaryCourse({
+    course: {
+      classId: 'computer-fundamentals' as never,
+      subject: 'Computer Fundamentals',
+      courseName: 'Computer Fundamentals (Grade 6)',
+      className: 'Computer Fundamentals',
+      defaultLanguage: 'en',
+      glossaryFolderPath: [
+        'Grade 6 CodeHS',
+        'Additional Resources',
+        'Unit Glossaries',
+      ],
+    },
+    academicYear: '2026-27',
+    academicYearFolderId: 'year-folder-123',
+    importedAt: '2035-04-13T01:00:00.000Z',
+    requestTimeoutMs: 5_000,
+    maximumPages: 2,
+    maximumFiles: 12,
+    signal: new AbortController().signal,
+    catalog: {
+      async replaceSource(input) {
+        return {
+          status: 'imported',
+          acceptedCount: input.entries.length,
+          rejectedCount: 0,
+        };
+      },
+      async listClassSources() {
+        return [];
+      },
+      async loadSource() {
+        return undefined;
+      },
+      async loadMedia() {
+        return undefined;
+      },
+    },
+    transport: {
+      async listChildren(request) {
+        listed.push(request.parentId);
+        const child = new Map([
+          [
+            'year-folder-123',
+            ['course-folder', 'Computer Fundamentals (Grade 6)'],
+          ],
+          ['course-folder', ['codehs-folder', 'Grade 6 CodeHS']],
+          ['codehs-folder', ['resources-folder', 'Additional Resources']],
+          ['resources-folder', ['glossary-folder', 'Unit Glossaries']],
+        ]).get(request.parentId);
+        if (child !== undefined)
+          return {
+            files: [
+              {
+                id: child[0]!,
+                name: child[1]!,
+                mimeType: 'application/vnd.google-apps.folder',
+              },
+            ],
+          };
+        return {
+          files: [
+            {
+              id: 'unit-file-123',
+              name: 'Unit 1 Glossary.csv',
+              mimeType: 'text/csv',
+            },
+          ],
+        };
+      },
+      async downloadCsv() {
+        return new TextEncoder().encode(
+          'Term,Definition\nAlgorithm,A sequence of steps\n',
+        );
+      },
+    },
+  });
+  assert.deepEqual(listed, [
+    'year-folder-123',
+    'course-folder',
+    'codehs-folder',
+    'resources-folder',
+    'glossary-folder',
+  ]);
+});

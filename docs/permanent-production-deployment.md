@@ -93,6 +93,18 @@ shape, rewrites its reference to the isolated production provider path, and
 creates only the protected config, provider credential, and job environment.
 It prints no protected value, contacts no provider, and starts no unit.
 
+Later course-binding or exact-folder-path changes use the separately fixed,
+validated config-only replacement and refresh actions:
+
+```sh
+sudo -n /usr/local/sbin/chalkwright-production-admin replace-glossary
+sudo -n /usr/local/sbin/chalkwright-production-admin refresh-glossary
+```
+
+Replacement atomically updates only the protected glossary configuration. It
+does not copy or alter the provider credential, print protected values, or
+contact Drive. The refresh action starts only the isolated glossary job.
+
 Initial provision also creates `/var/lib/chalkwright/deploy/source` as an
 isolated checkout of the canonical GitHub repository and installs the
 `systemd/production` templates through

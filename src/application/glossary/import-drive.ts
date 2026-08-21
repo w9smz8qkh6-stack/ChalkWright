@@ -18,7 +18,7 @@ export interface DriveGlossaryImportResult {
   readonly acceptedCount: number;
 }
 
-/** Imports every bounded CSV in one exact year/course/Glossaries folder. */
+/** Imports every bounded CSV at one exact configured path below a course. */
 export async function importDriveGlossaryCourse(options: {
   readonly course: GoogleDriveGlossaryCourseConfig;
   readonly academicYearFolderId: string;
@@ -37,12 +37,15 @@ export async function importDriveGlossaryCourse(options: {
     missingCode: 'glossary-drive-course-folder-missing',
     ambiguousCode: 'glossary-drive-course-folder-ambiguous',
   });
-  const glossaryFolderId = await exactFolder(options, {
-    parentId: courseFolderId,
-    name: 'Glossaries',
-    missingCode: 'glossary-drive-glossaries-folder-missing',
-    ambiguousCode: 'glossary-drive-glossaries-folder-ambiguous',
-  });
+  let glossaryFolderId = courseFolderId;
+  for (const name of options.course.glossaryFolderPath ?? ['Glossaries']) {
+    glossaryFolderId = await exactFolder(options, {
+      parentId: glossaryFolderId,
+      name,
+      missingCode: 'glossary-drive-glossaries-folder-missing',
+      ambiguousCode: 'glossary-drive-glossaries-folder-ambiguous',
+    });
+  }
   const children = await listAllChildren(options, glossaryFolderId);
   const csvFiles = children
     .filter(

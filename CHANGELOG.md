@@ -10,6 +10,11 @@ omitted.
 
 ### Added
 
+- Added exact bounded per-course glossary folder paths, enabling the existing
+  Computer Fundamentals and Digital Media Production Drive layouts without
+  recursive Drive search, plus fixed privileged actions for atomic protected
+  glossary-config replacement and an immediate isolated glossary refresh.
+
 - Completed standalone glossary word-of-the-day support: bounded read-only
   traversal of each configured `<academic-year>/<course>/Glossaries` Drive
   hierarchy, atomic import of all bounded direct-child CSVs with
@@ -20,6 +25,11 @@ omitted.
   translation call is used.
 
 ### Changed
+
+- Refresh an active meeting's stored vocabulary display data from the latest
+  matching catalog row while retaining the same selected term identity. CSV
+  capitalization, definition, example, and translation corrections now reach
+  the screen without rotating the word of the day.
 
 - Match the proven legacy vocabulary interaction while supporting three
   translations: keep the English term, definition, and example anchored while

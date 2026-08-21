@@ -21,6 +21,7 @@ function payload(root: string) {
         subject: 'Web Design',
         courseName: 'Web Design',
         defaultLanguage: 'en',
+        glossaryFolderPath: ['Resources', 'Unit Glossaries'],
       },
     ],
   };
@@ -35,6 +36,10 @@ test('loads a protected exact hierarchy mapping without reading credentials', ()
     const config = loadGoogleDriveGlossaryConfig(path, '/repository');
     assert.equal(config.academicYearFolderId, 'year-folder-123');
     assert.equal(config.courses[0]?.courseName, 'Web Design');
+    assert.deepEqual(config.courses[0]?.glossaryFolderPath, [
+      'Resources',
+      'Unit Glossaries',
+    ]);
     assert.equal(config.maximumFilesPerCourse, 20);
     assert.equal(config.requestTimeoutMs, 15_000);
   } finally {
@@ -54,6 +59,10 @@ test('rejects duplicate class bindings and unexpected fields', () => {
         courses: [...base.courses, { ...base.courses[0] }],
       },
       { ...base, unexpected: true },
+      {
+        ...base,
+        courses: [{ ...base.courses[0], glossaryFolderPath: [] }],
+      },
     ]) {
       writeFileSync(path, JSON.stringify(value), { mode: 0o600 });
       assert.throws(

@@ -13,6 +13,7 @@ export interface GoogleDriveGlossaryCourseConfig {
   readonly defaultLanguage: string;
   readonly courseName: string;
   readonly className?: string;
+  readonly glossaryFolderPath?: readonly string[];
 }
 
 export interface GoogleDriveGlossaryConfig {
@@ -67,7 +68,7 @@ function courseConfig(value: unknown): GoogleDriveGlossaryCourseConfig {
     throw new Error('glossary-config-invalid');
   const record = value as Record<string, unknown>;
   const required = ['classId', 'defaultLanguage', 'courseName', 'subject'];
-  const optional = ['className'];
+  const optional = ['className', 'glossaryFolderPath'];
   const keys = Object.keys(record);
   if (
     required.some((key) => !keys.includes(key)) ||
@@ -76,9 +77,9 @@ function courseConfig(value: unknown): GoogleDriveGlossaryCourseConfig {
     !languageCode(record.defaultLanguage) ||
     !boundedText(record.subject, 256) ||
     !boundedText(record.courseName, 256) ||
-    optional.some(
-      (key) => record[key] !== undefined && !boundedText(record[key], 512),
-    )
+    (record.className !== undefined && !boundedText(record.className, 512)) ||
+    (record.glossaryFolderPath !== undefined &&
+      !folderPath(record.glossaryFolderPath))
   )
     throw new Error('glossary-config-invalid');
   return {
@@ -89,7 +90,19 @@ function courseConfig(value: unknown): GoogleDriveGlossaryCourseConfig {
     ...(record.className === undefined
       ? {}
       : { className: record.className as string }),
+    ...(record.glossaryFolderPath === undefined
+      ? {}
+      : { glossaryFolderPath: [...(record.glossaryFolderPath as string[])] }),
   };
+}
+
+function folderPath(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.length <= 4 &&
+    value.every((segment) => boundedText(segment, 256))
+  );
 }
 
 function isPayload(value: unknown): value is Payload {

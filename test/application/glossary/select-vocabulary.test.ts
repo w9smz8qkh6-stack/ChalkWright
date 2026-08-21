@@ -6,6 +6,7 @@ import test from 'node:test';
 
 import { selectGlossaryVocabularyForPlan } from '../../../src/application/glossary/select-vocabulary.js';
 import { normalizeGlossaryCsv } from '../../../src/application/glossary/csv-normalizer.js';
+import { vocabularySelectionRecordKey } from '../../../src/domain/vocabulary.js';
 import type { EffectiveDayPlan } from '../../../src/domain/plans.js';
 import { SqliteClassroomEnrichmentCache } from '../../../src/infrastructure/sqlite/classroom-cache.js';
 import { SqliteDatabase } from '../../../src/infrastructure/sqlite/database.js';
@@ -100,6 +101,45 @@ test('selects and records one local glossary word per meeting, then reuses it', 
       unchanged: 1,
       unavailable: 0,
     });
+    await catalog.replaceSource(
+      normalizeGlossaryCsv({
+        importId: 'import-b',
+        source: {
+          sourceGlossaryId: 'web-design-main',
+          classId: 'web-design-a' as never,
+          academicYear: '2034-35',
+          sourceReference: 'google-drive:folder/file',
+          importedAt: '2035-04-13T00:20:00.000Z',
+        },
+        defaultLanguage: 'en',
+        csv: new TextEncoder().encode(
+          'Term,Definition,Vietnamese Word,Vietnamese Definition\nLayout,The updated arrangement of a page,Bố cục,Cách sắp xếp trang đã cập nhật\nContrast,Updated visible difference,Độ tương phản,Sự khác biệt dễ thấy đã cập nhật\n',
+        ),
+      }),
+    );
+    assert.deepEqual(await selectGlossaryVocabularyForPlan(options), {
+      selected: 1,
+      unchanged: 0,
+      unavailable: 0,
+    });
+    const refreshed = await state.findRecord({
+      kind: 'vocabulary-selection',
+      recordKey: vocabularySelectionRecordKey(
+        'web-design-a' as never,
+        'meeting-a' as never,
+      ),
+      date: plan.date,
+      classId: 'web-design-a' as never,
+      meetingId: 'meeting-a' as never,
+    });
+    assert.equal(refreshed?.kind, 'vocabulary-selection');
+    if (refreshed?.kind !== 'vocabulary-selection')
+      throw new Error('selection-missing');
+    assert.match(refreshed.data.selection.candidate?.term ?? '', /^[A-Z]/u);
+    assert.match(
+      refreshed.data.selection.candidate?.definition ?? '',
+      /updated/u,
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
