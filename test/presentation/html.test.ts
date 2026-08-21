@@ -211,11 +211,11 @@ test('vocabulary renders every multilingual face without flattening semantic tex
   assert.match(html, /vocabulary-multilingual/u);
   assert.match(
     html,
-    /--vocabulary-face-delay:0s;--vocabulary-cycle-duration:24s/u,
+    /--vocabulary-face-delay:0s;--vocabulary-cycle-duration:24s;animation:vocabulary-face-cycle 24s linear 0s infinite;z-index:1;opacity:1/u,
   );
   assert.match(
     html,
-    /--vocabulary-face-delay:18s;--vocabulary-cycle-duration:24s/u,
+    /--vocabulary-face-delay:18s;--vocabulary-cycle-duration:24s;animation:vocabulary-face-cycle 24s linear 18s infinite/u,
   );
   assert.match(html, /data-duration-ms="24000"/u);
 });
