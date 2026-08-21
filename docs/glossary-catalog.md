@@ -35,9 +35,11 @@ rejects malformed quotes, missing required columns, invalid rows, and oversized
 files before catalog writes. PDF files remain teacher reference material unless
 a separately tested extraction path is introduced. Imports replace the entries
 for one source atomically after validation, while
-the source record and audit trail remain local. A display selection should keep
-the selected entry snapshot, so later source edits do not rewrite a past day's
-word of the day.
+the source record and audit trail remain local. A refresh keeps the same word
+for an already selected meeting but updates that meeting's display snapshot
+from the current catalog row, so teacher corrections such as capitalization or
+translation edits reach the active screen without rotating to a different
+term.
 Entry and translation identities are bounded SHA-256 derivations of their
 source row and relevant content, so the longest accepted definitions cannot
 overflow the local catalog's identifier contract.
@@ -46,10 +48,14 @@ The provider boundary has only two capabilities: list the direct children of a
 known folder and download a bounded CSV file. It accepts no Drive write,
 sharing, delete, or global-search capability. Protected production
 configuration binds one known academic-year folder ID and, for each mapped
-class, an exact course name. The importer resolves only the direct-child
-`<academic-year>/<course name>/Glossaries` hierarchy, imports every direct-child
-CSV in that folder in deterministic filename order, rejects missing or
-ambiguous exact folders, and enforces finite page and per-course file budgets.
+class, an exact course name. By default the importer resolves only the
+direct-child `<academic-year>/<course name>/Glossaries` hierarchy. A course may
+instead declare one bounded exact folder path below its course folder, allowing
+established layouts such as `Grade 6 CodeHS/Additional Resources/Unit
+Glossaries` or a case-sensitive `glossaries` folder without enabling recursive
+search. It imports every direct-child CSV in the resolved folder in
+deterministic filename order, rejects missing or ambiguous exact folders, and
+enforces finite path, page, and per-course file budgets.
 
 After import, Chalkwright converts local catalog rows to class-scoped
 vocabulary candidates, selects one deterministic word per effective-plan

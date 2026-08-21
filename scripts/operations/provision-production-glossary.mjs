@@ -5,11 +5,14 @@ import {
   constants,
   existsSync,
   fstatSync,
+  fchmodSync,
+  fchownSync,
   lstatSync,
   mkdirSync,
   openSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -31,13 +34,9 @@ const serviceAccount = Object.freeze({ uid: 972, gid: 972 });
 const driveScope = 'https://www.googleapis.com/auth/drive.readonly';
 
 export function buildProductionGlossaryPayload(config, credential) {
-  assertConfig(config);
   assertCredential(credential);
   return {
-    config: {
-      ...config,
-      credentialReferencePath: target.credential,
-    },
+    config: buildProductionGlossaryConfig(config),
     credential,
     environment: {
       CLASSROOM_HUB_PRODUCTION_CONFIG_REFERENCE:
@@ -47,11 +46,24 @@ export function buildProductionGlossaryPayload(config, credential) {
   };
 }
 
+export function buildProductionGlossaryConfig(config) {
+  assertConfig(config);
+  return {
+    ...config,
+    credentialReferencePath: target.credential,
+  };
+}
+
 function main() {
-  if (process.argv.slice(2).join(' ') !== '--apply')
+  const operation = process.argv.slice(2).join(' ');
+  if (!['--apply', '--replace-config'].includes(operation))
     throw new Error('production-glossary-provision-usage-invalid');
   if (process.geteuid?.() !== 0)
     throw new Error('production-glossary-provision-root-required');
+  if (operation === '--replace-config') {
+    replaceConfig();
+    return;
+  }
   if (
     !existsSync('/etc/chalkwright/production/server.json') ||
     Object.values(target).some(existsSync)
@@ -103,6 +115,33 @@ function main() {
   );
 }
 
+function replaceConfig() {
+  if (
+    !existsSync('/etc/chalkwright/production/server.json') ||
+    Object.values(target).some((path) => !existsSync(path))
+  )
+    throw new Error('production-glossary-replace-target-invalid');
+  assertProtectedTarget(target.config, serviceAccount.uid, serviceAccount.gid);
+  assertProtectedTarget(
+    target.credential,
+    serviceAccount.uid,
+    serviceAccount.gid,
+  );
+  assertProtectedTarget(target.environment, 0, 0);
+  const config = buildProductionGlossaryConfig(
+    JSON.parse(readProtectedSource(source.config)),
+  );
+  writeReplacement(
+    target.config,
+    `${JSON.stringify(config, null, 2)}\n`,
+    serviceAccount.uid,
+    serviceAccount.gid,
+  );
+  process.stdout.write(
+    '{"status":"production-glossary-config-replaced","filesReplaced":1,"credentialsChanged":0,"valuesPrinted":0,"providerRequests":0,"unitsStarted":0}\n',
+  );
+}
+
 function assertConfig(value) {
   if (value === null || typeof value !== 'object' || Array.isArray(value))
     throw new Error('production-glossary-provision-config-invalid');
@@ -141,6 +180,7 @@ function assertConfig(value) {
             'className',
             'courseName',
             'defaultLanguage',
+            'glossaryFolderPath',
             'subject',
           ].includes(key),
       ) ||
@@ -150,6 +190,20 @@ function assertConfig(value) {
       typeof item.courseName !== 'string' ||
       typeof item.defaultLanguage !== 'string' ||
       (item.className !== undefined && typeof item.className !== 'string')
+    )
+      throw new Error('production-glossary-provision-config-invalid');
+    if (
+      item.glossaryFolderPath !== undefined &&
+      (!Array.isArray(item.glossaryFolderPath) ||
+        item.glossaryFolderPath.length < 1 ||
+        item.glossaryFolderPath.length > 4 ||
+        item.glossaryFolderPath.some(
+          (segment) =>
+            typeof segment !== 'string' ||
+            segment.length < 1 ||
+            segment.length > 256 ||
+            /[\r\n\0]/u.test(segment),
+        ))
     )
       throw new Error('production-glossary-provision-config-invalid');
     classIds.add(item.classId);
@@ -214,11 +268,50 @@ function writeNew(path, bytes, uid, gid) {
   );
   try {
     writeFileSync(descriptor, bytes, 'utf8');
+    fchmodSync(descriptor, 0o600);
+    fchownSync(descriptor, uid, gid);
   } finally {
     closeSync(descriptor);
   }
-  chmodSync(path, 0o600);
-  chownSync(path, uid, gid);
+}
+
+function assertProtectedTarget(path, uid, gid) {
+  const stat = lstatSync(path);
+  if (
+    !stat.isFile() ||
+    stat.isSymbolicLink() ||
+    stat.nlink !== 1 ||
+    (stat.mode & 0o077) !== 0 ||
+    stat.uid !== uid ||
+    stat.gid !== gid ||
+    realpathSync(path) !== path
+  )
+    throw new Error('production-glossary-replace-target-unsafe');
+}
+
+function writeReplacement(path, bytes, uid, gid) {
+  const candidate = `${path}.candidate-${process.pid}`;
+  let descriptor;
+  try {
+    descriptor = openSync(
+      candidate,
+      constants.O_WRONLY |
+        constants.O_CREAT |
+        constants.O_EXCL |
+        constants.O_NOFOLLOW,
+      0o600,
+    );
+    writeFileSync(descriptor, bytes, 'utf8');
+    fchmodSync(descriptor, 0o600);
+    fchownSync(descriptor, uid, gid);
+    closeSync(descriptor);
+    descriptor = undefined;
+    renameSync(candidate, path);
+  } catch (error) {
+    if (descriptor !== undefined) closeSync(descriptor);
+    rmSync(candidate, { force: true });
+    throw error;
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

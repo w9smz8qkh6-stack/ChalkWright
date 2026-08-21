@@ -23,10 +23,10 @@ deploy_digest=7090d2c37b2ea3e00a4e79761c3d870458314963ac2d50fad96eadb1e5374836
 migration_digest=22bcf8b71558f013662b7fff5028603dfc0715b96824ee2d2a1c7af62bc63c8b
 repair_digest=2c0f4854c18556c3e1b6adbe92a7510d362b063f1675815f7be8c0748abc3f67
 repair_provision_digest=f27fb2431a36b4e4339583eb1ec341b582d7397ca624765c40ea58e0b5d1ccae
-glossary_provision_digest=fec49ac5738cffc27135eeea8fa7c84efec74b5f781f5e538be1c239118d5f07
+glossary_provision_digest=f16df3c9e5c5e071134fb3bef6910993eef1da39228a2a7113a1f95476dc8394
 bootstrap_helper_digest=72d7ad3023fa1fb9292499073ae42b02b2c30f2fe06630cff85762d790b6edbb
 
-[[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing
+[[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/bin/systemctl && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing
 for path in "$bootstrap" "$provision" "$deploy" "$migration" "$repair" "$repair_provision" "$glossary_provision" "$bootstrap_helper"; do
   [[ -f $path && ! -L $path ]] || reject chalkwright-sudo-policy-source-missing
 done
@@ -77,6 +77,8 @@ case $1 in
   migrate-plans) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/migrate-production-plan-state.sh ;;
   repair-powerschool) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/repair-production-powerschool.sh ;;
   provision-glossary) exec /usr/bin/node /usr/local/lib/chalkwright-production-admin/provision-production-glossary.mjs --apply ;;
+  replace-glossary) exec /usr/bin/node /usr/local/lib/chalkwright-production-admin/provision-production-glossary.mjs --replace-config ;;
+  refresh-glossary) exec /usr/bin/systemctl start chalkwright-glossary-refresh.service ;;
   activate) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/activate-production.sh ;;
   cutover) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/cutover-production-tailscale-route.sh ;;
   *) reject chalkwright-admin-action-invalid ;;
@@ -87,7 +89,7 @@ WRAPPER
 
 sudoers_candidate=$admin_root/sudoers.candidate
 /usr/bin/tee "$sudoers_candidate" >/dev/null <<'SUDOERS'
-Cmnd_Alias CHALKWRIGHT_PRODUCTION_ADMIN = /usr/local/sbin/chalkwright-production-admin bootstrap, /usr/local/sbin/chalkwright-production-admin provision, /usr/local/sbin/chalkwright-production-admin deploy, /usr/local/sbin/chalkwright-production-admin migrate-plans, /usr/local/sbin/chalkwright-production-admin repair-powerschool, /usr/local/sbin/chalkwright-production-admin provision-glossary, /usr/local/sbin/chalkwright-production-admin activate, /usr/local/sbin/chalkwright-production-admin cutover
+Cmnd_Alias CHALKWRIGHT_PRODUCTION_ADMIN = /usr/local/sbin/chalkwright-production-admin bootstrap, /usr/local/sbin/chalkwright-production-admin provision, /usr/local/sbin/chalkwright-production-admin deploy, /usr/local/sbin/chalkwright-production-admin migrate-plans, /usr/local/sbin/chalkwright-production-admin repair-powerschool, /usr/local/sbin/chalkwright-production-admin provision-glossary, /usr/local/sbin/chalkwright-production-admin replace-glossary, /usr/local/sbin/chalkwright-production-admin refresh-glossary, /usr/local/sbin/chalkwright-production-admin activate, /usr/local/sbin/chalkwright-production-admin cutover
 bren ALL=(root) NOPASSWD: CHALKWRIGHT_PRODUCTION_ADMIN
 SUDOERS
 /usr/sbin/visudo -cf "$sudoers_candidate" >/dev/null || reject chalkwright-sudo-policy-invalid
@@ -96,4 +98,4 @@ SUDOERS
 /usr/sbin/visudo -c >/dev/null || reject chalkwright-sudo-policy-global-invalid
 created=()
 trap - EXIT INT TERM
-echo '{"status":"installed","commands":8,"generalRootShell":false,"passwordlessAll":false}'
+echo '{"status":"installed","commands":10,"generalRootShell":false,"passwordlessAll":false}'

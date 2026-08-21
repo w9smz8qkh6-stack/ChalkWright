@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+
 import type { IsoInstant } from '../../contracts/v1/common.js';
 import type { GoogleDriveGlossaryCourseConfig } from '../../config/google-drive-glossary.js';
 import type { VocabularyCandidate } from '../../domain/vocabulary.js';
@@ -57,6 +59,12 @@ export async function selectGlossaryVocabularyForPlan(options: {
       mapping.classId,
       meeting.meetingId,
     );
+    const candidates = await candidatesForClass(
+      options.catalog,
+      courseConfig,
+      mapping.classId,
+      options.academicYear,
+    );
     const existing = await options.state.findRecord({
       kind: 'vocabulary-selection',
       recordKey: selectionKey,
@@ -68,15 +76,19 @@ export async function selectGlossaryVocabularyForPlan(options: {
       existing?.kind === 'vocabulary-selection' &&
       existing.data.selection.candidate !== undefined
     ) {
-      unchanged += 1;
-      continue;
+      const current = candidates.find(
+        (candidate) =>
+          candidate.term.toLowerCase() ===
+          existing.data.selection.candidate!.term.toLowerCase(),
+      );
+      if (
+        current === undefined ||
+        isDeepStrictEqual(current, existing.data.selection.candidate)
+      ) {
+        unchanged += 1;
+        continue;
+      }
     }
-    const candidates = await candidatesForClass(
-      options.catalog,
-      courseConfig,
-      mapping.classId,
-      options.academicYear,
-    );
     const historyKey = vocabularyHistoryRecordKey(mapping.classId);
     const historyRecord = await options.state.findRecord({
       kind: 'vocabulary-history',
