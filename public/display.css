@@ -840,8 +840,36 @@ a {
   backface-visibility: hidden;
 }
 
-.vocabulary-vietnamese {
+.vocabulary-face:nth-child(2) {
   transform: rotateY(180deg);
+}
+
+.vocabulary-stage.vocabulary-multilingual .vocabulary-flip {
+  animation: none;
+  transform: none;
+}
+
+.vocabulary-stage.vocabulary-multilingual .vocabulary-face {
+  z-index: 0;
+  transform: none;
+  opacity: 0;
+  animation: vocabulary-face-cycle calc(var(--vocabulary-face-count) * 6s)
+    linear infinite;
+  animation-delay: calc(var(--vocabulary-face-index) * 6s);
+}
+
+@keyframes vocabulary-face-cycle {
+  0%,
+  20% {
+    z-index: 1;
+    opacity: 1;
+  }
+
+  24%,
+  100% {
+    z-index: 0;
+    opacity: 0;
+  }
 }
 
 .vocabulary-face h2 {
@@ -1598,6 +1626,36 @@ a {
     min-height: 20rem;
     transform: none;
     backface-visibility: visible;
+  }
+
+  .vocabulary-stage.vocabulary-multilingual .vocabulary-flip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .vocabulary-stage.vocabulary-multilingual .vocabulary-face {
+    min-height: 0;
+    gap: 0.25rem;
+    padding: clamp(0.4rem, 0.8vw, 0.8rem);
+    animation: none !important;
+    opacity: 1;
+  }
+
+  .vocabulary-stage.vocabulary-multilingual .vocabulary-face h2 {
+    font-size: clamp(1.6rem, 2.8vw, 3.2rem);
+  }
+
+  .vocabulary-stage.vocabulary-multilingual .vocabulary-language {
+    font-size: clamp(0.8rem, 1.1vw, 1.1rem);
+  }
+
+  .vocabulary-stage.vocabulary-multilingual .vocabulary-definition {
+    font-size: clamp(0.95rem, 1.4vw, 1.5rem);
+  }
+
+  .vocabulary-stage.vocabulary-multilingual .vocabulary-example {
+    margin-top: 0.15rem;
+    font-size: clamp(0.85rem, 1.1vw, 1.2rem);
   }
 
   .skip-link:focus,

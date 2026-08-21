@@ -7,11 +7,14 @@ reject() { echo "{\"status\":\"rejected\",\"code\":\"$1\"}" >&2; exit 1; }
 [[ $# -eq 0 ]] || reject production-activate-usage-invalid
 release=/opt/chalkwright/current
 config=/etc/chalkwright/production/server.json
-for path in "$config" /etc/chalkwright/production/calendar.json /etc/chalkwright/production/jobs/plan-refresh.env /etc/chalkwright/production/jobs/classroom-refresh.env /etc/chalkwright/production/jobs/maintenance.env; do
+for path in "$config" /etc/chalkwright/production/calendar.json /etc/chalkwright/production/glossary.json /etc/chalkwright/production/jobs/plan-refresh.env /etc/chalkwright/production/jobs/classroom-refresh.env /etc/chalkwright/production/jobs/glossary-refresh.env /etc/chalkwright/production/jobs/maintenance.env; do
   [[ -f $path && ! -L $path ]] || reject production-activate-config-missing
 done
-[[ -L $release && -f "$release/dist/entrypoints/production-server.js" ]] || reject production-activate-release-invalid
-for unit in chalkwright.service chalkwright-backup.service chalkwright-calendar-sync.service chalkwright-classroom-refresh.service chalkwright-deploy.service chalkwright-integrity.service chalkwright-plan-refresh.service; do
+[[ -L $release && -f "$release/dist/entrypoints/production-server.js" && -f "$release/dist/entrypoints/production-glossary-refresh.js" && -f "$release/systemd/production/chalkwright-glossary-refresh.service.in" && -f "$release/systemd/production/chalkwright-glossary-refresh.timer.in" ]] || reject production-activate-release-invalid
+/usr/bin/install -o root -g root -m 0644 "$release/systemd/production/chalkwright-glossary-refresh.service.in" /etc/systemd/system/chalkwright-glossary-refresh.service
+/usr/bin/install -o root -g root -m 0644 "$release/systemd/production/chalkwright-glossary-refresh.timer.in" /etc/systemd/system/chalkwright-glossary-refresh.timer
+/usr/bin/systemctl daemon-reload
+for unit in chalkwright.service chalkwright-backup.service chalkwright-calendar-sync.service chalkwright-classroom-refresh.service chalkwright-deploy.service chalkwright-glossary-refresh.service chalkwright-integrity.service chalkwright-plan-refresh.service; do
   [[ -f "/etc/systemd/system/$unit" && ! -L "/etc/systemd/system/$unit" ]] || reject production-activate-unit-missing
 done
 
@@ -24,6 +27,7 @@ NODE
 ) || reject production-activate-health-config-invalid
 timers=(
   chalkwright-plan-refresh.timer
+  chalkwright-glossary-refresh.timer
   chalkwright-classroom-refresh.timer
   chalkwright-calendar-sync.timer
   chalkwright-integrity.timer
@@ -32,7 +36,7 @@ timers=(
 )
 new_timer_links=()
 stop_permanent() {
-  /usr/bin/systemctl stop "${timers[@]}" chalkwright-calendar-sync.service chalkwright-classroom-refresh.service chalkwright-plan-refresh.service chalkwright-backup.service chalkwright-integrity.service chalkwright.service || true
+  /usr/bin/systemctl stop "${timers[@]}" chalkwright-calendar-sync.service chalkwright-classroom-refresh.service chalkwright-glossary-refresh.service chalkwright-plan-refresh.service chalkwright-backup.service chalkwright-integrity.service chalkwright.service || true
   for timer in "${new_timer_links[@]}"; do
     /usr/bin/rm -f -- "/etc/systemd/system/multi-user.target.wants/$timer"
   done
@@ -41,6 +45,7 @@ stop_permanent() {
 /usr/bin/systemctl start chalkwright-integrity.service || reject production-activate-integrity-failed
 /usr/bin/systemctl start chalkwright-backup.service || { stop_permanent; reject production-activate-backup-failed; }
 /usr/bin/systemctl start chalkwright-plan-refresh.service || { stop_permanent; reject production-activate-plan-failed; }
+/usr/bin/systemctl start chalkwright-glossary-refresh.service || { stop_permanent; reject production-activate-glossary-failed; }
 /usr/bin/systemctl start chalkwright-classroom-refresh.service || { stop_permanent; reject production-activate-classroom-failed; }
 /usr/bin/systemctl start chalkwright.service || { stop_permanent; reject production-activate-server-failed; }
 for _ in {1..20}; do
@@ -54,4 +59,4 @@ for timer in "${timers[@]}"; do
   /usr/bin/systemctl add-wants multi-user.target "$timer" || { stop_permanent; reject production-activate-timer-enable-failed; }
   /usr/bin/systemctl start "$timer" || { stop_permanent; reject production-activate-timer-start-failed; }
 done
-echo "{\"status\":\"active-internal\",\"displayHealth\":true,\"calendarSync\":\"started\",\"timersStarted\":6,\"routeChanges\":0,\"legacyServicesStopped\":0}"
+echo "{\"status\":\"active-internal\",\"displayHealth\":true,\"calendarSync\":\"started\",\"glossaryRefresh\":\"started\",\"timersStarted\":7,\"routeChanges\":0,\"legacyServicesStopped\":0}"

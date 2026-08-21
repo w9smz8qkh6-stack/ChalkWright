@@ -15,17 +15,19 @@ deploy=/home/bren/src/chalkwright-m17-canary/scripts/operations/deploy-productio
 migration=/home/bren/src/chalkwright-m17-canary/scripts/operations/migrate-production-plan-state.sh
 repair=/home/bren/src/chalkwright-m17-canary/scripts/operations/repair-production-powerschool.sh
 repair_provision=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-m17-powerschool-repair.mjs
+glossary_provision=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-production-glossary.mjs
 bootstrap_helper=/home/bren/src/chalkwright-m17-canary/scripts/operations/provision-m16-production.mjs
 bootstrap_digest=d6f26009f6bdf02924930da112b6288d032aaffbce2daf749469f71252d3bb10
-provision_digest=f3d4039ad0d1b0a1fa19acd6807df61acd00b38e7455dcb8e308145d16a9a3cf
+provision_digest=96ba05c996c310cc0220bec94a1e603823b16956c3d161ccc75c0829d3dd12ee
 deploy_digest=7090d2c37b2ea3e00a4e79761c3d870458314963ac2d50fad96eadb1e5374836
 migration_digest=22bcf8b71558f013662b7fff5028603dfc0715b96824ee2d2a1c7af62bc63c8b
 repair_digest=2c0f4854c18556c3e1b6adbe92a7510d362b063f1675815f7be8c0748abc3f67
 repair_provision_digest=f27fb2431a36b4e4339583eb1ec341b582d7397ca624765c40ea58e0b5d1ccae
+glossary_provision_digest=fec49ac5738cffc27135eeea8fa7c84efec74b5f781f5e538be1c239118d5f07
 bootstrap_helper_digest=72d7ad3023fa1fb9292499073ae42b02b2c30f2fe06630cff85762d790b6edbb
 
 [[ -x /usr/bin/node && -x /usr/bin/bash && -x /usr/bin/sha256sum && -x /usr/sbin/visudo ]] || reject chalkwright-sudo-policy-tool-missing
-for path in "$bootstrap" "$provision" "$deploy" "$migration" "$repair" "$repair_provision" "$bootstrap_helper"; do
+for path in "$bootstrap" "$provision" "$deploy" "$migration" "$repair" "$repair_provision" "$glossary_provision" "$bootstrap_helper"; do
   [[ -f $path && ! -L $path ]] || reject chalkwright-sudo-policy-source-missing
 done
 actual_bootstrap=$(/usr/bin/sha256sum "$bootstrap" | /usr/bin/cut -d ' ' -f 1)
@@ -34,8 +36,9 @@ actual_deploy=$(/usr/bin/sha256sum "$deploy" | /usr/bin/cut -d ' ' -f 1)
 actual_migration=$(/usr/bin/sha256sum "$migration" | /usr/bin/cut -d ' ' -f 1)
 actual_repair=$(/usr/bin/sha256sum "$repair" | /usr/bin/cut -d ' ' -f 1)
 actual_repair_provision=$(/usr/bin/sha256sum "$repair_provision" | /usr/bin/cut -d ' ' -f 1)
+actual_glossary_provision=$(/usr/bin/sha256sum "$glossary_provision" | /usr/bin/cut -d ' ' -f 1)
 actual_bootstrap_helper=$(/usr/bin/sha256sum "$bootstrap_helper" | /usr/bin/cut -d ' ' -f 1)
-[[ $actual_bootstrap == "$bootstrap_digest" && $actual_provision == "$provision_digest" && $actual_deploy == "$deploy_digest" && $actual_migration == "$migration_digest" && $actual_repair == "$repair_digest" && $actual_repair_provision == "$repair_provision_digest" && $actual_bootstrap_helper == "$bootstrap_helper_digest" ]] || reject chalkwright-sudo-policy-source-drift
+[[ $actual_bootstrap == "$bootstrap_digest" && $actual_provision == "$provision_digest" && $actual_deploy == "$deploy_digest" && $actual_migration == "$migration_digest" && $actual_repair == "$repair_digest" && $actual_repair_provision == "$repair_provision_digest" && $actual_glossary_provision == "$glossary_provision_digest" && $actual_bootstrap_helper == "$bootstrap_helper_digest" ]] || reject chalkwright-sudo-policy-source-drift
 if [[ $1 == --install ]]; then
   [[ ! -e $admin && ! -L $admin && ! -e $admin_root && ! -L $admin_root && ! -e $sudoers && ! -L $sudoers ]] || reject chalkwright-sudo-policy-target-exists
 else
@@ -58,6 +61,7 @@ created+=("$admin_root")
 /usr/bin/install -o root -g root -m 0700 "$migration" "$admin_root/migrate-production-plan-state.sh"
 /usr/bin/install -o root -g root -m 0700 "$repair" "$admin_root/repair-production-powerschool.sh"
 /usr/bin/install -o root -g root -m 0700 "$repair_provision" "$admin_root/provision-m17-powerschool-repair.mjs"
+/usr/bin/install -o root -g root -m 0700 "$glossary_provision" "$admin_root/provision-production-glossary.mjs"
 
 wrapper_candidate=$admin_root/wrapper.candidate
 /usr/bin/tee "$wrapper_candidate" >/dev/null <<'WRAPPER'
@@ -72,6 +76,7 @@ case $1 in
   deploy) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/deploy-production-from-main.sh ;;
   migrate-plans) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/migrate-production-plan-state.sh ;;
   repair-powerschool) exec /usr/bin/bash /usr/local/lib/chalkwright-production-admin/repair-production-powerschool.sh ;;
+  provision-glossary) exec /usr/bin/node /usr/local/lib/chalkwright-production-admin/provision-production-glossary.mjs --apply ;;
   activate) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/activate-production.sh ;;
   cutover) exec /usr/bin/bash /opt/chalkwright/current/scripts/operations/cutover-production-tailscale-route.sh ;;
   *) reject chalkwright-admin-action-invalid ;;
@@ -82,7 +87,7 @@ WRAPPER
 
 sudoers_candidate=$admin_root/sudoers.candidate
 /usr/bin/tee "$sudoers_candidate" >/dev/null <<'SUDOERS'
-Cmnd_Alias CHALKWRIGHT_PRODUCTION_ADMIN = /usr/local/sbin/chalkwright-production-admin bootstrap, /usr/local/sbin/chalkwright-production-admin provision, /usr/local/sbin/chalkwright-production-admin deploy, /usr/local/sbin/chalkwright-production-admin migrate-plans, /usr/local/sbin/chalkwright-production-admin repair-powerschool, /usr/local/sbin/chalkwright-production-admin activate, /usr/local/sbin/chalkwright-production-admin cutover
+Cmnd_Alias CHALKWRIGHT_PRODUCTION_ADMIN = /usr/local/sbin/chalkwright-production-admin bootstrap, /usr/local/sbin/chalkwright-production-admin provision, /usr/local/sbin/chalkwright-production-admin deploy, /usr/local/sbin/chalkwright-production-admin migrate-plans, /usr/local/sbin/chalkwright-production-admin repair-powerschool, /usr/local/sbin/chalkwright-production-admin provision-glossary, /usr/local/sbin/chalkwright-production-admin activate, /usr/local/sbin/chalkwright-production-admin cutover
 bren ALL=(root) NOPASSWD: CHALKWRIGHT_PRODUCTION_ADMIN
 SUDOERS
 /usr/sbin/visudo -cf "$sudoers_candidate" >/dev/null || reject chalkwright-sudo-policy-invalid
@@ -91,4 +96,4 @@ SUDOERS
 /usr/sbin/visudo -c >/dev/null || reject chalkwright-sudo-policy-global-invalid
 created=()
 trap - EXIT INT TERM
-echo '{"status":"installed","commands":7,"generalRootShell":false,"passwordlessAll":false}'
+echo '{"status":"installed","commands":8,"generalRootShell":false,"passwordlessAll":false}'

@@ -8,6 +8,17 @@ omitted.
 
 ## [Unreleased]
 
+### Added
+
+- Completed standalone glossary word-of-the-day support: bounded read-only
+  traversal of each configured `<academic-year>/<course>/Glossaries` Drive
+  hierarchy, atomic import of all bounded direct-child CSVs with
+  teacher-supplied English examples plus Vietnamese, Korean, and Simplified
+  Chinese fields, a four-language rotating vocabulary card,
+  deterministic per-meeting selection/history, native provider-free display
+  projection, and an isolated 07:27 production refresh timer. No LLM
+  translation call is used.
+
 ### Changed
 
 - Treat a normal production job skip as a clean process exit while retaining a

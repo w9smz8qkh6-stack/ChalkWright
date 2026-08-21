@@ -7,8 +7,10 @@ import test from 'node:test';
 
 import type { ClassId } from '../../../src/domain/identities.js';
 import { stableSerialize } from '../../../src/domain/pure-values.js';
+import { vocabularySelectionRecordKey } from '../../../src/domain/vocabulary.js';
 import { SqliteDatabase } from '../../../src/infrastructure/sqlite/database.js';
 import { SqliteDisplayContentProjection } from '../../../src/infrastructure/sqlite/display-content-projection.js';
+import { SqliteApplicationStateRepository } from '../../../src/infrastructure/sqlite/repository.js';
 
 function checksum(value: unknown): string {
   return createHash('sha256').update(stableSerialize(value)).digest('hex');
@@ -119,6 +121,59 @@ test('projects copied static lesson content and complete meeting-scoped bilingua
       'sự lặp lại',
     );
     assert.equal(projection.vocabularyCard?.vocabulary?.partOfSpeech, 'noun');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('prefers a validated native meeting selection over copied continuity vocabulary', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'chalkwright-native-vocabulary-'));
+  try {
+    using database = new SqliteDatabase(join(root, 'state.sqlite'), {
+      migration: { appliedAt: '2035-04-13T00:00:00.000Z' },
+    });
+    const repository = new SqliteApplicationStateRepository(database, {
+      clock: { now: () => '2035-04-13T01:00:00.000Z' },
+      nextRevision: () => 'native-vocabulary-revision',
+    });
+    const classId = 'class-alpha' as ClassId;
+    const result = await repository.storeRecord({
+      kind: 'vocabulary-selection',
+      recordKey: vocabularySelectionRecordKey(classId, 'meeting-alpha'),
+      scope: {
+        date: '2035-04-13',
+        classId,
+        meetingId: 'meeting-alpha',
+      },
+      data: {
+        selection: {
+          candidate: {
+            term: 'semantic HTML',
+            definition: 'Markup that communicates meaning.',
+            source: 'class',
+            partOfSpeech: 'noun',
+            vietnamese: {
+              term: 'HTML ngữ nghĩa',
+              definition: 'Mã đánh dấu truyền đạt ý nghĩa.',
+            },
+          },
+          accent: 'ink',
+          durationSeconds: 12,
+          diagnostics: [],
+        },
+      },
+    });
+    assert.equal(result.status, 'stored');
+    const projected = new SqliteDisplayContentProjection(database).read(
+      classId,
+      '2035-04-13',
+      'meeting-alpha',
+    );
+    assert.equal(projected.vocabularyCard?.vocabulary?.term, 'semantic HTML');
+    assert.equal(
+      projected.vocabularyCard?.vocabulary?.vietnamese?.term,
+      'HTML ngữ nghĩa',
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

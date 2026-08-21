@@ -39,6 +39,7 @@
     "ops:m17-copy-powerschool-state": "node dist/entrypoints/m17-copy-powerschool-state.js",
     "ops:m17-powerschool-repair": "node dist/entrypoints/m17-powerschool-repair.js",
     "ops:production-calendar-sync": "node dist/entrypoints/production-calendar-sync.js",
+    "ops:production-glossary-refresh": "node dist/entrypoints/production-glossary-refresh.js",
     "ops:production-plan-state-migration": "node dist/entrypoints/production-plan-state-migration.js",
     "ops:production-server": "node dist/entrypoints/production-server.js",
     "ops:powerschool-bells": "node dist/entrypoints/powerschool-bell-collector.js",

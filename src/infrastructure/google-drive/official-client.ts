@@ -1,4 +1,7 @@
-import { drive } from '@googleapis/drive';
+import { auth, drive } from '@googleapis/drive';
+
+import { googleDriveGlossaryReadScope } from '../../config/google-drive-glossary.js';
+import { readProtectedJson } from '../filesystem/protected-json.js';
 
 import {
   GoogleDriveGlossaryError,
@@ -14,6 +17,8 @@ interface NarrowDriveClient {
       params: {
         readonly q: string;
         readonly pageSize: number;
+        readonly includeItemsFromAllDrives: true;
+        readonly supportsAllDrives: true;
         readonly pageToken?: string;
       },
       options: {
@@ -29,7 +34,11 @@ interface NarrowDriveClient {
       };
     }>;
     get(
-      params: { readonly fileId: string; readonly alt: 'media' },
+      params: {
+        readonly fileId: string;
+        readonly alt: 'media';
+        readonly supportsAllDrives: true;
+      },
       options: {
         readonly responseType: 'arraybuffer';
         readonly retry: false;
@@ -53,6 +62,8 @@ export function createDriveGlossaryReadTransport(
           {
             q: `'${request.parentId}' in parents and trashed = false`,
             pageSize: 100,
+            includeItemsFromAllDrives: true,
+            supportsAllDrives: true,
             ...(request.pageToken === undefined
               ? {}
               : { pageToken: request.pageToken }),
@@ -87,7 +98,11 @@ export function createDriveGlossaryReadTransport(
         throw new GoogleDriveGlossaryError('drive-read-unavailable');
       try {
         const response = await client.files.get(
-          { fileId: request.fileId, alt: 'media' },
+          {
+            fileId: request.fileId,
+            alt: 'media',
+            supportsAllDrives: true,
+          },
           {
             responseType: 'arraybuffer',
             retry: false,
@@ -117,6 +132,53 @@ export function createOfficialDriveGlossaryClient(
     version: 'v3',
     auth: authenticatedClient,
   }) as unknown as NarrowDriveClient;
+}
+
+interface AuthorizedUserReference {
+  readonly version: 1;
+  readonly type: 'authorized-user';
+  readonly clientId: string;
+  readonly clientSecret: string;
+  readonly refreshToken: string;
+  readonly scopes: readonly [typeof googleDriveGlossaryReadScope];
+}
+
+/** Reads a Drive-read-only authorized-user reference only for the refresh job. */
+export function loadOfficialDriveGlossaryTransport(
+  referencePath: string,
+): DriveGlossaryReadTransport {
+  const reference = readProtectedJson(referencePath, isAuthorizedUserReference);
+  const oauth = new auth.OAuth2(reference.clientId, reference.clientSecret);
+  oauth.setCredentials({ refresh_token: reference.refreshToken });
+  return createDriveGlossaryReadTransport(
+    createOfficialDriveGlossaryClient(oauth),
+  );
+}
+
+function isAuthorizedUserReference(
+  value: unknown,
+): value is AuthorizedUserReference {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Object.keys(record).sort().join(',') ===
+      'clientId,clientSecret,refreshToken,scopes,type,version' &&
+    record.version === 1 &&
+    record.type === 'authorized-user' &&
+    typeof record.clientId === 'string' &&
+    /^[A-Za-z0-9._-]{8,256}\.apps\.googleusercontent\.com$/u.test(
+      record.clientId,
+    ) &&
+    typeof record.clientSecret === 'string' &&
+    /^[A-Za-z0-9._-]{8,256}$/u.test(record.clientSecret) &&
+    typeof record.refreshToken === 'string' &&
+    record.refreshToken.length >= 8 &&
+    record.refreshToken.length <= 4_096 &&
+    Array.isArray(record.scopes) &&
+    record.scopes.length === 1 &&
+    record.scopes[0] === googleDriveGlossaryReadScope
+  );
 }
 
 function parseFile(value: unknown): DriveGlossaryReadTransport extends never

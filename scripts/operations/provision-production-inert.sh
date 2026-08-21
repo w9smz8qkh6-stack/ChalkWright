@@ -21,13 +21,15 @@ system_units=(
   chalkwright-classroom-refresh.timer
   chalkwright-deploy.service
   chalkwright-deploy.timer
+  chalkwright-glossary-refresh.service
+  chalkwright-glossary-refresh.timer
   chalkwright-integrity.service
   chalkwright-integrity.timer
   chalkwright-plan-refresh.service
   chalkwright-plan-refresh.timer
 )
 user_unit=chalkwright-powerschool-repair.service
-for path in /etc/chalkwright/production/server.json /etc/chalkwright/production/calendar.json /etc/chalkwright/production/jobs/plan-refresh.env /etc/chalkwright/production/jobs/classroom-refresh.env /etc/chalkwright/production/jobs/maintenance.env; do
+for path in /etc/chalkwright/production/server.json /etc/chalkwright/production/calendar.json /etc/chalkwright/production/glossary.json /etc/chalkwright/production/jobs/plan-refresh.env /etc/chalkwright/production/jobs/classroom-refresh.env /etc/chalkwright/production/jobs/glossary-refresh.env /etc/chalkwright/production/jobs/maintenance.env; do
   [[ -f $path && ! -L $path ]] || reject production-provision-config-missing
 done
 [[ ! -e $source_root && ! -L $source_root ]] || reject production-provision-source-exists
@@ -77,4 +79,4 @@ done
 /usr/bin/bash "$source_root/scripts/operations/switch-production-release.sh" "$digest" >/dev/null
 created_units=0
 created_source=0
-echo "{\"status\":\"provisioned-inert\",\"release\":\"sha256:$digest\",\"unitsInstalled\":14,\"unitsStarted\":0,\"routeChanges\":0,\"providerRequests\":0}"
+echo "{\"status\":\"provisioned-inert\",\"release\":\"sha256:$digest\",\"unitsInstalled\":16,\"unitsStarted\":0,\"routeChanges\":0,\"providerRequests\":0}"

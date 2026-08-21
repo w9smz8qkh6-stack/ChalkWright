@@ -38,6 +38,12 @@ export interface PresentationCard {
       readonly definition?: string;
       readonly example?: string;
     };
+    readonly translations?: readonly {
+      readonly languageCode: 'vi' | 'ko' | 'zh-Hans';
+      readonly term?: string;
+      readonly definition?: string;
+      readonly example?: string;
+    }[];
   };
 }
 

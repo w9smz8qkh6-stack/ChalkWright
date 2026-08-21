@@ -287,15 +287,22 @@ function cardDetailsMarkup(card: PresentationCard): string {
 }
 
 function vocabularyFace(
-  language: 'English' | 'Vietnamese',
+  language: string,
+  className: string,
   value: {
     readonly term?: string;
     readonly definition?: string;
     readonly example?: string;
   },
   metadata = '',
+  faceIndex?: number,
+  faceCount?: number,
 ): string {
-  return `<section class="vocabulary-face vocabulary-${language.toLowerCase()}" aria-label="${language} vocabulary">
+  const style =
+    faceIndex === undefined || faceCount === undefined
+      ? ''
+      : ` style="--vocabulary-face-index:${faceIndex};--vocabulary-face-count:${faceCount}"`;
+  return `<section class="vocabulary-face vocabulary-${className}" aria-label="${language} vocabulary"${style}>
     <p class="vocabulary-language">${language}</p>
     <h2>${escapeHtml(value.term ?? '')}</h2>
     ${metadata}
@@ -311,8 +318,20 @@ function vocabularyMarkup(card: PresentationCard): string | undefined {
     .filter((value): value is string => value !== undefined)
     .map(escapeHtml)
     .join(' · ');
+  const translations = (
+    vocabulary.translations ??
+    (vocabulary.vietnamese === undefined
+      ? []
+      : [{ languageCode: 'vi' as const, ...vocabulary.vietnamese }])
+  ).filter((translation) =>
+    [translation.term, translation.definition, translation.example].some(
+      (value) => value !== undefined && value.trim().length > 0,
+    ),
+  );
+  const faceCount = 1 + translations.length;
   const english = vocabularyFace(
     'English',
+    'english',
     {
       term: vocabulary.term,
       definition: vocabulary.definition,
@@ -323,23 +342,53 @@ function vocabularyMarkup(card: PresentationCard): string | undefined {
     metadata.length === 0
       ? ''
       : `<p class="vocabulary-metadata">${metadata}</p>`,
+    faceCount > 2 ? 0 : undefined,
+    faceCount > 2 ? faceCount : undefined,
   );
-  const vietnamese = vocabulary.vietnamese;
-  const translated =
-    vietnamese !== undefined &&
-    [vietnamese.term, vietnamese.definition, vietnamese.example].some(
-      (value) => value !== undefined && value.trim().length > 0,
-    )
-      ? vocabularyFace('Vietnamese', vietnamese)
-      : '';
-  return `<div class="vocabulary-stage${translated === '' ? ' single-face' : ''}"><div class="vocabulary-flip">${english}${translated}</div></div>`;
+  const language = {
+    vi: { label: 'Vietnamese', className: 'vietnamese' },
+    ko: { label: 'Korean', className: 'korean' },
+    'zh-Hans': { label: 'Simplified Chinese', className: 'chinese' },
+  } as const;
+  const translated = translations
+    .map((translation, index) => {
+      const presentation = language[translation.languageCode];
+      return vocabularyFace(
+        presentation.label,
+        presentation.className,
+        translation,
+        '',
+        faceCount > 2 ? index + 1 : undefined,
+        faceCount > 2 ? faceCount : undefined,
+      );
+    })
+    .join('');
+  const mode =
+    translated === ''
+      ? ' single-face'
+      : faceCount > 2
+        ? ' vocabulary-multilingual'
+        : '';
+  return `<div class="vocabulary-stage${mode}"><div class="vocabulary-flip">${english}${translated}</div></div>`;
+}
+
+function vocabularyFaceCount(card: PresentationCard): number {
+  const vocabulary = card.vocabulary;
+  if (vocabulary === undefined) return 0;
+  if (vocabulary.translations !== undefined)
+    return 1 + vocabulary.translations.length;
+  return vocabulary.vietnamese === undefined ? 1 : 2;
 }
 
 function cardMarkup(card: PresentationCard, index: number): string {
-  const durationSeconds =
+  const configuredDurationSeconds =
     Number.isFinite(card.durationSeconds) && (card.durationSeconds ?? 0) > 0
       ? (card.durationSeconds ?? 12)
       : 12;
+  const durationSeconds = Math.max(
+    configuredDurationSeconds,
+    vocabularyFaceCount(card) * 6,
+  );
   const vocabulary = vocabularyMarkup(card);
   const title =
     card.type === 'bellringer'

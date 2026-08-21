@@ -596,7 +596,13 @@ export function isDisplayCard(value: unknown): boolean {
           hasExactKeys(
             value.vocabulary,
             ['term', 'definition'],
-            ['pronunciation', 'partOfSpeech', 'example', 'vietnamese'],
+            [
+              'pronunciation',
+              'partOfSpeech',
+              'example',
+              'vietnamese',
+              'translations',
+            ],
           ) &&
           isNonEmptyString(value.vocabulary.term) &&
           isNonEmptyString(value.vocabulary.definition) &&
@@ -604,7 +610,9 @@ export function isDisplayCard(value: unknown): boolean {
           isOptionalString(value.vocabulary.partOfSpeech) &&
           isOptionalString(value.vocabulary.example) &&
           (value.vocabulary.vietnamese === undefined ||
-            isVietnamese(value.vocabulary.vietnamese)))),
+            isVietnamese(value.vocabulary.vietnamese)) &&
+          (value.vocabulary.translations === undefined ||
+            isVocabularyTranslations(value.vocabulary.translations)))),
   );
 }
 
@@ -679,6 +687,39 @@ export function isVietnamese(value: unknown): boolean {
   );
 }
 
+export function isVocabularyTranslations(value: unknown): boolean {
+  return safelyValidate(() => {
+    if (!isInspectableArray(value) || value.length < 1 || value.length > 3)
+      return false;
+    const languageCodes = new Set<string>();
+    for (const translation of value) {
+      if (
+        !isPlainObject(translation) ||
+        !hasExactKeys(
+          translation,
+          ['languageCode'],
+          ['term', 'definition', 'example'],
+        ) ||
+        !isEnumValue(translation.languageCode, [
+          'vi',
+          'ko',
+          'zh-Hans',
+        ] as const) ||
+        !isOptionalString(translation.term) ||
+        !isOptionalString(translation.definition) ||
+        !isOptionalString(translation.example) ||
+        languageCodes.has(translation.languageCode) ||
+        [translation.term, translation.definition, translation.example].every(
+          (entry) => entry === undefined,
+        )
+      )
+        return false;
+      languageCodes.add(translation.languageCode);
+    }
+    return true;
+  });
+}
+
 export function isVocabularyContext(value: unknown): boolean {
   return safelyValidate(() => {
     if (
@@ -748,6 +789,7 @@ export function isVocabularyCandidate(value: unknown): boolean {
           'partOfSpeech',
           'example',
           'vietnamese',
+          'translations',
           'accent',
           'durationSeconds',
         ],
@@ -763,6 +805,8 @@ export function isVocabularyCandidate(value: unknown): boolean {
       isOptionalString(value.partOfSpeech) &&
       isOptionalString(value.example) &&
       (value.vietnamese === undefined || isVietnamese(value.vietnamese)) &&
+      (value.translations === undefined ||
+        isVocabularyTranslations(value.translations)) &&
       isOptionalString(value.accent) &&
       (value.durationSeconds === undefined ||
         (isFiniteNumber(value.durationSeconds) && value.durationSeconds > 0)),
@@ -785,6 +829,7 @@ export function isVocabularyHistoryEntry(
           'partOfSpeech',
           'example',
           'vietnamese',
+          'translations',
           'accent',
           'durationSeconds',
           'selectionContext',
@@ -801,6 +846,8 @@ export function isVocabularyHistoryEntry(
       isOptionalString(value.partOfSpeech) &&
       isOptionalString(value.example) &&
       (value.vietnamese === undefined || isVietnamese(value.vietnamese)) &&
+      (value.translations === undefined ||
+        isVocabularyTranslations(value.translations)) &&
       isOptionalString(value.accent) &&
       (value.durationSeconds === undefined ||
         (isFiniteNumber(value.durationSeconds) && value.durationSeconds > 0)) &&

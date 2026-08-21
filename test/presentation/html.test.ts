@@ -64,11 +64,24 @@ function model(
           pronunciation: 'in-VAIR-ee-uhnt',
           partOfSpeech: 'noun',
           example: 'The safety invariant remains true.',
-          vietnamese: {
-            term: 'bất biến',
-            definition: 'Một điều kiện luôn đúng.',
-            example: 'Điều kiện an toàn luôn đúng.',
-          },
+          translations: [
+            {
+              languageCode: 'vi',
+              term: 'bất biến',
+              definition: 'Một điều kiện luôn đúng.',
+              example: 'Điều kiện an toàn luôn đúng.',
+            },
+            {
+              languageCode: 'ko',
+              term: '불변 조건',
+              definition: '항상 참인 조건입니다.',
+            },
+            {
+              languageCode: 'zh-Hans',
+              term: '不变量',
+              definition: '始终为真的条件。',
+            },
+          ],
         },
       },
     ],
@@ -181,9 +194,9 @@ test('objective details preserve the legacy pointer, Classroom checkmark, and du
   assert.match(invalidDate, />👉<\/span>/u);
 });
 
-test('vocabulary renders complete bilingual flip faces without flattening semantic text', () => {
+test('vocabulary renders every multilingual face without flattening semantic text', () => {
   const html = renderDisplayPage(model('in_class_content'));
-  assert.match(html, /class="vocabulary-stage"/u);
+  assert.match(html, /class="vocabulary-stage vocabulary-multilingual"/u);
   assert.match(html, /aria-label="English vocabulary"/u);
   assert.match(html, />Invariant<\/h2>/u);
   assert.match(html, />noun · in-VAIR-ee-uhnt<\/p>/u);
@@ -191,6 +204,12 @@ test('vocabulary renders complete bilingual flip faces without flattening semant
   assert.match(html, /aria-label="Vietnamese vocabulary"/u);
   assert.match(html, />bất biến<\/h2>/u);
   assert.match(html, /Một điều kiện luôn đúng\./u);
+  assert.match(html, /aria-label="Korean vocabulary"/u);
+  assert.match(html, />불변 조건<\/h2>/u);
+  assert.match(html, /aria-label="Simplified Chinese vocabulary"/u);
+  assert.match(html, />不变量<\/h2>/u);
+  assert.match(html, /vocabulary-multilingual/u);
+  assert.match(html, /data-duration-ms="24000"/u);
 });
 
 test('bellringer removes only the redundant legacy title prefix', () => {

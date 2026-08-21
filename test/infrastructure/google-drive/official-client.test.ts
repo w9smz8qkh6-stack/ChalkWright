@@ -50,6 +50,8 @@ test('Drive glossary transport admits only parent-bounded list and CSV-byte read
     params: {
       q: "'folder-id-123' in parents and trashed = false",
       pageSize: 100,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
     },
     options: {
       fields: 'nextPageToken,files(id,name,mimeType,modifiedTime)',
@@ -59,7 +61,11 @@ test('Drive glossary transport admits only parent-bounded list and CSV-byte read
     },
   });
   assert.deepEqual(calls[1], {
-    params: { fileId: 'file-id-123', alt: 'media' },
+    params: {
+      fileId: 'file-id-123',
+      alt: 'media',
+      supportsAllDrives: true,
+    },
     options: {
       responseType: 'arraybuffer',
       retry: false,
