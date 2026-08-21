@@ -81,9 +81,10 @@ test('imports the live compact Web Design multilingual schema', () => {
     },
     defaultLanguage: 'en',
     csv: new TextEncoder().encode(
-      'term,definition,language,lessons,sample_sentence_en,term_vi,definition_vi,sample_sentence_vi,term_ko,definition_ko,sample_sentence_ko,term_zh,definition_zh,sample_sentence_zh\nHTML Tag,A markup label,en,3,Use the tag in a page.,Thẻ HTML,Nhãn đánh dấu,Dùng thẻ trong trang.,HTML 태그,마크업 레이블,페이지에서 태그를 사용하세요.,HTML 标签,标记标签,在页面中使用该标签。\n',
+      'term,definition,language,lessons,sample_sentence_en,term_vi,definition_vi,sample_sentence_vi,term_ko,definition_ko,sample_sentence_ko,term_zh,definition_zh,sample_sentence_zh\nHTML Tag,A markup label,markup,3,Use the tag in a page.,Thẻ HTML,Nhãn đánh dấu,Dùng thẻ trong trang.,HTML 태그,마크업 레이블,페이지에서 태그를 사용하세요.,HTML 标签,标记标签,在页面中使用该标签。\n',
     ),
   });
+  assert.equal(result.entries[0]?.sourceLanguage, 'en');
   assert.equal(result.entries[0]?.example, 'Use the tag in a page.');
   assert.deepEqual(
     result.translations.map((translation) => ({

@@ -163,7 +163,11 @@ function entryFromRow(
     index === undefined ? undefined : nonEmpty(row[index]);
   const term = value(indexes.term);
   const definition = value(indexes.definition);
-  const sourceLanguage = value(indexes.language) ?? request.defaultLanguage;
+  const suppliedLanguage = value(indexes.language);
+  const sourceLanguage =
+    suppliedLanguage !== undefined && languageCode(suppliedLanguage)
+      ? suppliedLanguage
+      : request.defaultLanguage;
   if (
     term === undefined ||
     definition === undefined ||

@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import test from 'node:test';
 
 import { chromium } from 'playwright-core';
@@ -63,7 +66,58 @@ const model: DisplayPresentationModel = {
   pinnedAt: '2035-04-13T08:30:00Z',
 };
 
+async function startVocabularyServer(): Promise<{
+  readonly origin: string;
+  readonly close: () => Promise<void>;
+}> {
+  const html = renderDisplayPage(model);
+  const css = readFileSync('public/display.css');
+  const server = createServer((request, response) => {
+    const path = new URL(request.url ?? '/', 'http://fixture.invalid').pathname;
+    if (path === '/') {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.end(html);
+      return;
+    }
+    if (path === '/assets/display.css') {
+      response.writeHead(200, { 'content-type': 'text/css; charset=utf-8' });
+      response.end(css);
+      return;
+    }
+    if (path === '/assets/display.js') {
+      response.writeHead(200, {
+        'content-type': 'text/javascript; charset=utf-8',
+      });
+      response.end('');
+      return;
+    }
+    if (path === '/manifest.webmanifest') {
+      response.writeHead(200, {
+        'content-type': 'application/manifest+json; charset=utf-8',
+      });
+      response.end('{}');
+      return;
+    }
+    response.writeHead(404).end();
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address() as AddressInfo;
+  return {
+    origin: `http://127.0.0.1:${address.port}`,
+    close: () =>
+      new Promise<void>((resolve, reject) => {
+        server.close((error) =>
+          error === undefined ? resolve() : reject(error),
+        );
+      }),
+  };
+}
+
 test('multilingual vocabulary rotates one face at a time and fits the classroom display', async () => {
+  const fixture = await startVocabularyServer();
   const browser = await chromium.launch({
     executablePath: '/usr/bin/google-chrome',
     headless: true,
@@ -74,10 +128,7 @@ test('multilingual vocabulary rotates one face at a time and fits the classroom 
       reducedMotion: 'no-preference',
     });
     const page = await context.newPage();
-    await page.setContent(renderDisplayPage(model), {
-      waitUntil: 'domcontentloaded',
-    });
-    await page.addStyleTag({ path: 'public/display.css' });
+    await page.goto(fixture.origin, { waitUntil: 'domcontentloaded' });
     const labels = await page
       .locator('.vocabulary-face')
       .evaluateAll((faces) =>
@@ -124,10 +175,12 @@ test('multilingual vocabulary rotates one face at a time and fits the classroom 
     await context.close();
   } finally {
     await browser.close();
+    await fixture.close();
   }
 });
 
 test('reduced motion shows all four vocabulary languages without overflow', async () => {
+  const fixture = await startVocabularyServer();
   const browser = await chromium.launch({
     executablePath: '/usr/bin/google-chrome',
     headless: true,
@@ -142,10 +195,7 @@ test('reduced motion shows all four vocabulary languages without overflow', asyn
         reducedMotion: 'reduce',
       });
       const page = await context.newPage();
-      await page.setContent(renderDisplayPage(model), {
-        waitUntil: 'domcontentloaded',
-      });
-      await page.addStyleTag({ path: 'public/display.css' });
+      await page.goto(fixture.origin, { waitUntil: 'domcontentloaded' });
       const result = await page
         .locator('.vocabulary-stage')
         .evaluate((stage) => ({
@@ -158,9 +208,11 @@ test('reduced motion shows all four vocabulary languages without overflow', asyn
           scrollWidth: document.documentElement.scrollWidth,
           viewportWidth: window.innerWidth,
           scrollHeight: document.documentElement.scrollHeight,
+          bodyMargin: getComputedStyle(document.body).margin,
         }));
       assert.equal(result.faceCount, 4);
       assert.equal(result.visibleCount, 4);
+      assert.equal(result.bodyMargin, '0px');
       assert.ok(
         result.stageBottom <= result.viewportHeight,
         `stage-bounds:${JSON.stringify({ viewport, result })}`,
@@ -177,5 +229,6 @@ test('reduced motion shows all four vocabulary languages without overflow', asyn
     }
   } finally {
     await browser.close();
+    await fixture.close();
   }
 });
