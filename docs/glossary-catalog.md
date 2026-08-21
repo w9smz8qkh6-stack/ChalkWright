@@ -28,6 +28,9 @@ accepts both descriptive translated headers and the compact production schema:
 `term_ko`/`definition_ko`/`sample_sentence_ko`, and
 `term_zh`/`definition_zh`/`sample_sentence_zh`. Vietnamese, Korean, and
 Simplified Chinese values are stored as reviewed teacher translations. It
+uses a `language` cell only when it is a valid BCP-47 language code; course or
+code-context labels in that legacy column retain their metadata role and the
+protected course default supplies the source language. It
 rejects malformed quotes, missing required columns, invalid rows, and oversized
 files before catalog writes. PDF files remain teacher reference material unless
 a separately tested extraction path is introduced. Imports replace the entries
