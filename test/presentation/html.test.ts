@@ -197,26 +197,26 @@ test('objective details preserve the legacy pointer, Classroom checkmark, and du
 test('vocabulary renders every multilingual face without flattening semantic text', () => {
   const html = renderDisplayPage(model('in_class_content'));
   assert.match(html, /class="vocabulary-stage vocabulary-multilingual"/u);
+  assert.match(html, /class="vocabulary-anchor"/u);
   assert.match(html, /aria-label="English vocabulary"/u);
   assert.match(html, />Invariant<\/h2>/u);
   assert.match(html, />noun · in-VAIR-ee-uhnt<\/p>/u);
   assert.match(html, /The safety invariant remains true\./u);
   assert.match(html, /aria-label="Vietnamese vocabulary"/u);
-  assert.match(html, />bất biến<\/h2>/u);
+  assert.match(html, />bất biến<\/h3>/u);
   assert.match(html, /Một điều kiện luôn đúng\./u);
   assert.match(html, /aria-label="Korean vocabulary"/u);
-  assert.match(html, />불변 조건<\/h2>/u);
+  assert.match(html, />불변 조건<\/h3>/u);
   assert.match(html, /aria-label="Simplified Chinese vocabulary"/u);
-  assert.match(html, />不变量<\/h2>/u);
-  assert.match(html, /vocabulary-multilingual/u);
+  assert.match(html, />不变量<\/h3>/u);
+  assert.match(html, /data-vocabulary-panel/u);
+  assert.match(html, /data-vocabulary-face/u);
   assert.match(
     html,
-    /--vocabulary-face-delay:0s;--vocabulary-cycle-duration:24s;animation:vocabulary-face-cycle 24s linear 0s infinite;z-index:1;opacity:1/u,
+    /class="vocabulary-panel-face vocabulary-english is-active"/u,
   );
-  assert.match(
-    html,
-    /--vocabulary-face-delay:18s;--vocabulary-cycle-duration:24s;animation:vocabulary-face-cycle 24s linear 18s infinite/u,
-  );
+  assert.match(html, /aria-hidden="false"/u);
+  assert.match(html, /aria-hidden="true"/u);
   assert.match(html, /data-duration-ms="24000"/u);
 });
 

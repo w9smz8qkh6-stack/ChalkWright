@@ -14,18 +14,17 @@ omitted.
   traversal of each configured `<academic-year>/<course>/Glossaries` Drive
   hierarchy, atomic import of all bounded direct-child CSVs with
   teacher-supplied English examples plus Vietnamese, Korean, and Simplified
-  Chinese fields, a four-language rotating vocabulary card,
+  Chinese fields, a four-language vocabulary card,
   deterministic per-meeting selection/history, native provider-free display
   projection, and an isolated 07:27 production refresh timer. No LLM
   translation call is used.
 
 ### Changed
 
-- Made four-language vocabulary cards compatible with older classroom display
-  browsers by emitting explicit animation durations and delays, with a visible
-  English face when animation support is unavailable. The server-delivered
-  scene carries the same timing so an already-open display also updates without
-  requiring a stylesheet reload.
+- Match the proven legacy vocabulary interaction: keep the English term
+  anchored while a contained panel flips from English details through
+  Vietnamese, Korean, and Simplified Chinese. Panel timing starts only when the
+  vocabulary card becomes active, preserving six readable seconds per face.
 
 - Treat non-BCP-47 values in a glossary CSV's legacy `language` column as
   course/code-context metadata and use the protected course default for the

@@ -72,6 +72,7 @@ async function startVocabularyServer(): Promise<{
 }> {
   const html = renderDisplayPage(model);
   const css = readFileSync('public/display.css');
+  const client = readFileSync('dist/client/display-client.js');
   const server = createServer((request, response) => {
     const path = new URL(request.url ?? '/', 'http://fixture.invalid').pathname;
     if (path === '/') {
@@ -88,7 +89,7 @@ async function startVocabularyServer(): Promise<{
       response.writeHead(200, {
         'content-type': 'text/javascript; charset=utf-8',
       });
-      response.end('');
+      response.end(client);
       return;
     }
     if (path === '/manifest.webmanifest') {
@@ -116,7 +117,7 @@ async function startVocabularyServer(): Promise<{
   };
 }
 
-test('multilingual vocabulary rotates one face at a time and fits the classroom display', async () => {
+test('multilingual vocabulary keeps English anchored while the panel flips through three translations', async () => {
   const fixture = await startVocabularyServer();
   const browser = await chromium.launch({
     executablePath: '/usr/bin/google-chrome',
@@ -128,9 +129,27 @@ test('multilingual vocabulary rotates one face at a time and fits the classroom 
       reducedMotion: 'no-preference',
     });
     const page = await context.newPage();
+    await page.addInitScript(() => {
+      const originalSetTimeout = window.setTimeout.bind(window);
+      const vocabularyCallbacks: Array<() => void> = [];
+      (
+        window as unknown as { __advanceVocabulary: () => void }
+      ).__advanceVocabulary = () => vocabularyCallbacks.shift()?.();
+      window.setTimeout = ((
+        handler: TimerHandler,
+        timeout?: number,
+        ...arguments_: unknown[]
+      ) => {
+        if (timeout === 6000 && typeof handler === 'function') {
+          vocabularyCallbacks.push(() => handler(...arguments_));
+          return 900_000 + vocabularyCallbacks.length;
+        }
+        return originalSetTimeout(handler, timeout, ...arguments_);
+      }) as typeof window.setTimeout;
+    });
     await page.goto(fixture.origin, { waitUntil: 'domcontentloaded' });
     const labels = await page
-      .locator('.vocabulary-face')
+      .locator('.vocabulary-panel-face')
       .evaluateAll((faces) =>
         faces.map((face) => face.getAttribute('aria-label')),
       );
@@ -141,37 +160,32 @@ test('multilingual vocabulary rotates one face at a time and fits the classroom 
       'Simplified Chinese vocabulary',
     ]);
 
-    for (const [time, visibleIndex] of [
-      [1_000, 0],
-      [7_000, 1],
-      [13_000, 2],
-      [19_000, 3],
-    ] as const) {
-      const opacities = await page
-        .locator('.vocabulary-face')
-        .evaluateAll((faces, animationTime) => {
-          for (const face of faces) {
-            const animation = face.getAnimations()[0];
-            if (animation !== undefined) animation.currentTime = animationTime;
-          }
-          return faces.map((face) => Number(getComputedStyle(face).opacity));
-        }, time);
-      assert.ok((opacities[visibleIndex] ?? 0) >= 0.99, `${time}:visible-face`);
-      assert.equal(
-        opacities.filter((opacity) => opacity >= 0.99).length,
-        1,
-        `${time}:one-visible-face`,
+    const anchoredTerm = await page
+      .locator('.vocabulary-anchor h2')
+      .innerText();
+    const activeLabels: (string | null)[] = [];
+    for (let index = 0; index < labels.length; index += 1) {
+      activeLabels.push(
+        await page
+          .locator('.vocabulary-panel-face.is-active')
+          .getAttribute('aria-label'),
       );
+      assert.equal(
+        await page.locator('.vocabulary-anchor h2').innerText(),
+        anchoredTerm,
+      );
+      assert.equal(
+        await page.locator('.vocabulary-panel-face.is-active').count(),
+        1,
+      );
+      if (index < labels.length - 1)
+        await page.evaluate(() =>
+          (
+            window as unknown as { __advanceVocabulary: () => void }
+          ).__advanceVocabulary(),
+        );
     }
-
-    const fallbackOpacities = await page
-      .locator('.vocabulary-face')
-      .evaluateAll((faces) => {
-        for (const face of faces)
-          (face as HTMLElement).style.animation = 'none';
-        return faces.map((face) => Number(getComputedStyle(face).opacity));
-      });
-    assert.deepEqual(fallbackOpacities, [1, 0, 0, 0]);
+    assert.deepEqual(activeLabels, labels);
 
     const layout = await page.evaluate(() => ({
       width: document.documentElement.scrollWidth,
@@ -188,7 +202,7 @@ test('multilingual vocabulary rotates one face at a time and fits the classroom 
   }
 });
 
-test('reduced motion shows all four vocabulary languages without overflow', async () => {
+test('reduced motion preserves one readable vocabulary face without overflow', async () => {
   const fixture = await startVocabularyServer();
   const browser = await chromium.launch({
     executablePath: '/usr/bin/google-chrome',
@@ -198,6 +212,7 @@ test('reduced motion shows all four vocabulary languages without overflow', asyn
     for (const viewport of [
       { width: 1_920, height: 1_080 },
       { width: 1_366, height: 768 },
+      { width: 768, height: 1_024 },
     ]) {
       const context = await browser.newContext({
         viewport,
@@ -208,10 +223,10 @@ test('reduced motion shows all four vocabulary languages without overflow', asyn
       const result = await page
         .locator('.vocabulary-stage')
         .evaluate((stage) => ({
-          faceCount: stage.querySelectorAll('.vocabulary-face').length,
-          visibleCount: [...stage.querySelectorAll('.vocabulary-face')].filter(
-            (face) => getComputedStyle(face).opacity === '1',
-          ).length,
+          faceCount: stage.querySelectorAll('.vocabulary-panel-face').length,
+          visibleCount: [
+            ...stage.querySelectorAll('.vocabulary-panel-face'),
+          ].filter((face) => getComputedStyle(face).opacity === '1').length,
           stageBottom: stage.getBoundingClientRect().bottom,
           viewportHeight: window.innerHeight,
           scrollWidth: document.documentElement.scrollWidth,
@@ -220,7 +235,7 @@ test('reduced motion shows all four vocabulary languages without overflow', asyn
           bodyMargin: getComputedStyle(document.body).margin,
         }));
       assert.equal(result.faceCount, 4);
-      assert.equal(result.visibleCount, 4);
+      assert.equal(result.visibleCount, 1);
       assert.equal(result.bodyMargin, '0px');
       assert.ok(
         result.stageBottom <= result.viewportHeight,
