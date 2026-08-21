@@ -232,14 +232,21 @@
     activateVocabularyFace(card, 0);
     if (faces.length === 1 || carouselState.paused) return;
     const state = carouselState;
+    const configuredInterval = Number(
+      card.querySelector<HTMLElement>('[data-vocabulary-panel]')?.dataset
+        .vocabularyIntervalMs,
+    );
+    const interval = Number.isFinite(configuredInterval)
+      ? Math.max(6000, configuredInterval)
+      : 10000;
     let faceIndex = 0;
     const advance = () => {
       if (carouselState !== state || state.cards[state.index] !== card) return;
       faceIndex = (faceIndex + 1) % faces.length;
       activateVocabularyFace(card, faceIndex);
-      state.vocabularyTimer = window.setTimeout(advance, 6000);
+      state.vocabularyTimer = window.setTimeout(advance, interval);
     };
-    state.vocabularyTimer = window.setTimeout(advance, 6000);
+    state.vocabularyTimer = window.setTimeout(advance, interval);
   }
 
   function initializeCarousel(previousState?: CarouselSnapshot): void {

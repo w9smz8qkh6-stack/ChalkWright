@@ -198,10 +198,12 @@ test('vocabulary renders every multilingual face without flattening semantic tex
   const html = renderDisplayPage(model('in_class_content'));
   assert.match(html, /class="vocabulary-stage vocabulary-multilingual"/u);
   assert.match(html, /class="vocabulary-anchor"/u);
-  assert.match(html, /aria-label="English vocabulary"/u);
   assert.match(html, />Invariant<\/h2>/u);
   assert.match(html, />noun · in-VAIR-ee-uhnt<\/p>/u);
+  assert.match(html, /class="vocabulary-anchor-definition"/u);
   assert.match(html, /The safety invariant remains true\./u);
+  assert.doesNotMatch(html, /aria-label="English vocabulary"/u);
+  assert.doesNotMatch(html, /<p class="card-type">vocabulary<\/p>/u);
   assert.match(html, /aria-label="Vietnamese vocabulary"/u);
   assert.match(html, />bất biến<\/h3>/u);
   assert.match(html, /Một điều kiện luôn đúng\./u);
@@ -210,14 +212,15 @@ test('vocabulary renders every multilingual face without flattening semantic tex
   assert.match(html, /aria-label="Simplified Chinese vocabulary"/u);
   assert.match(html, />不变量<\/h3>/u);
   assert.match(html, /data-vocabulary-panel/u);
+  assert.match(html, /data-vocabulary-interval-ms="10000"/u);
   assert.match(html, /data-vocabulary-face/u);
   assert.match(
     html,
-    /class="vocabulary-panel-face vocabulary-english is-active"/u,
+    /class="vocabulary-panel-face vocabulary-vietnamese is-active"/u,
   );
   assert.match(html, /aria-hidden="false"/u);
   assert.match(html, /aria-hidden="true"/u);
-  assert.match(html, /data-duration-ms="24000"/u);
+  assert.match(html, /data-duration-ms="30000"/u);
 });
 
 test('bellringer removes only the redundant legacy title prefix', () => {
