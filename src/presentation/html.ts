@@ -301,7 +301,7 @@ function vocabularyFace(
   const style =
     faceIndex === undefined || faceCount === undefined
       ? ''
-      : ` style="--vocabulary-face-delay:${faceIndex * 6}s;--vocabulary-cycle-duration:${faceCount * 6}s"`;
+      : ` style="--vocabulary-face-delay:${faceIndex * 6}s;--vocabulary-cycle-duration:${faceCount * 6}s;animation:vocabulary-face-cycle ${faceCount * 6}s linear ${faceIndex * 6}s infinite${faceIndex === 0 ? ';z-index:1;opacity:1' : ''}"`;
   return `<section class="vocabulary-face vocabulary-${className}" aria-label="${language} vocabulary"${style}>
     <p class="vocabulary-language">${language}</p>
     <h2>${escapeHtml(value.term ?? '')}</h2>

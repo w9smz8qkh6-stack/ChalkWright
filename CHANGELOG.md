@@ -23,7 +23,9 @@ omitted.
 
 - Made four-language vocabulary cards compatible with older classroom display
   browsers by emitting explicit animation durations and delays, with a visible
-  English face when animation support is unavailable.
+  English face when animation support is unavailable. The server-delivered
+  scene carries the same timing so an already-open display also updates without
+  requiring a stylesheet reload.
 
 - Treat non-BCP-47 values in a glossary CSV's legacy `language` column as
   course/code-context metadata and use the protected course default for the
