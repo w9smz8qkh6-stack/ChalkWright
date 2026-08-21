@@ -39,6 +39,15 @@ omitted.
   PowerSchool repair lane: its last three runs authenticated successfully. The
   obsolete failed system-manager repair result is historical; the remaining
   gate is credential-free routine state handoff/reuse after repair.
+- Qualified the complete native PowerSchool handoff in production: one
+  application-owned repair was followed by two consecutive credential-free
+  plan refreshes, both of which succeeded and exposed a current verified,
+  non-degraded plan. The legacy OpenClaw PowerSchool Chrome instance was then
+  disabled and stopped; a third credential-free refresh still succeeded and
+  the display remained ready. The obsolete system-manager repair unit was moved
+  to root-owned rollback storage while the working user-manager unit remained
+  loaded. Natural timer observation and final artifact removal remain;
+  repair-to-routine reuse and OpenClaw runtime separation are no longer open.
 
 - Refresh an active meeting's stored vocabulary display data from the latest
   matching catalog row while retaining the same selected term identity. CSV

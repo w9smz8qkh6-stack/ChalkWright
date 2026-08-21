@@ -1016,11 +1016,16 @@ independent user-scoped OpenClaw workloads remain installed on the shared host.
 M-18 removes only Chalkwright's dormant code and explicitly approved legacy
 artifacts; unrelated host workloads are outside its retirement scope. The
 native headed repair is working in the user manager and has three consecutive
-authenticated results. The credential-free plan refresh still returned
-`repair-required` after the latest success, making routine state handoff/reuse a
-stabilization gate even though neither lane depends on OpenClaw. The obsolete
-failed system-manager repair record is historical and must not be mistaken for
-the active repair lane.
+authenticated results. A controlled August 21 qualification subsequently ran
+the native repair and two consecutive credential-free plan refreshes. Both
+refreshes succeeded and published a current verified plan. The legacy OpenClaw
+PowerSchool Chrome instance was then disabled and stopped, after which a third
+credential-free refresh also succeeded and the display remained ready. The
+obsolete failed system-manager repair unit was moved to root-owned rollback
+storage while the working user-manager repair unit remained loaded. This closes
+routine state handoff/reuse and OpenClaw runtime separation as functional gates.
+The next natural scheduled refresh remains observation evidence, not a
+dependency gate.
 
 - **Objective:** Earn steady-state confidence before deleting rollback paths or
   OpenClaw dependencies.
