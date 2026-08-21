@@ -111,8 +111,8 @@ The production service serves the existing classroom URL, all permanent timers
 are active, Calendar reconciliation converges, and the historical shadow stays
 available without serving the display. One successful full classroom day is
 recorded. Alert activation, a fresh restore/restart drill, a natural
-PowerSchool expiry/repair cycle, and the approved observation interval remain
-open before M-18 retirement.
+post-repair credential-free PowerSchool refresh, and the approved observation
+interval remain open before M-18 retirement.
 
 The August 21 OpenClaw dependency scan found no reference in any active
 Chalkwright unit, production entrypoint, systemd dependency, package dependency,
@@ -125,11 +125,14 @@ Chalkwright dependency. M-18 must classify and remove the dormant repository
 modules from Chalkwright; it must not remove unrelated OpenClaw workloads merely
 because they share the host.
 
-The same scan found that the latest production plan refresh is
-`repair-required` and the latest native repair ended with
-`browser-launch-closed`. The display retained its last-known-good plan and ran
-successfully, but PowerSchool expiry/repair cannot be marked stable until a
-later native repair and credential-free refresh succeed without OpenClaw.
+The active native repair runs in Bren's systemd user manager and is working:
+its last three recorded runs returned `authenticated` with exit code zero and
+no OpenClaw involvement. The failed `browser-launch-closed` record belongs to
+the obsolete system-manager lane and is not current repair evidence. The
+credential-free production plan refresh that followed the latest successful
+repair still returned `repair-required`, so the remaining stabilization gap is
+routine state handoff/reuse, not native authentication repair. The display
+retained its last-known-good plan and ran successfully.
 
 Goal: prove the migrated app can run without babysitting before final handoff.
 
