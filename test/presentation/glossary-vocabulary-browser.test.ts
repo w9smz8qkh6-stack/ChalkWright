@@ -162,6 +162,15 @@ test('multilingual vocabulary keeps English anchored while the panel flips throu
       'Korean vocabulary',
       'Simplified Chinese vocabulary',
     ]);
+    const translatedTermWeights = await page
+      .locator('.vocabulary-translation-term')
+      .evaluateAll((terms) =>
+        terms.map((term) => Number(getComputedStyle(term).fontWeight)),
+      );
+    assert.equal(
+      translatedTermWeights.every((weight) => weight >= 700),
+      true,
+    );
 
     const anchoredTerm = await page
       .locator('.vocabulary-anchor h2')
