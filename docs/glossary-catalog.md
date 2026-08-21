@@ -38,6 +38,9 @@ for one source atomically after validation, while
 the source record and audit trail remain local. A display selection should keep
 the selected entry snapshot, so later source edits do not rewrite a past day's
 word of the day.
+Entry and translation identities are bounded SHA-256 derivations of their
+source row and relevant content, so the longest accepted definitions cannot
+overflow the local catalog's identifier contract.
 
 The provider boundary has only two capabilities: list the direct children of a
 known folder and download a bounded CSV file. It accepts no Drive write,

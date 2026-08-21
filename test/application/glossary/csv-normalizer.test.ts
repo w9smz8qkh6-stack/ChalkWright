@@ -26,7 +26,7 @@ test('normalizes recognized teacher CSV headers and quoted source text', () => {
   assert.match(result.source.contentHash, /^sha256:[0-9a-f]{64}$/u);
   assert.deepEqual(result.entries[0], {
     entryId:
-      'glossary-entry-web-design-unit-1-2-semantic-html-html-with-meaning',
+      'glossary-entry-5e94a7f5840811a4e8877a00580cb25113008c30c7a763c4ef2fa4a9d888bade',
     sourceGlossaryId: 'web-design-unit-1',
     sourceRowKey: 'csv-line-2',
     sourceLanguage: 'en',
@@ -55,9 +55,10 @@ test('imports teacher-supplied Vietnamese columns as reviewed translations', () 
   });
   assert.deepEqual(result.translations, [
     {
-      translationId: 'glossary-translation-web-design-unit-2-2-vi',
+      translationId:
+        'glossary-translation-861c81091b98708eac0c9bdba8efcdff9493ae4df6510a7af68a900c8568e48b',
       entryId:
-        'glossary-entry-web-design-unit-2-2-iteration-a-repeated-process',
+        'glossary-entry-1d216a025add4449c534f4f3ab6325bd61b1a439d79dc028b1f5d266d0c19bba',
       languageCode: 'vi',
       origin: 'teacher',
       reviewStatus: 'reviewed',
@@ -114,6 +115,32 @@ test('imports the live compact Web Design multilingual schema', () => {
       },
     ],
   );
+});
+
+test('bounds content-derived identities for the longest valid definition', () => {
+  const definition = 'A'.repeat(8_192);
+  const request = {
+    importId: 'import-long-identity',
+    source: {
+      sourceGlossaryId: `drive-glossary-${'s'.repeat(200)}`,
+      classId: 'class-web-design' as never,
+      academicYear: '2026-27',
+      sourceReference: 'google-drive:fixture/long.csv',
+      importedAt,
+    },
+    defaultLanguage: 'en',
+  } as const;
+  const first = normalizeGlossaryCsv({
+    ...request,
+    csv: new TextEncoder().encode(`term,definition\nHTML,${definition}\n`),
+  });
+  const changed = normalizeGlossaryCsv({
+    ...request,
+    csv: new TextEncoder().encode(`term,definition\nCSS,${definition}\n`),
+  });
+  assert.match(first.entries[0]!.entryId, /^glossary-entry-[0-9a-f]{64}$/u);
+  assert.ok(first.entries[0]!.entryId.length <= 256);
+  assert.notEqual(first.entries[0]!.entryId, changed.entries[0]!.entryId);
 });
 
 test('fails closed for missing columns, malformed quote syntax, and invalid rows', () => {

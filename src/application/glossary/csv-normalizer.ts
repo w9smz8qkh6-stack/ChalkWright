@@ -188,10 +188,12 @@ function entryFromRow(
   return {
     entryId: stableId(
       'glossary-entry',
-      request.source.sourceGlossaryId,
-      String(line),
-      term,
-      definition,
+      derivedIdentity(
+        request.source.sourceGlossaryId,
+        String(line),
+        term,
+        definition,
+      ),
     ),
     sourceGlossaryId: request.source.sourceGlossaryId,
     sourceRowKey: `csv-line-${line}`,
@@ -239,9 +241,11 @@ function translationFromRow(
       {
         translationId: stableId(
           'glossary-translation',
-          request.source.sourceGlossaryId,
-          String(line),
-          translation.languageCode,
+          derivedIdentity(
+            request.source.sourceGlossaryId,
+            String(line),
+            translation.languageCode,
+          ),
         ),
         entryId: entry.entryId,
         languageCode: translation.languageCode,
@@ -310,4 +314,8 @@ function languageCode(value: string): boolean {
 
 function digest(value: Uint8Array): string {
   return `sha256:${createHash('sha256').update(value).digest('hex')}`;
+}
+
+function derivedIdentity(...parts: readonly string[]): string {
+  return createHash('sha256').update(JSON.stringify(parts)).digest('hex');
 }
