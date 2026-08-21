@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -66,46 +66,15 @@ test('M-07B source-less preflight cannot construct profile, repair, persistence,
   assert.doesNotMatch(entrypoint, /characterizePowerSchoolOnce/u);
 });
 
-test('M-07B live capability is confined to the fixed child and process supervisor', () => {
-  const supervisor = read(
-    'src/entrypoints/powerschool-characterization-supervisor.ts',
-  );
-  const child = read('src/entrypoints/powerschool-characterization-child.ts');
-  const processBoundary = read('src/infrastructure/process/quiescent-child.ts');
-  const liveSource = read(
-    'src/infrastructure/powerschool/live-characterization-source.ts',
-  );
-
-  assert.match(supervisor, /runQuiescentChild/u);
-  assert.match(supervisor, /powerschool-characterization-child\.js/u);
-  assert.match(
-    supervisor,
-    /dirname\(dirname\(dirname\(dirname\(childFile\)\)\)\)/u,
-  );
-  assert.match(processBoundary, /spawn\(/u);
-  assert.match(processBoundary, /detached: true/u);
-  assert.match(processBoundary, /process\.kill\(-processGroup/u);
-  for (const source of [supervisor, child, liveSource]) {
-    assert.doesNotMatch(
-      source,
-      /authentication-repair|calendar-writer|sqlite/iu,
-    );
-    assert.doesNotMatch(source, /\.(?:click|fill|press|type|evaluate)\(/u);
-  }
-  assert.doesNotMatch(supervisor, /from ['"]node:child_process/u);
-  assert.doesNotMatch(child, /from ['"]node:child_process/u);
-  assert.doesNotMatch(liveSource, /from ['"]node:child_process/u);
+test('obsolete managed-profile characterization execution is absent', () => {
   for (const path of [
-    'src/index.ts',
-    'src/entrypoints/job.ts',
-    'src/entrypoints/rehearsal.ts',
+    'src/entrypoints/powerschool-characterization-supervisor.ts',
+    'src/entrypoints/powerschool-characterization-child.ts',
   ]) {
-    assert.equal(
-      read(path).includes('characterization-supervisor'),
-      false,
-      path,
-    );
+    assert.equal(existsSync(join(root, path)), false, path);
   }
+  const browser = read('src/infrastructure/powerschool/browser-read.ts');
+  assert.doesNotMatch(browser, /managed-powerschool|\.openclaw-workonly/iu);
 });
 
 test('browser boundary contains no active DOM or form interaction API', () => {

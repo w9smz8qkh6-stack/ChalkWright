@@ -48,6 +48,11 @@ omitted.
   to root-owned rollback storage while the working user-manager unit remained
   loaded. Natural timer observation and final artifact removal remain;
   repair-to-routine reuse and OpenClaw runtime separation are no longer open.
+- Removed the obsolete managed-profile PowerSchool characterization child and
+  supervisor plus the historical M-15 Calendar-trial provisioning and
+  OpenClaw-writer adapter. The remaining passive characterization browser now
+  accepts disposable temporary profiles only; package commands and operator
+  documentation can no longer invoke the retired M-15 path.
 
 - Refresh an active meeting's stored vocabulary display data from the latest
   matching catalog row while retaining the same selected term identity. CSV

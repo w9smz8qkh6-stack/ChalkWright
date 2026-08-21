@@ -6,13 +6,12 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir, userInfo } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, test } from 'node:test';
 
 import {
   awaitBoundedBrowserQuiescence,
-  isDesignatedManagedPowerSchoolProfilePath,
   PassiveBrowserReadSession,
   type PassiveBrowserReadRequest,
 } from '../../../src/infrastructure/powerschool/browser-read.js';
@@ -346,95 +345,6 @@ describe('passive PowerSchool browser boundary', () => {
     );
   });
 
-  test('rejects personal, lookalike, malformed, repository, and symlinked managed profile paths', async () => {
-    const server = await fixtureServer();
-    const root = mkdtempSync(join(tmpdir(), 'classroom-hub-managed-invalid-'));
-    profiles.push(root);
-    const arbitrary = join(root, 'arbitrary-profile');
-    mkdirSync(arbitrary);
-    const personal = join(root, '.config', 'google-chrome', 'Default');
-    mkdirSync(personal, { recursive: true });
-    const wrongShape = join(
-      root,
-      '.openclaw-workonly',
-      'browser',
-      'not-powerschool',
-    );
-    mkdirSync(wrongShape, { recursive: true });
-    const nonDirectory = join(
-      root,
-      'non-directory',
-      '.openclaw-workonly',
-      'browser',
-      'powerschool',
-    );
-    mkdirSync(join(nonDirectory, '..'), { recursive: true });
-    writeFileSync(nonDirectory, 'synthetic');
-    const symlinkTarget = join(root, 'symlink-target');
-    mkdirSync(symlinkTarget);
-    const symlinked = join(
-      root,
-      'symlinked',
-      '.openclaw-workonly',
-      'browser',
-      'powerschool',
-    );
-    mkdirSync(join(symlinked, '..'), { recursive: true });
-    symlinkSync(symlinkTarget, symlinked);
-    const canonicalManaged = fixtureManagedProfile();
-
-    for (const userDataDir of [
-      tmpdir(),
-      process.cwd(),
-      fixtureProfile(),
-      arbitrary,
-      personal,
-      wrongShape,
-      nonDirectory,
-      symlinked,
-      `${canonicalManaged}/../powerschool`,
-    ]) {
-      await assert.rejects(
-        PassiveBrowserReadSession.launch({
-          userDataDir,
-          profileMode: 'managed-powerschool',
-          allowedOrigin: server.origin,
-          timeoutMs: 1_000,
-          maxBodyBytes: 1_024,
-          ...syntheticPowerSchoolBrowserPolicy(),
-        }),
-      );
-    }
-  });
-
-  test('managed identity ignores the supervisor disposable HOME', () => {
-    const previousHome = process.env.HOME;
-    process.env.HOME = join(tmpdir(), 'classroom-hub-m07b-runtime-home');
-    try {
-      const designated = join(
-        userInfo({ encoding: 'utf8' }).homedir,
-        '.openclaw-workonly',
-        'browser',
-        'powerschool',
-      );
-      assert.equal(isDesignatedManagedPowerSchoolProfilePath(designated), true);
-      assert.equal(
-        isDesignatedManagedPowerSchoolProfilePath(
-          join(
-            process.env.HOME,
-            '.openclaw-workonly',
-            'browser',
-            'powerschool',
-          ),
-        ),
-        false,
-      );
-    } finally {
-      if (previousHome === undefined) delete process.env.HOME;
-      else process.env.HOME = previousHome;
-    }
-  });
-
   test('rejects same-origin GET paths outside the finite route policy', async () => {
     const server = await fixtureServer();
     const session = await browserSession(server);
@@ -467,14 +377,6 @@ function fixtureProfile(): string {
     join(tmpdir(), 'classroom-hub-powerschool-profile-'),
   );
   profiles.push(profile);
-  return profile;
-}
-
-function fixtureManagedProfile(): string {
-  const root = mkdtempSync(join(tmpdir(), 'classroom-hub-managed-profile-'));
-  profiles.push(root);
-  const profile = join(root, '.openclaw-workonly', 'browser', 'powerschool');
-  mkdirSync(profile, { recursive: true });
   return profile;
 }
 

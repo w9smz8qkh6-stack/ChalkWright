@@ -382,51 +382,15 @@ signal is still usable. The separately approved recovery mode exists for an
 abort, process loss, or later retry. It never lists Calendar events or accepts
 an arbitrary event reference.
 
-## M-15 bounded production-trial runbook
+## Retired M-15 bounded production-trial runbook
 
-This is a one-off outside-hours trial, not a service or recurring job. The
-checked-in command accepts only the fixed 2026-08-11 C509 scope and a protected
-configuration reference. Never print or copy that configuration, the prepared
-state, approval state, OAuth reference, Calendar ID, event references, etags,
-or backup contents.
-
-1. Build from the reviewed clean worktree and complete `npm run check` plus
-   `git diff --check`. Source/build changes after preparation invalidate the
-   proposal.
-2. Confirm no OpenClaw Calendar sync is running, then disable only the fixed
-   legacy job. The M-15 verifier requires its exact ID/name/schedule to remain
-   present but report disabled and quiescent. Do not delete or reschedule it.
-3. Run `npm run ops:m15-provision` once. It derives the production Calendar
-   identity from the retained legacy source, requires it to match the protected
-   M-14 production deny hash, reuses only the exact owner-only writer grant,
-   and writes one owner-only external config without printing protected values.
-4. Set `CLASSROOM_HUB_M15_CONFIG_REFERENCE` to that external config and run
-   `npm run ops:m15-calendar-trial -- --prepare`. This creates and verifies a
-   fresh source-state backup, reads the exact verified three-meeting plan,
-   reproduces M-13's exact candidate set, and performs event-list plus exact
-   event-GET reads. Accept only `m15-production-preflight-ready` with three
-   observations/replacements and zero attempted/completed mutations.
-5. Run `npm run ops:m15-calendar-trial -- --stage-approval`. Record only its
-   proposal fingerprint, approval fingerprint, and expiry. Obtain explicit
-   operator approval for that exact fingerprint. Do not execute if the build,
-   backup, legacy exclusion, provider events, or approval window changed.
-6. Execute only
-   `npm run ops:m15-calendar-trial -- --execute --approval-fingerprint <exact>`.
-   Accept success only with three replacements, exact readback, no rollback
-   attempts, and no unexplained counts. Every write is etag-conditional and
-   fixes `sendUpdates=none`. The fixed patch omits reminders and unrelated
-   properties so the preflighted provider-default policy and foreign metadata
-   remain unchanged.
-7. Keep the legacy writer disabled until the user accepts sanitized trial
-   evidence and rollback readiness. M-16 decides the later operational handoff.
-
-On failure, do not re-enable the legacy writer while an M-15 process or lease
-may remain. The executor compensates each changed event to its exact protected
-legacy fields and verifies the result. A retained exact Classroom Hub ownership
-marker is intentional and hash-bound by the approved adoption. If compensation
-or readback is incomplete, preserve the protected state/database/backup, expose
-only sanitized codes and hashes, and stop for a new recovery decision. Never
-use generic Calendar commands to repair the scope.
+M-15 was a one-off outside-hours migration trial and is no longer an executable
+operation. Its entrypoint, provisioning command, protected-profile checks, and
+OpenClaw legacy-writer adapter were removed during M-18 stabilization after the
+permanent Chalkwright Calendar and PowerSchool lanes were qualified. Historical
+policy, evidence, and rollback decisions remain in the migration documentation;
+operators must use the current permanent-production procedures below rather
+than attempting to reconstruct the retired trial.
 
 M-06 serializes fake alert evaluation within one process. A future real
 transport must add a cross-process lease/CAS before concurrent delivery is

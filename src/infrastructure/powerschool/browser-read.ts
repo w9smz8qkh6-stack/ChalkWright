@@ -1,5 +1,5 @@
 import { lstatSync, realpathSync } from 'node:fs';
-import { tmpdir, userInfo } from 'node:os';
+import { tmpdir } from 'node:os';
 import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 
 import {
@@ -16,29 +16,10 @@ import { BoundedOperationTimeoutError } from './timeout.js';
 const MAX_TIMEOUT_MS = 30_000;
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 const PROFILE_PREFIX = 'classroom-hub-powerschool-profile-';
-const MANAGED_PROFILE_TAIL = [
-  '.openclaw-workonly',
-  'browser',
-  'powerschool',
-] as const;
 const activeProfiles = new Set<string>();
-
-/** HOME-independent identity check for the one authorized managed profile. */
-export function isDesignatedManagedPowerSchoolProfilePath(
-  input: string,
-): boolean {
-  return (
-    isAbsolute(input) &&
-    resolve(input) === input &&
-    input ===
-      resolve(userInfo({ encoding: 'utf8' }).homedir, ...MANAGED_PROFILE_TAIL)
-  );
-}
 
 export interface PassiveBrowserReadOptions {
   readonly userDataDir: string;
-  /** Temporary is the safe default; managed mode requires the work-only shape. */
-  readonly profileMode?: 'temporary' | 'managed-powerschool';
   readonly allowedOrigin: string;
   readonly timeoutMs: number;
   readonly maxBodyBytes: number;
@@ -126,11 +107,7 @@ export class PassiveBrowserReadSession {
   static async launch(
     options: PassiveBrowserReadOptions,
   ): Promise<PassiveBrowserReadSession> {
-    const profileMode = options.profileMode ?? 'temporary';
-    if (profileMode !== 'temporary' && profileMode !== 'managed-powerschool') {
-      throw new Error('browser-profile-mode-invalid');
-    }
-    const profilePath = validateProfilePath(options.userDataDir, profileMode);
+    const profilePath = validateProfilePath(options.userDataDir);
     const allowedOrigin = validateOrigin(options.allowedOrigin);
     const timeoutMs = validateBoundedInteger(
       'timeoutMs',
@@ -534,10 +511,7 @@ interface ReadBudget {
   exceeded: boolean;
 }
 
-function validateProfilePath(
-  input: string,
-  mode: 'temporary' | 'managed-powerschool',
-): string {
+function validateProfilePath(input: string): string {
   if (!isAbsolute(input)) throw new Error('browser-profile-must-be-absolute');
   const resolved = resolve(input);
   if (resolved !== input) throw new Error('browser-profile-must-be-canonical');
@@ -548,11 +522,6 @@ function validateProfilePath(
   const canonical = realpathSync(resolved);
   if (canonical !== resolved)
     throw new Error('browser-profile-symlink-rejected');
-
-  if (mode === 'managed-powerschool') {
-    validateManagedProfileShape(canonical);
-    return canonical;
-  }
 
   const temporaryRoot = realpathSync(tmpdir());
   const fromTemporaryRoot = relative(temporaryRoot, canonical);
@@ -565,32 +534,6 @@ function validateProfilePath(
     throw new Error('browser-profile-not-dedicated-temporary-directory');
   }
   return canonical;
-}
-
-function validateManagedProfileShape(canonical: string): void {
-  const parts = canonical.split(sep).filter((part) => part.length > 0);
-  if (
-    parts.at(-1) !== MANAGED_PROFILE_TAIL[2] ||
-    parts.at(-2) !== MANAGED_PROFILE_TAIL[1] ||
-    parts.at(-3) !== MANAGED_PROFILE_TAIL[0]
-  ) {
-    throw new Error('browser-managed-profile-shape-invalid');
-  }
-
-  // The supervisor intentionally supplies a disposable HOME, so the managed
-  // identity must bind to the account database rather than that environment.
-  if (!isDesignatedManagedPowerSchoolProfilePath(canonical)) {
-    throw new Error('browser-managed-profile-identity-invalid');
-  }
-
-  const repositoryRoot = realpathSync(process.cwd());
-  const fromRepository = relative(repositoryRoot, canonical);
-  if (
-    fromRepository.length === 0 ||
-    (fromRepository !== '..' && !fromRepository.startsWith(`..${sep}`))
-  ) {
-    throw new Error('browser-managed-profile-location-invalid');
-  }
 }
 
 function validateOrigin(input: string): string {
